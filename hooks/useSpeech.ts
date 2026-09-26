@@ -3,35 +3,45 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useSpeech() {
-  const [enabled, setEnabled] = useState(true);
   const [supported, setSupported] = useState(false);
-  const lastSpokenRef = useRef<string>("");
+  const arabicVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
   useEffect(() => {
-    setSupported(
-      typeof window !== "undefined" && "speechSynthesis" in window
-    );
+    const isSupported =
+      typeof window !== "undefined" && "speechSynthesis" in window;
+    setSupported(isSupported);
+    if (!isSupported) return;
+
+    const pickArabicVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      arabicVoiceRef.current =
+        voices.find((v) => v.lang.toLowerCase().startsWith("ar-tn")) ??
+        voices.find((v) => v.lang.toLowerCase().startsWith("ar")) ??
+        null;
+    };
+
+    pickArabicVoice();
+    window.speechSynthesis.addEventListener("voiceschanged", pickArabicVoice);
+    return () =>
+      window.speechSynthesis.removeEventListener("voiceschanged", pickArabicVoice);
   }, []);
 
-  const speak = useCallback(
+  // Reads a full block of text (e.g. the whole built sentence) aloud on
+  // demand, using an installed Arabic voice when one is available.
+  const speakSentence = useCallback(
     (text: string) => {
-      if (!enabled || !supported || !text) return;
-      if (lastSpokenRef.current === text) return;
-      lastSpokenRef.current = text;
-
+      if (!supported || !text) return;
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1;
+      utterance.lang = "ar";
+      if (arabicVoiceRef.current) utterance.voice = arabicVoiceRef.current;
+      utterance.rate = 0.95;
       utterance.pitch = 1;
       utterance.volume = 1;
       window.speechSynthesis.speak(utterance);
     },
-    [enabled, supported]
+    [supported]
   );
 
-  const resetLastSpoken = useCallback(() => {
-    lastSpokenRef.current = "";
-  }, []);
-
-  return { enabled, setEnabled, supported, speak, resetLastSpoken };
+  return { supported, speakSentence };
 }

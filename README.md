@@ -2,14 +2,14 @@
 
 A mobile-first Next.js app that scans hand gestures from the phone camera
 in real time, entirely on-device, and translates them into a growing
-sentence with a "liquid glass" UI.
+sentence with a clean black/white UI.
 
 ## Stack
 
 - Next.js 15 (App Router) + TypeScript
-- Tailwind CSS 3 (custom liquid-glass utility classes + animated mesh background)
-- `@mediapipe/tasks-vision` `GestureRecognizer` running client-side (WebGPU/WebGL via GPU delegate, falls back to CPU)
-- Browser `SpeechSynthesis` for voice output
+- Tailwind CSS 3 + shadcn/ui (Button, Card, Badge) on a black background theme
+- `@mediapipe/tasks-vision` `GestureRecognizer` running client-side (WebGPU/WebGL via GPU delegate, falls back to CPU), supports up to 2 hands
+- Browser `SpeechSynthesis` (Arabic voice) to read the sentence aloud on demand
 
 ## Getting started
 
@@ -54,29 +54,33 @@ or use `ngrok http 3000`, then open the printed HTTPS URL on your phone.
    ~700ms (see `LOCK_HOLD_MS` / `CONFIDENCE_THRESHOLD`) before it "locks
    in" as a translated word — this avoids flickering, single-frame
    misfires.
-3. Locked words are mapped through `lib/gestureDictionary.ts`, appended to
-   the current in-progress sentence (`app/page.tsx`), and optionally
-   spoken aloud via `window.speechSynthesis`.
-4. The sentence keeps growing with each new locked gesture, and is
-   cleared either automatically after ~3s of no new gesture
-   (`SENTENCE_IDLE_MS`) or immediately via the "Clear sentence" button.
+3. Locked gestures are mapped to Arabic words through
+   `lib/gestureDictionary.ts` and appended to the current sentence
+   (`app/page.tsx`).
+4. The sentence keeps growing with each new locked gesture from either
+   hand, until the user taps "Clear sentence". Tapping "Speak sentence"
+   reads the whole thing aloud via `window.speechSynthesis`.
+
+**Current limitation:** the model classifies a single still frame of hand
+landmarks — it only recognizes *held static hand shapes*, not motion.
 
 ## Project structure
 
 ```
 app/
-  layout.tsx        Root layout, fonts, viewport/meta (safe-area, notch)
-  page.tsx           Composes background, scanner, translation panel
-  globals.css        Tailwind layers + liquid-glass utility classes
+  layout.tsx        Root layout, fonts (Inter + Noto Sans Arabic), viewport/meta
+  page.tsx           Composes scanner + translation panel
+  icon.tsx           Generated favicon/app icon
+  globals.css        Tailwind layers + shadcn CSS variable theme (black/white)
 components/
-  AmbientBackground.tsx  Animated gradient-blob backdrop
   GestureScanner.tsx     Camera + MediaPipe recognition + landmark overlay
-  TranslationPanel.tsx   Glass card showing the growing sentence + controls
+  TranslationPanel.tsx   Card showing the growing sentence + controls
+  ui/                    shadcn/ui primitives (Button, Card, Badge)
 hooks/
-  useSpeech.ts       Wraps window.speechSynthesis
+  useSpeech.ts       Picks an Arabic voice and speaks the sentence on demand
 lib/
-  gestureDictionary.ts   Gesture label -> word mapping
+  gestureDictionary.ts   Gesture label -> word mapping (Tunisian Arabic script)
   handConnections.ts     Hand landmark skeleton graph for drawing
-  types.ts               Shared types
-public/models/       Where the .task model file goes (gitignored)
+  utils.ts               `cn()` classname helper (shadcn convention)
+public/models/       Where the .task model file goes
 ```

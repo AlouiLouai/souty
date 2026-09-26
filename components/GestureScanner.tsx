@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Loader2, VideoOff } from "lucide-react";
 import type {
   GestureRecognizer as GestureRecognizerType,
   GestureRecognizerResult,
 } from "@mediapipe/tasks-vision";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { gestureToWord, IGNORED_LABELS } from "@/lib/gestureDictionary";
 import { HAND_CONNECTIONS } from "@/lib/handConnections";
-import type { RecognizedGesture, ScannerPhase } from "@/lib/types";
 
 const TASKS_VISION_VERSION = "1.0.1";
 const WASM_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${TASKS_VISION_VERSION}/wasm`;
@@ -16,17 +18,89 @@ const CONFIDENCE_THRESHOLD = 0.65;
 const LOCK_HOLD_MS = 700;
 const MAX_HANDS = 2;
 
+type ScannerPhase =
+  | "loading-model"
+  | "requesting-camera"
+  | "camera-denied"
+  | "unsupported"
+  | "error"
+  | "ready";
+
 interface GestureScannerProps {
   className?: string;
   paused: boolean;
-  onLocked: (gesture: RecognizedGesture) => void;
+  onLocked: (word: string) => void;
 }
 
-interface LiveHand {
-  key: string;
+interface HandInfo {
   label: string;
   confidence: number;
   progress: number;
+}
+
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Draws a small progress ring + gesture label anchored just above the hand's
+// own on-screen position (instead of a fixed spot), so the indicator tracks
+// wherever the hand actually is in frame.
+function drawHandLabel(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  info: HandInfo,
+  canvasWidth: number
+) {
+  const r = Math.max(20, canvasWidth * 0.035);
+
+  ctx.save();
+  ctx.lineWidth = Math.max(3, r * 0.18);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+  ctx.beginPath();
+  ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + info.progress * Math.PI * 2);
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+  ctx.font = `600 ${Math.max(11, r * 0.32)}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(`${Math.round(info.confidence * 100)}%`, x, y);
+
+  const label = info.label;
+  const fontSize = Math.max(12, r * 0.34);
+  ctx.font = `600 ${fontSize}px sans-serif`;
+  const paddingX = fontSize * 0.7;
+  const textWidth = ctx.measureText(label).width;
+  const pillWidth = textWidth + paddingX * 2;
+  const pillHeight = fontSize * 1.8;
+  const pillY = y + r + 8;
+
+  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+  roundRect(ctx, x - pillWidth / 2, pillY, pillWidth, pillHeight, pillHeight / 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(label, x, pillY + pillHeight / 2);
+  ctx.restore();
 }
 
 // MediaPipe's WASM runtime logs its internal graph setup (delegate choice,
@@ -93,7 +167,6 @@ export default function GestureScanner({
 
   const [phase, setPhase] = useState<ScannerPhase>("loading-model");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [liveHands, setLiveHands] = useState<LiveHand[]>([]);
 
   useEffect(() => {
     pausedRef.current = paused;
@@ -103,60 +176,77 @@ export default function GestureScanner({
     onLockedRef.current = onLocked;
   }, [onLocked]);
 
-  const drawLandmarks = useCallback((result: GestureRecognizerResult) => {
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    if (!canvas || !video) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+  // Renders the hand skeleton plus a per-hand progress ring/label directly
+  // onto the canvas, anchored to that hand's own landmarks so it tracks the
+  // hand wherever it moves (rather than sitting in one fixed screen spot).
+  // The video is mirrored via a CSS scaleX(-1), but the canvas itself is
+  // NOT — so x coordinates are mirrored manually here to line up with the
+  // mirrored video, while text/shapes drawn on the canvas stay readable.
+  const drawOverlay = useCallback(
+    (result: GestureRecognizerResult, handInfos: Array<HandInfo | null>) => {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      if (!canvas || !video) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    if (
-      canvas.width !== video.videoWidth ||
-      canvas.height !== video.videoHeight
-    ) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-    }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (!result.landmarks?.length) return;
-
-    for (const landmarks of result.landmarks) {
-      ctx.lineWidth = Math.max(2, canvas.width * 0.0035);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-      ctx.beginPath();
-      for (const [a, b] of HAND_CONNECTIONS) {
-        const p1 = landmarks[a];
-        const p2 = landmarks[b];
-        if (!p1 || !p2) continue;
-        ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
-        ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
+      if (
+        canvas.width !== video.videoWidth ||
+        canvas.height !== video.videoHeight
+      ) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
       }
-      ctx.stroke();
 
-      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-      for (const point of landmarks) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!result.landmarks?.length) return;
+
+      const mirroredX = (x: number) => canvas.width - x * canvas.width;
+
+      result.landmarks.forEach((landmarks, i) => {
+        ctx.lineWidth = Math.max(2, canvas.width * 0.0035);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
         ctx.beginPath();
-        ctx.arc(
-          point.x * canvas.width,
-          point.y * canvas.height,
-          Math.max(2.5, canvas.width * 0.006),
-          0,
-          Math.PI * 2
-        );
-        ctx.fill();
-      }
-    }
-  }, []);
+        for (const [a, b] of HAND_CONNECTIONS) {
+          const p1 = landmarks[a];
+          const p2 = landmarks[b];
+          if (!p1 || !p2) continue;
+          ctx.moveTo(mirroredX(p1.x), p1.y * canvas.height);
+          ctx.lineTo(mirroredX(p2.x), p2.y * canvas.height);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minY = Infinity;
+        for (const point of landmarks) {
+          const px = mirroredX(point.x);
+          const py = point.y * canvas.height;
+          if (px < minX) minX = px;
+          if (px > maxX) maxX = px;
+          if (py < minY) minY = py;
+          ctx.beginPath();
+          ctx.arc(px, py, Math.max(2.5, canvas.width * 0.006), 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        const info = handInfos[i];
+        if (!info) return;
+        const anchorX = (minX + maxX) / 2;
+        const anchorY = Math.max(minY - canvas.height * 0.08, canvas.height * 0.08);
+        drawHandLabel(ctx, anchorX, anchorY, info, canvas.width);
+      });
+    },
+    []
+  );
 
   const handleResult = useCallback(
     (result: GestureRecognizerResult) => {
-      drawLandmarks(result);
-
       const now = performance.now();
       const seenKeys = new Set<string>();
-      const nextLiveHands: LiveHand[] = [];
       const handCount = result.gestures?.length ?? 0;
+      const handInfos: Array<HandInfo | null> = new Array(handCount).fill(null);
 
       for (let i = 0; i < handCount; i++) {
         const top = result.gestures[i]?.[0];
@@ -177,25 +267,18 @@ export default function GestureScanner({
         candidatesRef.current.set(handKey, { label: top.categoryName, start });
 
         const progress = Math.min((now - start) / LOCK_HOLD_MS, 1);
-        nextLiveHands.push({
-          key: handKey,
-          label: top.categoryName,
+        handInfos[i] = {
+          label: gestureToWord(top.categoryName),
           confidence: top.score,
           progress,
-        });
+        };
 
         if (
           progress >= 1 &&
           lastLockedRef.current.get(handKey) !== top.categoryName
         ) {
           lastLockedRef.current.set(handKey, top.categoryName);
-          onLockedRef.current({
-            id: `${Date.now()}-${handKey}-${top.categoryName}`,
-            label: top.categoryName,
-            word: gestureToWord(top.categoryName),
-            confidence: top.score,
-            timestamp: Date.now(),
-          });
+          onLockedRef.current(gestureToWord(top.categoryName));
         }
       }
 
@@ -206,9 +289,9 @@ export default function GestureScanner({
         }
       }
 
-      setLiveHands(nextLiveHands);
+      drawOverlay(result, handInfos);
     },
-    [drawLandmarks]
+    [drawOverlay]
   );
 
   const detectLoop = useCallback(() => {
@@ -400,9 +483,9 @@ export default function GestureScanner({
   const showOverlayMessage = phase !== "ready";
 
   return (
-    <div
+    <Card
       ref={containerRef}
-      className={`relative w-full overflow-hidden rounded-3xl ${className}`}
+      className={`relative overflow-hidden p-0 ${className}`}
     >
       <video
         ref={videoRef}
@@ -413,68 +496,27 @@ export default function GestureScanner({
       />
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 h-full w-full scale-x-[-1] object-cover"
+        className="absolute inset-0 h-full w-full object-cover"
       />
 
-      <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/15" />
-
-      {liveHands.length > 0 && phase === "ready" && (
-        <div className="absolute inset-x-0 top-6 z-10 flex items-start justify-center gap-6">
-          {liveHands.map((hand) => (
-            <div key={hand.key} className="relative flex flex-col items-center gap-2">
-              <div className="relative h-16 w-16">
-                <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90">
-                  <circle
-                    cx="32"
-                    cy="32"
-                    r="28"
-                    fill="none"
-                    stroke="rgba(255,255,255,0.15)"
-                    strokeWidth="5"
-                  />
-                  <circle
-                    cx="32"
-                    cy="32"
-                    r="28"
-                    fill="none"
-                    stroke="rgba(255,255,255,0.9)"
-                    strokeWidth="5"
-                    strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 28}
-                    strokeDashoffset={2 * Math.PI * 28 * (1 - hand.progress)}
-                    className="transition-[stroke-dashoffset] duration-75 ease-linear"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white/80">
-                  {Math.round(hand.confidence * 100)}%
-                </div>
-              </div>
-              <span className="glass-pill rounded-full px-3 py-1 text-xs font-medium text-white">
-                {hand.label.replace(/_/g, " ")}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
       {showOverlayMessage && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 p-6 backdrop-blur-sm">
-          <div className="glass-panel glass-highlight w-full max-w-xs rounded-2xl p-6 text-center">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/85 p-6 backdrop-blur-sm">
+          <div className="w-full max-w-xs rounded-2xl border border-border bg-card p-6 text-center">
             {phase === "loading-model" && (
               <>
-                <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                <p className="text-sm font-medium text-white/90">
+                <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-foreground" />
+                <p className="text-sm font-medium text-foreground">
                   Loading gesture model…
                 </p>
-                <p className="mt-1 text-xs text-white/50">
+                <p className="mt-1 text-xs text-muted-foreground">
                   First load may take a few seconds.
                 </p>
               </>
             )}
             {phase === "requesting-camera" && (
               <>
-                <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-                <p className="text-sm font-medium text-white/90">
+                <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-foreground" />
+                <p className="text-sm font-medium text-foreground">
                   Requesting camera access…
                 </p>
               </>
@@ -483,29 +525,27 @@ export default function GestureScanner({
               phase === "error" ||
               phase === "unsupported") && (
               <>
-                <p className="text-sm font-semibold text-white">
+                <VideoOff className="mx-auto mb-3 h-8 w-8 text-destructive" />
+                <p className="text-sm font-semibold text-foreground">
                   {phase === "camera-denied"
                     ? "Camera blocked"
                     : phase === "unsupported"
                     ? "Unsupported browser"
                     : "Failed to start"}
                 </p>
-                <p className="mt-2 text-xs leading-relaxed text-white/60">
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                   {errorMessage}
                 </p>
                 {phase === "camera-denied" && (
-                  <button
-                    onClick={retryCamera}
-                    className="glass-pill mt-4 rounded-full px-4 py-2 text-xs font-semibold text-white active:scale-95"
-                  >
+                  <Button onClick={retryCamera} size="sm" className="mt-4">
                     Retry camera
-                  </button>
+                  </Button>
                 )}
               </>
             )}
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

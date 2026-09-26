@@ -7,9 +7,10 @@ public/models/gesture_recognizer.task
 ```
 
 This file is a binary MediaPipe task bundle and is **not** included in the
-repo (see `.gitignore`) — download or train it once per environment.
+repo (see `.gitignore`) — download it once per environment.
 
-## Option A — use Google's pretrained model (fastest)
+**Note:** this model classifies a single still frame of hand landmarks —
+it recognizes held static hand shapes only, not motion/trajectory.
 
 Download the pretrained bundle and save it at the path above:
 
@@ -26,20 +27,10 @@ Invoke-WebRequest -Uri "https://storage.googleapis.com/mediapipe-models/gesture_
 
 This bundle recognizes 7 built-in gestures: `Open_Palm`, `Closed_Fist`,
 `Thumb_Up`, `Thumb_Down`, `Victory`, `Pointing_Up`, `ILoveYou`. These are
-mapped to Tunisian Arabizi words in
+mapped to Tunisian Arabic words (in Arabic script) in
 [`lib/gestureDictionary.ts`](../../lib/gestureDictionary.ts)
-(e.g. `Open_Palm` -> "Aslema"). Edit that file to change the wording or
+(e.g. `Open_Palm` -> "عسلامة"). Edit that file to change the wording or
 swap in another language/dialect.
-
-## Option B — train a custom sign-language vocabulary
-
-For a real sign-language alphabet or a custom word set, train your own
-model with [MediaPipe Model Maker](https://ai.google.dev/edge/mediapipe/solutions/customization/gesture_recognizer)
-on your own labeled hand-gesture images, export the resulting `.task` file
-to this same path, and update the label -> word entries in
-`lib/gestureDictionary.ts` to match your training labels. No other code
-changes are needed — `GestureScanner` reads whatever category names the
-model produces.
 
 ## Notes
 

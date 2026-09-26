@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -8,10 +8,16 @@ const inter = Inter({
   display: "swap",
 });
 
+const notoSansArabic = Noto_Sans_Arabic({
+  subsets: ["arabic"],
+  variable: "--font-arabic",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Souty | Sign Scanner",
   description:
-    "Real-time hand gesture and sign language scanner with a liquid glass interface.",
+    "Real-time hand gesture and sign language scanner that speaks and displays each sign in Arabic.",
   applicationName: "Souty",
   appleWebApp: {
     capable: true,
@@ -26,7 +32,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#04050a",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({
@@ -35,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${inter.variable} ${notoSansArabic.variable}`}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

@@ -1,8 +1,8 @@
 /**
  * Maps the category names produced by the gesture recognition model to
- * display words, written in Tunisian Arabizi (Tunisian Arabic transliterated
- * with Latin letters + digits, the way it's typed in Messenger/WhatsApp —
- * e.g. 3 for ع, 7 for ح, 9 for ق).
+ * display/spoken words, written in Tunisian Arabic (Derja) using Arabic
+ * script — not Latin transliteration — so the words are both readable as
+ * Arabic and read correctly by an Arabic text-to-speech voice.
  *
  * The default MediaPipe `gesture_recognizer.task` model (see
  * public/models/README.md) only ships the 7 built-in categories below.
@@ -13,13 +13,13 @@
  * own label -> word entries. No other code changes are required.
  */
 export const GESTURE_WORD_MAP: Record<string, string> = {
-  Open_Palm: "Aslema", // hello
-  Closed_Fist: "W9ef", // stop
-  Thumb_Up: "Eh", // yes
-  Thumb_Down: "Le", // no
-  Victory: "Bslema", // peace / bye
-  Pointing_Up: "Stenna", // wait
-  ILoveYou: "N7ebbek", // I love you
+  Open_Palm: "عسلامة", // hello
+  Closed_Fist: "وقف", // stop
+  Thumb_Up: "ايه", // yes
+  Thumb_Down: "لا", // no
+  Victory: "بالسلامة", // bye / peace
+  Pointing_Up: "استنى", // wait
+  ILoveYou: "نحبك", // I love you
 };
 
 export const IGNORED_LABELS = new Set(["None", "none"]);
