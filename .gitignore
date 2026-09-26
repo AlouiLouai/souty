@@ -27,6 +27,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# model assets are large binaries and environment-specific — see public/models/README.md
-/public/models/*.task
