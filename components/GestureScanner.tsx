@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, VideoOff } from "lucide-react";
+import { Loader2, SwitchCamera, VideoOff } from "lucide-react";
 import type {
   GestureRecognizer as GestureRecognizerType,
   GestureRecognizerResult,
@@ -25,6 +25,8 @@ type ScannerPhase =
   | "unsupported"
   | "error"
   | "ready";
+
+type FacingMode = "user" | "environment";
 
 interface GestureScannerProps {
   className?: string;
@@ -164,9 +166,11 @@ export default function GestureScanner({
   const lastLockedRef = useRef<Map<string, string>>(new Map());
   const pausedRef = useRef(paused);
   const onLockedRef = useRef(onLocked);
+  const facingModeRef = useRef<FacingMode>("user");
 
   const [phase, setPhase] = useState<ScannerPhase>("loading-model");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<FacingMode>("user");
 
   useEffect(() => {
     pausedRef.current = paused;
@@ -176,12 +180,18 @@ export default function GestureScanner({
     onLockedRef.current = onLocked;
   }, [onLocked]);
 
+  useEffect(() => {
+    facingModeRef.current = facingMode;
+  }, [facingMode]);
+
   // Renders the hand skeleton plus a per-hand progress ring/label directly
   // onto the canvas, anchored to that hand's own landmarks so it tracks the
   // hand wherever it moves (rather than sitting in one fixed screen spot).
-  // The video is mirrored via a CSS scaleX(-1), but the canvas itself is
-  // NOT — so x coordinates are mirrored manually here to line up with the
-  // mirrored video, while text/shapes drawn on the canvas stay readable.
+  // The front camera's video is mirrored via a CSS scaleX(-1) (standard
+  // selfie-view convention), but the canvas itself is NOT — so x
+  // coordinates are mirrored manually here to line up with it. The back
+  // camera isn't CSS-mirrored (you're filming someone else, not yourself),
+  // so landmarks are drawn unmirrored to match.
   const drawOverlay = useCallback(
     (result: GestureRecognizerResult, handInfos: Array<HandInfo | null>) => {
       const canvas = canvasRef.current;
@@ -201,7 +211,10 @@ export default function GestureScanner({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (!result.landmarks?.length) return;
 
-      const mirroredX = (x: number) => canvas.width - x * canvas.width;
+      const mirroredX =
+        facingModeRef.current === "user"
+          ? (x: number) => canvas.width - x * canvas.width
+          : (x: number) => x * canvas.width;
 
       result.landmarks.forEach((landmarks, i) => {
         ctx.lineWidth = Math.max(2, canvas.width * 0.0035);
@@ -317,6 +330,32 @@ export default function GestureScanner({
     rafRef.current = requestAnimationFrame(detectLoop);
   }, [handleResult]);
 
+  // Requests a camera stream for the given facing mode and wires it up to
+  // the <video> element. Stops whatever stream is currently running first,
+  // so this is also what powers switching between front/back cameras.
+  // `ideal` (not an exact/required constraint) so it degrades gracefully
+  // on devices that don't have a matching camera (e.g. a laptop webcam
+  // asked for "environment") instead of hard-failing.
+  const startCamera = useCallback(async (mode: FacingMode) => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: mode },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    });
+
+    streamRef.current = stream;
+    const video = videoRef.current;
+    if (video) {
+      video.srcObject = stream;
+      await video.play().catch(() => {});
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -372,27 +411,11 @@ export default function GestureScanner({
 
       setPhase("requesting-camera");
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-          audio: false,
-        });
-
+        await startCamera(facingModeRef.current);
         if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
+          streamRef.current?.getTracks().forEach((t) => t.stop());
           return;
         }
-
-        streamRef.current = stream;
-        const video = videoRef.current;
-        if (video) {
-          video.srcObject = stream;
-          await video.play().catch(() => {});
-        }
-
         setPhase("ready");
         rafRef.current = requestAnimationFrame(detectLoop);
       } catch (err) {
@@ -421,18 +444,8 @@ export default function GestureScanner({
   const retryCamera = useCallback(() => {
     setErrorMessage(null);
     setPhase("requesting-camera");
-    navigator.mediaDevices
-      .getUserMedia({
-        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      })
-      .then((stream) => {
-        streamRef.current = stream;
-        const video = videoRef.current;
-        if (video) {
-          video.srcObject = stream;
-          video.play().catch(() => {});
-        }
+    startCamera(facingModeRef.current)
+      .then(() => {
         setPhase("ready");
         rafRef.current = requestAnimationFrame(detectLoop);
       })
@@ -444,7 +457,17 @@ export default function GestureScanner({
             "من إعدادات المتصفح — سيستأنف الماسح تلقائيًا فور منح الإذن."
         );
       });
-  }, [detectLoop]);
+  }, [detectLoop, startCamera]);
+
+  const switchCamera = useCallback(() => {
+    if (phase !== "ready") return;
+    const nextMode: FacingMode = facingModeRef.current === "user" ? "environment" : "user";
+    startCamera(nextMode)
+      .then(() => setFacingMode(nextMode))
+      .catch((err) => {
+        console.error("Failed to switch camera", err);
+      });
+  }, [phase, startCamera]);
 
   // If the browser exposes the Permissions API, watch for the user flipping
   // camera access on from their browser's own UI (address-bar padlock,
@@ -490,12 +513,26 @@ export default function GestureScanner({
         playsInline
         muted
         autoPlay
-        className="absolute inset-0 h-full w-full scale-x-[-1] object-cover"
+        className={`absolute inset-0 h-full w-full object-cover ${
+          facingMode === "user" ? "scale-x-[-1]" : ""
+        }`}
       />
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full object-cover"
       />
+
+      {phase === "ready" && (
+        <Button
+          onClick={switchCamera}
+          variant="outline"
+          size="icon"
+          className="absolute right-3 top-3 z-10 bg-background/60 backdrop-blur-sm"
+          aria-label="تبديل الكاميرا"
+        >
+          <SwitchCamera className="h-4 w-4" />
+        </Button>
+      )}
 
       {showOverlayMessage && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/85 p-6 backdrop-blur-sm">
