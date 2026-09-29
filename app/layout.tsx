@@ -19,11 +19,6 @@ export const metadata: Metadata = {
   description:
     "Real-time hand gesture and sign language scanner that speaks and displays each sign in Arabic.",
   applicationName: "Souty",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Souty",
-  },
 };
 
 export const viewport: Viewport = {
@@ -42,6 +37,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${notoSansArabic.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+      </head>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

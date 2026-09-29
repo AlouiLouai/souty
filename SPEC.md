@@ -44,7 +44,11 @@ accumulate into a sentence; the sentence can be read aloud on demand.
 - **Vocabulary:** the 7 gestures built into MediaPipe's pretrained model
   (`Open_Palm`, `Closed_Fist`, `Thumb_Up`, `Thumb_Down`, `Victory`,
   `Pointing_Up`, `ILoveYou`), each mapped to one Arabic word in
-  `lib/gestureDictionary.ts`.
+  `lib/gestureDictionary.ts`. A retraining pipeline in `training/` (see
+  `training/README.md`) extends this with further distinguishable static
+  gestures (`OK_Sign`, `Three_Fingers`, `Four_Fingers`, `Shaka_Sign`) —
+  those need a model retrained on real photos before they're actually
+  recognized; the dictionary entries alone are just staged mappings.
 - **Hands:** up to 2 tracked independently and simultaneously (keyed by
   MediaPipe's left/right handedness classification).
 - **Lock-in logic:** a gesture must stay above a confidence threshold

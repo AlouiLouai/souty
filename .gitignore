@@ -24,6 +24,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# gesture training data (personal photos, and large exported model artifacts)
+training/dataset/*/*
+!training/dataset/*/.gitkeep
+training/exported_model/
+__pycache__/
+*.pyc
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

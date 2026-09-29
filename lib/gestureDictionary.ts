@@ -4,13 +4,15 @@
  * script — not Latin transliteration — so the words are both readable as
  * Arabic and read correctly by an Arabic text-to-speech voice.
  *
- * The default MediaPipe `gesture_recognizer.task` model (see
- * public/models/README.md) only ships the 7 built-in categories below.
+ * The first 7 entries match MediaPipe's stock `gesture_recognizer.task`
+ * categories. The rest are custom classes trained via the pipeline in
+ * training/ (see training/README.md for the full rationale, and what was
+ * deliberately left out) — the model file must be retrained to actually
+ * recognize them; adding an entry here alone does nothing.
  *
- * To recognize a full sign-language alphabet or a custom vocabulary, train
- * a custom model with MediaPipe Model Maker and drop it in as
- * public/models/gesture_recognizer.task, then extend this map with your
- * own label -> word entries. No other code changes are required.
+ * A label's key here must exactly match the category name the model
+ * reports. To add more, extend both training/dataset/ and this map with
+ * matching label -> word entries. No other code changes are required.
  */
 export const GESTURE_WORD_MAP: Record<string, string> = {
   Open_Palm: "عسلامة", // hello
@@ -20,6 +22,14 @@ export const GESTURE_WORD_MAP: Record<string, string> = {
   Victory: "بالسلامة", // bye / peace
   Pointing_Up: "استنى", // wait
   ILoveYou: "نحبك", // I love you
+
+  OK_Sign: "تمام", // OK / all good
+  Three_Fingers: "ثلاثة", // three
+  Four_Fingers: "أربعة", // four
+  // Experimental: landmark shape is one finger away from ILoveYou
+  // (thumb+pinky vs. thumb+index+pinky) — verify the trained model can
+  // reliably tell them apart before relying on this in production.
+  Shaka_Sign: "مبروك", // congrats
 };
 
 export const IGNORED_LABELS = new Set(["None", "none"]);

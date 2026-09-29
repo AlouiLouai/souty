@@ -32,6 +32,16 @@ mapped to Tunisian Arabic words (in Arabic script) in
 (e.g. `Open_Palm` -> "عسلامة"). Edit that file to change the wording or
 swap in another language/dialect.
 
+## Expanding the vocabulary
+
+To recognize more than the stock 7 gestures, retrain via the pipeline in
+[`training/`](../../training/README.md) — it walks through collecting
+photos, training with MediaPipe Model Maker, and exporting a replacement
+`gesture_recognizer.task` for this folder. `lib/gestureDictionary.ts`
+already has entries staged for the extra classes that pipeline is set up
+for (`OK_Sign`, `Three_Fingers`, `Four_Fingers`, `Shaka_Sign`) — they just
+need real training data before the model actually recognizes them.
+
 ## Notes
 
 - The app also fetches MediaPipe's WASM runtime from a CDN
