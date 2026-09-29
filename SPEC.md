@@ -23,7 +23,8 @@ accumulate into a sentence; the sentence can be read aloud on demand.
   coordinated signs, facial non-manual markers). The model in use is a
   single-frame classifier — see [Known limitation](#known-limitation).
 - Any backend, persistence across sessions, or analytics.
-- Multi-language UI (interface chrome is English; vocabulary is Arabic).
+- Multi-language UI (interface chrome and vocabulary are both Arabic; no
+  language switcher).
 
 ## User flow
 

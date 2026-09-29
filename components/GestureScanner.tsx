@@ -326,7 +326,7 @@ export default function GestureScanner({
       if (!navigator.mediaDevices?.getUserMedia) {
         setPhase("unsupported");
         setErrorMessage(
-          "This browser does not support camera access (getUserMedia)."
+          "هذا المتصفح لا يدعم الوصول إلى الكاميرا."
         );
         return;
       }
@@ -364,8 +364,8 @@ export default function GestureScanner({
         console.error("Failed to load gesture model", err);
         setPhase("error");
         setErrorMessage(
-          "Could not load the gesture recognition model. Make sure " +
-            "public/models/gesture_recognizer.task exists (see public/models/README.md)."
+          "تعذّر تحميل نموذج التعرف على الإشارات. تأكد من وجود الملف " +
+            "public/models/gesture_recognizer.task (راجع public/models/README.md)."
         );
         return;
       }
@@ -400,9 +400,8 @@ export default function GestureScanner({
         console.error("Camera permission error", err);
         setPhase("camera-denied");
         setErrorMessage(
-          "Camera access was denied or unavailable. Allow camera " +
-            "permissions in your browser settings — the scanner will " +
-            "resume automatically once access is granted."
+          "تم رفض الوصول إلى الكاميرا أو أنه غير متاح. فعّل إذن الكاميرا " +
+            "من إعدادات المتصفح — سيستأنف الماسح تلقائيًا فور منح الإذن."
         );
       }
     }
@@ -441,9 +440,8 @@ export default function GestureScanner({
         console.error(err);
         setPhase("camera-denied");
         setErrorMessage(
-          "Camera access was denied or unavailable. Allow camera " +
-            "permissions in your browser settings — the scanner will " +
-            "resume automatically once access is granted."
+          "تم رفض الوصول إلى الكاميرا أو أنه غير متاح. فعّل إذن الكاميرا " +
+            "من إعدادات المتصفح — سيستأنف الماسح تلقائيًا فور منح الإذن."
         );
       });
   }, [detectLoop]);
@@ -506,10 +504,10 @@ export default function GestureScanner({
               <>
                 <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-foreground" />
                 <p className="text-sm font-medium text-foreground">
-                  Loading gesture model…
+                  جارٍ تحميل نموذج الإشارات…
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  First load may take a few seconds.
+                  قد يستغرق التحميل الأول بضع ثوانٍ.
                 </p>
               </>
             )}
@@ -517,7 +515,7 @@ export default function GestureScanner({
               <>
                 <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-foreground" />
                 <p className="text-sm font-medium text-foreground">
-                  Requesting camera access…
+                  جارٍ طلب إذن الكاميرا…
                 </p>
               </>
             )}
@@ -528,17 +526,17 @@ export default function GestureScanner({
                 <VideoOff className="mx-auto mb-3 h-8 w-8 text-destructive" />
                 <p className="text-sm font-semibold text-foreground">
                   {phase === "camera-denied"
-                    ? "Camera blocked"
+                    ? "الكاميرا محظورة"
                     : phase === "unsupported"
-                    ? "Unsupported browser"
-                    : "Failed to start"}
+                    ? "المتصفح غير مدعوم"
+                    : "فشل بدء التشغيل"}
                 </p>
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                   {errorMessage}
                 </p>
                 {phase === "camera-denied" && (
                   <Button onClick={retryCamera} size="sm" className="mt-4">
-                    Retry camera
+                    إعادة محاولة الكاميرا
                   </Button>
                 )}
               </>

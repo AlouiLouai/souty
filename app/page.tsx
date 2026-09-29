@@ -28,7 +28,7 @@ export default function HomePage() {
             <h1 className="text-lg font-bold tracking-tight text-foreground">
               Souty
             </h1>
-            <p className="text-xs text-muted-foreground">Live sign scanner</p>
+            <p dir="rtl" className="text-xs text-muted-foreground">ماسح الإشارات المباشر</p>
           </div>
           <Badge variant={paused ? "outline" : "secondary"} className="gap-1.5">
             <span
@@ -36,7 +36,7 @@ export default function HomePage() {
                 paused ? "bg-muted-foreground" : "bg-foreground animate-pulse-glow"
               }`}
             />
-            {paused ? "Paused" : "Scanning"}
+            <span dir="rtl">{paused ? "متوقف" : "جارٍ المسح"}</span>
           </Badge>
         </header>
 

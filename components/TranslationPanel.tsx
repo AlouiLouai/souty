@@ -46,8 +46,8 @@ export default function TranslationPanel({
             })}
           </p>
         ) : (
-          <p className="text-2xl font-semibold text-muted-foreground">
-            Show a gesture…
+          <p dir="rtl" className="text-2xl font-semibold text-muted-foreground">
+            أظهر إشارة…
           </p>
         )}
       </CardContent>
@@ -58,7 +58,7 @@ export default function TranslationPanel({
           size="icon"
           onClick={onTogglePaused}
           aria-pressed={paused}
-          aria-label={paused ? "Resume scanning" : "Pause scanning"}
+          aria-label={paused ? "استئناف المسح" : "إيقاف المسح مؤقتًا"}
         >
           {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
         </Button>
@@ -69,14 +69,14 @@ export default function TranslationPanel({
           onClick={() => onSpeakSentence(sentenceText)}
         >
           <Volume2 className="h-4 w-4" />
-          Speak sentence
+          انطق الجملة
         </Button>
         <Button
           variant="destructive"
           size="icon"
           disabled={!hasSentence}
           onClick={onClearSentence}
-          aria-label="Clear sentence"
+          aria-label="مسح الجملة"
         >
           <X className="h-4 w-4" />
         </Button>

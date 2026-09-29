@@ -15,9 +15,9 @@ const notoSansArabic = Noto_Sans_Arabic({
 });
 
 export const metadata: Metadata = {
-  title: "Souty | Sign Scanner",
+  title: "Souty | ماسح الإشارات",
   description:
-    "Real-time hand gesture and sign language scanner that speaks and displays each sign in Arabic.",
+    "ماسح إشارات اليد الفوري الذي ينطق ويعرض كل إشارة باللغة العربية.",
   applicationName: "Souty",
 };
 
@@ -36,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${notoSansArabic.variable}`}>
+    <html lang="ar" className={`${inter.variable} ${notoSansArabic.variable}`}>
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
