@@ -24,12 +24,8 @@ yarn-error.log*
 # vercel
 .vercel
 
-# gesture training data (personal photos, and large exported model artifacts)
-training/dataset/*/*
-!training/dataset/*/.gitkeep
-training/exported_model/
-__pycache__/
-*.pyc
+# downloaded gesture model artifact (training runs entirely on Kaggle now)
+training/gesture_recognizer.task
 
 # typescript
 *.tsbuildinfo

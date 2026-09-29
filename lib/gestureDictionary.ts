@@ -23,9 +23,12 @@ export const GESTURE_WORD_MAP: Record<string, string> = {
   Pointing_Up: "استنى", // wait
   ILoveYou: "نحبك", // I love you
 
-  OK_Sign: "تمام", // OK / all good
-  Three_Fingers: "ثلاثة", // three
-  Four_Fingers: "أربعة", // four
+  OK_Sign: "باهي", // OK / good — Tunisian Derja, not the Egyptian/Levantine "تمام"
+  // Digits, not spelled-out words: matches the finger count at a glance,
+  // and Tunisians commonly write digits inline in Arabic text anyway
+  // (Maghreb convention, unlike Mashriq's spelled-out/Eastern numerals).
+  Three_Fingers: "3",
+  Four_Fingers: "4",
   // Experimental: landmark shape is one finger away from ILoveYou
   // (thumb+pinky vs. thumb+index+pinky) — verify the trained model can
   // reliably tell them apart before relying on this in production.
