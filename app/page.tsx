@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Image from "next/image";
 import GestureScanner from "@/components/GestureScanner";
 import TranslationPanel from "@/components/TranslationPanel";
 import { Badge } from "@/components/ui/badge";
@@ -24,11 +25,21 @@ export default function HomePage() {
     <main className="min-h-[100dvh] w-full bg-background">
       <div className="safe-top safe-x safe-bottom mx-auto flex h-[100dvh] max-w-md flex-col overflow-hidden">
         <header className="mb-2 flex shrink-0 items-center justify-between px-1 py-1">
-          <div>
-            <h1 className="text-lg font-bold tracking-tight text-foreground">
-              Souty
-            </h1>
-            <p dir="rtl" className="text-xs text-muted-foreground">ماسح الإشارات المباشر</p>
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo-mark.png"
+              alt=""
+              width={69}
+              height={78}
+              className="h-8 w-auto"
+              priority
+            />
+            <div>
+              <h1 className="text-lg font-bold tracking-tight text-foreground">
+                Souty
+              </h1>
+              <p dir="rtl" className="text-xs text-muted-foreground">ماسح الإشارات المباشر</p>
+            </div>
           </div>
           <Badge variant={paused ? "outline" : "secondary"} className="gap-1.5">
             <span

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, SwitchCamera, VideoOff } from "lucide-react";
+import { Loader2, RefreshCw, VideoOff } from "lucide-react";
 import type {
   GestureRecognizer as GestureRecognizerType,
   GestureRecognizerResult,
@@ -530,7 +530,7 @@ export default function GestureScanner({
           className="absolute right-3 top-3 z-10 bg-background/60 backdrop-blur-sm"
           aria-label="تبديل الكاميرا"
         >
-          <SwitchCamera className="h-4 w-4" />
+          <RefreshCw className="h-4 w-4" />
         </Button>
       )}
 
