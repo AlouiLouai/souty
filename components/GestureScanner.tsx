@@ -11,8 +11,12 @@ import { Card } from "@/components/ui/card";
 import { gestureToWord, IGNORED_LABELS } from "@/lib/gestureDictionary";
 import { HAND_CONNECTIONS } from "@/lib/handConnections";
 
-const TASKS_VISION_VERSION = "1.0.1";
-const WASM_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${TASKS_VISION_VERSION}/wasm`;
+// Self-hosted (public/wasm/, copied from node_modules/@mediapipe/tasks-vision/wasm)
+// rather than fetched from a CDN - required for real offline/PWA support
+// (a service worker can't reliably guarantee a third-party origin stays
+// cached) and removes a supply-chain dependency on that CDN staying
+// trustworthy and available.
+const WASM_URL = "/wasm";
 const MODEL_URL = "/models/gesture_recognizer.task";
 const CONFIDENCE_THRESHOLD = 0.65;
 const LOCK_HOLD_MS = 700;
@@ -32,6 +36,11 @@ interface GestureScannerProps {
   className?: string;
   paused: boolean;
   onLocked: (word: string) => void;
+  // Reports whether at least one hand is currently visible in frame,
+  // only called when the value actually changes (not every frame). Used
+  // by the parent to auto-return to the landing screen when the camera
+  // has clearly been left unattended.
+  onHandPresenceChange?: (present: boolean) => void;
 }
 
 interface HandInfo {
@@ -119,38 +128,55 @@ const NOISY_LOG_PATTERNS = [
 ];
 
 function isNoisyMediapipeLog(args: unknown[]) {
-  const first = args[0];
-  return typeof first === "string" && NOISY_LOG_PATTERNS.some((p) => p.test(first));
+  // Check every argument, not just the first - some of these logs come
+  // through as e.g. console.info("INFO:", "...XNNPACK...") with the level
+  // as a separate leading argument, which a first-arg-only check misses.
+  return args.some(
+    (arg) => typeof arg === "string" && NOISY_LOG_PATTERNS.some((p) => p.test(arg))
+  );
 }
 
-async function withSuppressedMediapipeLogs<T>(fn: () => Promise<T>): Promise<T> {
-  const originalInfo = console.info;
-  const originalWarn = console.warn;
-  const originalLog = console.log;
+// Patches console methods for as long as the scanner is mounted (not just
+// during model load) - the XNNPACK delegate log in particular fires at
+// first inference, inside the ongoing detection loop, well after model
+// loading has finished, so a scope limited to just the load step misses it.
+function patchConsoleForMediapipe() {
+  const originals = {
+    info: console.info,
+    warn: console.warn,
+    log: console.log,
+    // The WASM runtime's stdio (via Emscripten's _fd_write -> put_char)
+    // routes through console.error for at least some of these lines
+    // despite them being self-labeled "INFO:" - not just info/warn/log.
+    error: console.error,
+  };
 
   console.info = (...args: unknown[]) => {
-    if (!isNoisyMediapipeLog(args)) originalInfo(...args);
+    if (!isNoisyMediapipeLog(args)) originals.info(...args);
   };
   console.warn = (...args: unknown[]) => {
-    if (!isNoisyMediapipeLog(args)) originalWarn(...args);
+    if (!isNoisyMediapipeLog(args)) originals.warn(...args);
   };
   console.log = (...args: unknown[]) => {
-    if (!isNoisyMediapipeLog(args)) originalLog(...args);
+    if (!isNoisyMediapipeLog(args)) originals.log(...args);
+  };
+  console.error = (...args: unknown[]) => {
+    if (!isNoisyMediapipeLog(args)) originals.error(...args);
   };
 
-  try {
-    return await fn();
-  } finally {
-    console.info = originalInfo;
-    console.warn = originalWarn;
-    console.log = originalLog;
-  }
+  return () => {
+    console.info = originals.info;
+    console.warn = originals.warn;
+    console.log = originals.log;
+    console.error = originals.error;
+  };
 }
 
 export default function GestureScanner({
   className = "",
   paused,
   onLocked,
+  onHandPresenceChange,
 }: GestureScannerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -166,6 +192,8 @@ export default function GestureScanner({
   const lastLockedRef = useRef<Map<string, string>>(new Map());
   const pausedRef = useRef(paused);
   const onLockedRef = useRef(onLocked);
+  const onHandPresenceChangeRef = useRef(onHandPresenceChange);
+  const lastHandPresentRef = useRef<boolean | null>(null);
   const facingModeRef = useRef<FacingMode>("user");
 
   const [phase, setPhase] = useState<ScannerPhase>("loading-model");
@@ -179,6 +207,10 @@ export default function GestureScanner({
   useEffect(() => {
     onLockedRef.current = onLocked;
   }, [onLocked]);
+
+  useEffect(() => {
+    onHandPresenceChangeRef.current = onHandPresenceChange;
+  }, [onHandPresenceChange]);
 
   useEffect(() => {
     facingModeRef.current = facingMode;
@@ -261,6 +293,12 @@ export default function GestureScanner({
       const handCount = result.gestures?.length ?? 0;
       const handInfos: Array<HandInfo | null> = new Array(handCount).fill(null);
 
+      const handPresent = (result.landmarks?.length ?? 0) > 0;
+      if (lastHandPresentRef.current !== handPresent) {
+        lastHandPresentRef.current = handPresent;
+        onHandPresenceChangeRef.current?.(handPresent);
+      }
+
       for (let i = 0; i < handCount; i++) {
         const top = result.gestures[i]?.[0];
         if (
@@ -311,23 +349,25 @@ export default function GestureScanner({
     const video = videoRef.current;
     const recognizer = recognizerRef.current;
 
-    if (!video || !recognizer || video.readyState < 2) {
+    // Always reschedule the next frame no matter what happens below - a
+    // single bad frame (a transient WASM/inference error) throwing here
+    // must not silently kill the whole detection loop with no recovery
+    // and no feedback to the user.
+    try {
+      if (!video || !recognizer || video.readyState < 2 || pausedRef.current) {
+        return;
+      }
+
+      if (video.currentTime !== lastVideoTimeRef.current) {
+        lastVideoTimeRef.current = video.currentTime;
+        const result = recognizer.recognizeForVideo(video, performance.now());
+        handleResult(result);
+      }
+    } catch (err) {
+      console.error("Gesture detection frame failed, continuing", err);
+    } finally {
       rafRef.current = requestAnimationFrame(detectLoop);
-      return;
     }
-
-    if (pausedRef.current) {
-      rafRef.current = requestAnimationFrame(detectLoop);
-      return;
-    }
-
-    if (video.currentTime !== lastVideoTimeRef.current) {
-      lastVideoTimeRef.current = video.currentTime;
-      const result = recognizer.recognizeForVideo(video, performance.now());
-      handleResult(result);
-    }
-
-    rafRef.current = requestAnimationFrame(detectLoop);
   }, [handleResult]);
 
   // Requests a camera stream for the given facing mode and wires it up to
@@ -358,15 +398,17 @@ export default function GestureScanner({
 
   useEffect(() => {
     let cancelled = false;
+    // Covers the whole mounted lifetime (not just model load) - the
+    // XNNPACK delegate log fires at first inference, inside the ongoing
+    // detection loop, well after loading has finished.
+    const restoreConsole = patchConsoleForMediapipe();
 
     async function init() {
       if (typeof window === "undefined") return;
 
       if (!navigator.mediaDevices?.getUserMedia) {
         setPhase("unsupported");
-        setErrorMessage(
-          "هذا المتصفح لا يدعم الوصول إلى الكاميرا."
-        );
+        setErrorMessage("هذا المتصفح لا يدعم الوصول إلى الكاميرا.");
         return;
       }
 
@@ -376,22 +418,21 @@ export default function GestureScanner({
           "@mediapipe/tasks-vision"
         );
 
-        const recognizer = await withSuppressedMediapipeLogs(async () => {
-          const vision = await FilesetResolver.forVisionTasks(WASM_URL);
-          try {
-            return await GestureRecognizer.createFromOptions(vision, {
-              baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
-              runningMode: "VIDEO",
-              numHands: MAX_HANDS,
-            });
-          } catch {
-            return await GestureRecognizer.createFromOptions(vision, {
-              baseOptions: { modelAssetPath: MODEL_URL, delegate: "CPU" },
-              runningMode: "VIDEO",
-              numHands: MAX_HANDS,
-            });
-          }
-        });
+        const vision = await FilesetResolver.forVisionTasks(WASM_URL);
+        let recognizer: GestureRecognizerType;
+        try {
+          recognizer = await GestureRecognizer.createFromOptions(vision, {
+            baseOptions: { modelAssetPath: MODEL_URL, delegate: "GPU" },
+            runningMode: "VIDEO",
+            numHands: MAX_HANDS,
+          });
+        } catch {
+          recognizer = await GestureRecognizer.createFromOptions(vision, {
+            baseOptions: { modelAssetPath: MODEL_URL, delegate: "CPU" },
+            runningMode: "VIDEO",
+            numHands: MAX_HANDS,
+          });
+        }
 
         if (cancelled) {
           recognizer.close();
@@ -433,6 +474,7 @@ export default function GestureScanner({
 
     return () => {
       cancelled = true;
+      restoreConsole();
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
       recognizerRef.current?.close();

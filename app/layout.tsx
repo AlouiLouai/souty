@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Sans_Arabic } from "next/font/google";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
 
 const inter = Inter({
@@ -19,6 +20,18 @@ export const metadata: Metadata = {
   description:
     "ماسح إشارات اليد الفوري الذي ينطق ويعرض كل إشارة باللغة العربية.",
   applicationName: "Souty",
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Souty",
+  },
 };
 
 export const viewport: Viewport = {
@@ -37,11 +50,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" className={`${inter.variable} ${notoSansArabic.variable}`}>
-      <head>
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
-      </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <ServiceWorkerRegistration />
+        {children}
+      </body>
     </html>
   );
 }

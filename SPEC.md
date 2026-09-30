@@ -17,6 +17,9 @@ accumulate into a sentence; the sentence can be read aloud on demand.
   in; manual clear.
 - Reading the full sentence aloud via on-device text-to-speech.
 - Fully client-side: no server, no accounts, no data leaves the device.
+- Installable PWA with offline support after first load (app shell,
+  model, and WASM runtime are all self-hosted and cached by a service
+  worker — see [Offline / PWA](#offline--pwa)).
 
 **Explicitly out of scope**
 - Dynamic/motion-based sign recognition (trajectories, two-hand
@@ -28,15 +31,30 @@ accumulate into a sentence; the sentence can be read aloud on demand.
 
 ## User flow
 
-1. Open the app → camera permission prompt → live camera preview fills
-   most of the screen.
-2. Hold a supported hand shape steady for ~700ms → a per-hand ring fills
-   over the hand showing recognition confidence and progress.
-3. On lock-in, the mapped Arabic word is appended to the sentence shown
-   at the bottom of the screen.
-4. Repeat per word/hand to build a sentence.
-5. Tap **Speak sentence** to hear it read aloud, or **Clear** to reset.
-6. Tap pause/resume to freeze detection without leaving the page.
+1. **Splash** (`app/page.tsx`): the logo/wordmark shows full-screen for
+   ~4s on every app load (fades out over 300ms), while camera/model init
+   proceeds underneath — the splash doesn't add to actual load time.
+2. **Landing** (`components/LandingScreen.tsx`): a short explainer + two
+   entry points — "ابدأ الاستخدام" (go straight to the scanner) or
+   "كيفاش نستعملها؟" (onboarding tour).
+3. **Onboarding** (`components/OnboardingTour.tsx`), optional: a real,
+   working scanner instance with a 3-step spotlight tour (dims everything
+   but the highlighted target) covering: making a gesture, the
+   flip-camera button, and the sentence/controls panel. Skippable at any
+   point; finishing goes to the scanner.
+4. **Scanner** (main app): camera permission prompt → live preview fills
+   most of the screen → hold a supported hand shape steady for ~700ms →
+   a per-hand ring fills over the hand showing recognition confidence and
+   progress → on lock-in, the mapped Arabic word is appended to the
+   sentence shown at the bottom. Repeat per word/hand to build a
+   sentence. Tap **Speak sentence** to hear it read aloud, **Clear** to
+   reset, pause/resume to freeze detection, the flip-camera icon to
+   switch front/back camera, or the home icon to return to the landing
+   screen.
+5. **Idle reminder**: if no hand has been visible in frame for 5s, a
+   purely informational popup reminds the user to put their hand back in
+   frame — it does not close the camera or navigate away on its own; it
+   clears the moment a hand reappears, or can be dismissed manually.
 
 ## Recognition model
 
@@ -78,20 +96,44 @@ recognition would require a different model architecture entirely
 ## Non-functional requirements
 
 - **Privacy:** camera frames and audio never leave the device; no
-  network calls except the one-time model/WASM asset fetch.
+  third-party network calls at all — the model and the MediaPipe WASM
+  runtime are both self-hosted (`public/models/`, `public/wasm/`), not
+  fetched from a CDN.
 - **Resilience:** camera-permission-denied and model-load-failure states
   are handled with visible retry UI; if the browser's Permissions API is
   available, the app auto-resumes the moment the user grants camera
-  access from browser settings, without requiring a manual retry.
+  access from browser settings, without requiring a manual retry. A
+  single bad detection frame is caught and logged rather than silently
+  killing the detection loop (`components/GestureScanner.tsx`'s
+  `detectLoop`), and an App Router error boundary (`app/error.tsx`)
+  catches unexpected render errors with a retry UI instead of a blank
+  crashed page.
 - **Layout:** fixed-height mobile viewport (`100dvh`), safe-area insets
   for notches, camera view takes remaining space after a minimal header
   and the sentence panel.
 - **Theme:** black background, white text/UI, shadcn/ui components.
 
+## Offline / PWA
+
+- `app/manifest.ts` (Next.js metadata route) generates the web app
+  manifest — installable, standalone display, black theme, icons at
+  192/512px plus a maskable variant.
+- `public/sw.js`: a hand-written service worker (no build-time precache
+  tooling). Registered by `components/ServiceWorkerRegistration.tsx`,
+  production builds only (a service worker caching dev-mode assets would
+  fight the dev server). Strategy: network-first for the navigation/app
+  shell (fresh content when online, cached shell when offline),
+  cache-first for `_next/static/`, the model, the WASM runtime, and
+  icons (all effectively immutable per build).
+- Bump `CACHE_VERSION` in `public/sw.js` when the *caching logic itself*
+  changes — routine content updates are handled by the network-first
+  navigation strategy already.
+
 ## Tech stack
 
 Next.js 15 (App Router) + TypeScript, Tailwind CSS 3 + shadcn/ui,
-`@mediapipe/tasks-vision`, browser `SpeechSynthesis`. No backend.
+`@mediapipe/tasks-vision`, browser `SpeechSynthesis`, hand-written service
+worker (PWA, offline-capable). No backend.
 
 ## Configuration knobs
 
@@ -102,3 +144,5 @@ Next.js 15 (App Router) + TypeScript, Tailwind CSS 3 + shadcn/ui,
 | Max tracked hands | `components/GestureScanner.tsx` → `MAX_HANDS` | 2 |
 | Gesture → word mapping | `lib/gestureDictionary.ts` → `GESTURE_WORD_MAP` | — |
 | Model file | `public/models/gesture_recognizer.task` | pretrained (see its README) |
+| Splash duration | `app/page.tsx` → `SPLASH_MS` | 4000ms |
+| No-hand idle reminder delay | `app/page.tsx` → `IDLE_HAND_TIMEOUT_MS` | 5000ms |

@@ -5,6 +5,11 @@ trained — see `training/README.md`). Test on a phone over HTTPS (camera
 APIs require a secure origin — see README.md's `localtunnel`/`ngrok` note
 if testing a local build).
 
+The app now opens to a splash screen, then a landing page (with an
+optional onboarding tour) before reaching the scanner below — see
+`SPEC.md`'s User flow section for the full sequence, including the
+idle-reminder popup and PWA/offline behavior, before testing those.
+
 ## Gesture -> expected word
 
 | # | Hand shape | Expected word |

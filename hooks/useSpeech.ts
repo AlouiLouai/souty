@@ -31,14 +31,24 @@ export function useSpeech() {
   const speakSentence = useCallback(
     (text: string) => {
       if (!supported || !text) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "ar";
-      if (arabicVoiceRef.current) utterance.voice = arabicVoiceRef.current;
-      utterance.rate = 0.95;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-      window.speechSynthesis.speak(utterance);
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "ar";
+        if (arabicVoiceRef.current) utterance.voice = arabicVoiceRef.current;
+        utterance.rate = 0.95;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        utterance.onerror = (event) => {
+          console.error("Speech synthesis error", event);
+        };
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        // Some browsers throw synchronously for edge cases (e.g. an
+        // unsupported voice/lang combination) - never let this crash the
+        // app over what's a non-essential feature.
+        console.error("Failed to speak sentence", err);
+      }
     },
     [supported]
   );

@@ -44,12 +44,13 @@ need real training data before the model actually recognizes them.
 
 ## Notes
 
-- The app also fetches MediaPipe's WASM runtime from a CDN
-  (`cdn.jsdelivr.net/npm/@mediapipe/tasks-vision`) at startup. If you need
-  a fully offline build, copy that package's `wasm/` folder into
-  `public/wasm/` and point `WASM_URL` in
-  [`components/GestureScanner.tsx`](../../components/GestureScanner.tsx)
-  at `/wasm` instead.
+- MediaPipe's WASM runtime is self-hosted under `public/wasm/` (copied
+  from `node_modules/@mediapipe/tasks-vision/wasm/`), not fetched from a
+  CDN — required for the PWA's offline support (a service worker can't
+  reliably guarantee a third-party origin stays cached) and removes a
+  supply-chain dependency on that CDN. If you bump the
+  `@mediapipe/tasks-vision` version, re-copy that folder's contents over
+  `public/wasm/`.
 - The model file is served with a permissive `Cross-Origin-Resource-Policy`
   header (configured in `next.config.mjs`) so it loads correctly on mobile
   Safari/Chrome.
