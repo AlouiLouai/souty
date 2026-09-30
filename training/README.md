@@ -2,11 +2,13 @@
 
 Retrains the gesture recognizer using [MediaPipe Model
 Maker](https://developers.google.com/edge/mediapipe/solutions/customization/gesture_recognizer)
-on Kaggle, via [`kaggle_pipeline.ipynb`](kaggle_pipeline.ipynb) — upload it
-directly to a Kaggle Notebook (File -> Upload Notebook), attach the two
-datasets it names, and run top to bottom. That notebook is fully
-self-contained: it installs everything it needs inline, no local Python
-setup required.
+on Kaggle, via [`kaggle_pipeline.ipynb`](kaggle_pipeline.ipynb) — the only
+file needed for training. Upload it directly to a Kaggle Notebook (File ->
+Upload Notebook), attach the two datasets it names (the original,
+unmodified `warcoder/tunisian-sign-language-dataset` — no need to
+pre-clean or re-upload anything, the notebook flattens it on the fly),
+and run top to bottom. Fully self-contained: it installs everything it
+needs inline, no local Python setup required.
 
 **Caveat:** Google marks Model Maker as "still available, but no longer
 actively maintained." It works, but don't expect upstream fixes.
@@ -22,7 +24,7 @@ under that instead — the notebook already does this.
 required layout is flat, `<dataset_path>/<label_name>/<img_name>.*`, with
 exactly one label folder literally named `none` ("the none label
 represents any gesture that isn't classified as one of the other
-gestures") — `kaggle_pipeline.py`'s `build_dataset()` already produces
+gestures") — the notebook's `build_dataset()` step already produces
 exactly this. The docs also confirm Model Maker runs its own hand
 detector while loading and **silently drops any image with no hand
 found** — `Dataset.size` (checked directly in the
