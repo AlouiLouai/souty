@@ -30,6 +30,18 @@ which also has the real Arabic translation for each) - build_dataset()
 checks the discovered folders against that confirmed list by name, not
 just a count, so a wrong/partial mount is caught immediately.
 
+DATASET FORMAT: verified against the official Model Maker docs
+(https://developers.google.com/edge/mediapipe/solutions/customization/gesture_recognizer)
+- required layout is flat, <dataset_path>/<label_name>/<img_name>.*, with
+exactly one label folder literally named "none" ("the none label
+represents any gesture that isn't classified as one of the other
+gestures") - both of which this script's output already matches. The
+docs also confirm Model Maker runs its own hand detector during loading
+and silently drops any image with no hand found (Dataset.size, in the
+official source, is set to the count that survives this, not the count
+you handed it) - train_and_export() below prints that gap explicitly so
+a silent loss isn't discovered only after a 40-epoch run.
+
 FULL VOCABULARY REPLACEMENT: once this model is deployed, none of the
 previous categories (the original stock 7, or the HaGRID-trained
 OK_Sign/Three_Fingers/Four_Fingers/Shaka_Sign) will ever be recognized
@@ -118,7 +130,11 @@ def copy_images(src: Path, dst: Path, cap: int | None = None) -> int:
     return len(files)
 
 
-def build_dataset() -> None:
+def build_dataset() -> int:
+    """Returns the total number of images copied in, so train_and_export()
+    can compare it against Dataset.size (the count that actually survives
+    Model Maker's own hand-detection filtering - see the module docstring's
+    note on HAND-DETECTION FILTERING)."""
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     sign_dirs = find_leaf_class_dirs(TUNSL_ROOT)
@@ -154,15 +170,37 @@ def build_dataset() -> None:
         )
     none_count = copy_images(none_dir, OUT_DIR / "none", cap=NONE_CAP)
     print(f"none: {none_count} images (from {none_dir})")
+    total += none_count
+    return total
 
 
-def train_and_export() -> None:
+def train_and_export(images_copied: int) -> None:
     data = gesture_recognizer.Dataset.from_folder(
         dirname=str(OUT_DIR),
         hparams=gesture_recognizer.HandDataPreprocessingParams(),
     )
+    # Model Maker silently drops any image where its own hand detector
+    # doesn't find a hand (confirmed in the official dataset.py source -
+    # `size=len(valid_hand_data)`). A big gap here means a lot of copied
+    # images aren't actually being trained on - worth knowing before a
+    # 40-epoch run, especially for the thinnest classes (mar7ba started
+    # at just 15 images).
+    dropped = images_copied - data.size
+    print(f"Dataset.size after hand-detection filtering: {data.size} (copied in: {images_copied}, dropped: {dropped})")
+    if dropped > 0:
+        print(
+            "Some images had no hand detected and were silently excluded - "
+            "this can't be attributed back to specific classes from here, "
+            "but if this number is large relative to the total, some of "
+            "the thinner classes may have ended up with too few examples."
+        )
+
     train_data, rest_data = data.split(0.8)
     validation_data, test_data = rest_data.split(0.5)
+    print(
+        f"Split: train={train_data.size}, validation={validation_data.size}, "
+        f"test={test_data.size}"
+    )
 
     # More epochs than the earlier 10-class run (20 -> 40): 57 classes is
     # a harder problem. Dropout added since the classifier head is tiny
@@ -197,5 +235,5 @@ def train_and_export() -> None:
 
 
 if __name__ == "__main__":
-    build_dataset()
-    train_and_export()
+    copied = build_dataset()
+    train_and_export(copied)

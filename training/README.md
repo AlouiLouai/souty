@@ -18,6 +18,21 @@ bug ([mediapipe-samples#643](https://github.com/google-ai-edge/mediapipe-samples
 Confirmed workaround: install Python 3.10 alongside the default and run
 under that instead — the notebook already does this.
 
+**Dataset format, verified against the [official docs](https://developers.google.com/edge/mediapipe/solutions/customization/gesture_recognizer):**
+required layout is flat, `<dataset_path>/<label_name>/<img_name>.*`, with
+exactly one label folder literally named `none` ("the none label
+represents any gesture that isn't classified as one of the other
+gestures") — `kaggle_pipeline.py`'s `build_dataset()` already produces
+exactly this. The docs also confirm Model Maker runs its own hand
+detector while loading and **silently drops any image with no hand
+found** — `Dataset.size` (checked directly in the
+[official source](https://github.com/google-ai-edge/mediapipe/blob/master/mediapipe/model_maker/python/vision/gesture_recognizer/dataset.py))
+reflects the count that survives this, not the count handed to it.
+`train_and_export()` prints the gap between images copied in and
+`Dataset.size` explicitly, plus the actual train/validation/test split
+sizes, so a silent loss isn't discovered only after a 40-epoch run —
+worth watching closely given `mar7ba` starts at just 15 images.
+
 ## Current data source: real Tunisian Sign Language
 
 [Tunisian Sign Language Dataset](https://www.kaggle.com/datasets/warcoder/tunisian-sign-language-dataset)
