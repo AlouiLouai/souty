@@ -26,6 +26,8 @@ yarn-error.log*
 
 # downloaded gesture model artifact (training runs entirely on Kaggle now)
 training/gesture_recognizer.task
+__pycache__/
+*.pyc
 
 # typescript
 *.tsbuildinfo
