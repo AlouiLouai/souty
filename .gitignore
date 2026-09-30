@@ -29,6 +29,13 @@ training/gesture_recognizer.task
 __pycache__/
 *.pyc
 
+# raw/cleaned local copies of the Tunisian Sign Language dataset (CC BY 4.0,
+# not ours to redistribute via this repo - training happens on Kaggle,
+# these are just local working copies for inspection/cleaning)
+training/(First ever) Tunisian Sign Language Dataset/
+training/cleaned_tunsl_dataset/
+training/tunsl_cleaned_57.zip
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

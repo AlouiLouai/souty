@@ -24,11 +24,11 @@ kernel's own MPLBACKEND env var (set for inline plotting) leaks into any
 subprocess and crashes matplotlib, which mediapipe pulls in transitively
 and which isn't actually used for output here.
 
-TWO-PHASE WORKFLOW: the class labels Model Maker trains on are whatever
-this dataset's own folder names are ("named in Tunisian dialect" per its
-description - exact script/spelling unknown until this actually runs).
-lib/gestureDictionary.ts cannot be updated with real Arabic-word mappings
-until we see the printed class list from build_dataset() below.
+CONFIRMED CLASS LIST: verified by inspecting a local copy of the dataset
+directly (see EXPECTED_SIGN_LABELS below and training/README.md's table,
+which also has the real Arabic translation for each) - build_dataset()
+checks the discovered folders against that confirmed list by name, not
+just a count, so a wrong/partial mount is caught immediately.
 
 FULL VOCABULARY REPLACEMENT: once this model is deployed, none of the
 previous categories (the original stock 7, or the HaGRID-trained
@@ -48,6 +48,7 @@ test accuracy this script prints.
 
 import os
 import shutil
+import unicodedata
 from pathlib import Path
 
 from mediapipe_model_maker import gesture_recognizer
@@ -66,6 +67,32 @@ IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 # (avg ~78 images/class here) rather than letting HaGRID's much larger
 # pool dominate training and bias the model toward predicting "none".
 NONE_CAP = 150
+
+# Confirmed by inspecting a local copy of the dataset directly (see
+# training/README.md) - used as a stronger sanity check than just a count,
+# so a partial/wrong mount is caught by name, not just number.
+EXPECTED_SIGN_LABELS = {
+    "3aslema", "5adamet", "assam", "barnamjk", "chabeb", "cv", "demande",
+    "enti", "labes", "lyoum", "mar7ba", "n3awnek", "nekteblk", "non", "oui",
+    "radio", "se7a", "siye7a", "t7eb", "ta3lim", "ta3raf", "ta9ra", "telvza",
+    "tha9afa",  # Demandes (24)
+    "baladya", "banka", "bousta", "dar", "ma7kma", "mostawsaf", "sbitar",
+    "wzara",  # Destinations (8)
+    "3ayla", "5al-3am", "5ou", "bent", "bou", "eben", "jad", "jadda",
+    "mar2a", "o5t", "om", "tfol",  # Famille (12)
+    "5mis", "a7ad", "erb3a", "jom3a", "sebt", "thleth", "thnin",  # Jours (7)
+    "car", "karhba", "louage", "metro", "taxi", "train",  # Transport (6)
+}
+
+
+def sanitize_label(name: str) -> str:
+    """ASCII-folds accented characters (e.g. "metro"'s e) so a label can't
+    carry an encoding glitch through Kaggle's mount, this repo, and JS
+    string handling later - a mangled accented character was seen when
+    inspecting a local copy of this dataset on Windows."""
+    normalized = unicodedata.normalize("NFKD", name)
+    ascii_only = normalized.encode("ascii", "ignore").decode("ascii")
+    return ascii_only if ascii_only else name
 
 
 def find_leaf_class_dirs(root: Path) -> list[Path]:
@@ -97,18 +124,26 @@ def build_dataset() -> None:
     sign_dirs = find_leaf_class_dirs(TUNSL_ROOT)
     print(f"Discovered {len(sign_dirs)} sign classes under {TUNSL_ROOT}:")
     total = 0
+    found_labels = set()
     for d in sorted(sign_dirs):
-        label = d.name
+        label = sanitize_label(d.name)
+        found_labels.add(label)
         count = copy_images(d, OUT_DIR / label)
         total += count
         print(f"  {label}: {count} images")
     print(f"Total sign images copied: {total} across {len(sign_dirs)} classes")
-    if len(sign_dirs) != 57:
+
+    missing = EXPECTED_SIGN_LABELS - found_labels
+    unexpected = found_labels - EXPECTED_SIGN_LABELS
+    if missing or unexpected:
         print(
-            f"WARNING: expected 57 sign classes, found {len(sign_dirs)}. "
-            "Check TUNSL_ROOT against the Input panel before trusting this run - "
-            "do not proceed to train on a wrong/partial class list."
+            "WARNING: discovered class list doesn't match the confirmed 57 - "
+            "check TUNSL_ROOT against the Input panel before trusting this run."
         )
+        if missing:
+            print(f"  missing: {sorted(missing)}")
+        if unexpected:
+            print(f"  unexpected: {sorted(unexpected)}")
 
     none_dirs = find_leaf_class_dirs(NONE_SOURCE_ROOT)
     none_dir = next((d for d in none_dirs if d.name == "no_gesture"), None)

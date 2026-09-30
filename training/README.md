@@ -23,8 +23,11 @@ under that instead — the notebook already does this.
 [Tunisian Sign Language Dataset](https://www.kaggle.com/datasets/warcoder/tunisian-sign-language-dataset)
 (Chakroun & Jerbi, 2023 — Mendeley Data, DOI `10.17632/fbjjgzgv7f.1`,
 collected with **ATILS**, the Tunisian Association of Sign Language
-Interpreters). CC BY 4.0 — credit it if you mention the training data
-anywhere public.
+Interpreters, as part of a SUP'COM P2M project). CC BY 4.0 — credit it if
+you mention the training data anywhere public. The dataset also bundles
+the students' own project report (PDF), which independently confirms the
+Arabic gloss for most of these signs — used below alongside standard
+Tunisian Derja transliteration conventions.
 
 4423 images, 57 real Tunisian signs, 7 signers, across 5 categories:
 
@@ -44,32 +47,125 @@ none of those previous categories are recognized anymore.
 its `no_gesture` folder, as the required negative ("none") class Model
 Maker needs.
 
-**Two-phase workflow — read before running:** the class *labels* Model
-Maker trains on are whatever this dataset's own folder names actually are
-("named in Tunisian dialect" per its own description — exact
-script/spelling unknown until the notebook's `build_dataset()` step
-prints the discovered list). `lib/gestureDictionary.ts` cannot be filled
-in with real Arabic-word mappings until that list is in hand — this is
-the same discover-then-refine pattern the HaGRID mount-path issue needed
-earlier. Run the notebook, get the printed class list, then come back and
-update the dictionary around the real names.
-
 **No accuracy guarantee.** 57 classes with a modest, imbalanced image
 count per class (~78 images/class on average, Transport as low as
-~50/class) is a harder problem than the earlier 10-class HaGRID run. It's
-also unknown whether any of these 57 signs are inherently two-handed or
-motion-based — this architecture (single-hand, single-frame classifier)
-fundamentally cannot represent those well, per [`../SPEC.md`](../SPEC.md)'s
-Known Limitation. The training script prints aggregate test accuracy, but
-that can hide a badly-confused individual class — test every one of the
-57 signs manually after deploying (see [`../TESTING.md`](../TESTING.md)),
-and be prepared to drop any sign the model can't reliably distinguish.
+~50/class, the thinnest single class only 15) is a harder problem than
+the earlier 10-class HaGRID run. It's also unknown whether any of these
+57 signs are inherently two-handed or motion-based — this architecture
+(single-hand, single-frame classifier) fundamentally cannot represent
+those well, per [`../SPEC.md`](../SPEC.md)'s Known Limitation. The
+training script prints aggregate test accuracy, but that can hide a
+badly-confused individual class — test every one of the 57 signs
+manually after deploying (see [`../TESTING.md`](../TESTING.md)), and be
+prepared to drop any sign the model can't reliably distinguish. Classes
+under ~30 images (`mar7ba`, `karhba`, `labes`, `5adamet`) are the most
+likely to need it.
+
+## Confirmed vocabulary (folder name -> class label -> Arabic word)
+
+Verified by inspecting a local copy of the dataset directly — not
+guessed. Folder names are Tunisian Derja in Franco-Arabic transliteration
+(digits stand in for letters with no Latin equivalent: `3`=ع, `5`=خ,
+`7`=ح, `9`=ق, `2`=ء). These exact names become the model's output
+category names, so they're also the `GESTURE_WORD_MAP` keys once a
+trained model is deployed.
+
+**Demandes**
+
+| Label | Word (ar) | Gloss |
+|---|---|---|
+| `3aslema` | عسلامة | hello |
+| `5adamet` | خدمات | services |
+| `assam` | أصم | deaf |
+| `barnamjk` | برنامجك | your schedule |
+| `chabeb` | شباب | youth |
+| `cv` | سيرة ذاتية | CV / résumé |
+| `demande` | طلب | request |
+| `enti` | انت | you |
+| `labes` | لاباس | fine / OK |
+| `lyoum` | اليوم | today |
+| `mar7ba` | مرحبا | welcome |
+| `n3awnek` | نعاونك | I'll help you |
+| `nekteblk` | نكتبلك | I'll write to you |
+| `non` | لا | no |
+| `oui` | ايه | yes |
+| `radio` | راديو | radio |
+| `se7a` | صحة | health |
+| `siye7a` | سياحة | tourism |
+| `t7eb` | تحب | you like/want |
+| `ta3lim` | تعليم | education |
+| `ta3raf` | تعرف | you know |
+| `ta9ra` | تقرا | you read |
+| `telvza` | تلفزة | television |
+| `tha9afa` | ثقافة | culture |
+
+**Destinations**
+
+| Label | Word (ar) | Gloss |
+|---|---|---|
+| `baladya` | بلدية | municipality |
+| `banka` | بنك | bank |
+| `bousta` | بوسطة | post office |
+| `dar` | دار | house |
+| `ma7kma` | محكمة | court |
+| `mostawsaf` | مستوصف | clinic |
+| `sbitar` | سبيطار | hospital |
+| `wzara` | وزارة | ministry |
+
+**Famille**
+
+| Label | Word (ar) | Gloss |
+|---|---|---|
+| `3ayla` | عائلة | family |
+| `5al-3am` | خال / عم | uncle |
+| `5ou` | خو | brother |
+| `bent` | بنت | daughter/girl |
+| `bou` | بابا | dad |
+| `eben` | ابن | son |
+| `jad` | جد | grandfather |
+| `jadda` | جدة | grandmother |
+| `mar2a` | مرأة | woman/wife |
+| `o5t` | اخت | sister |
+| `om` | أم | mother |
+| `tfol` | طفل | child |
+
+**Jours**
+
+| Label | Word (ar) | Gloss |
+|---|---|---|
+| `5mis` | الخميس | Thursday |
+| `a7ad` | الأحد | Sunday |
+| `erb3a` | الأربعاء | Wednesday |
+| `jom3a` | الجمعة | Friday |
+| `sebt` | السبت | Saturday |
+| `thleth` | الثلاثاء | Tuesday |
+| `thnin` | الاثنين | Monday |
+
+**Transport**
+
+| Label | Word (ar) | Gloss |
+|---|---|---|
+| `car` | سيارة | car |
+| `karhba` | كرهبة | car (Tunisian dialect term — distinct hand shape from `car`, verified) |
+| `louage` | لواج | louage (shared taxi) |
+| `metro` | مترو | metro |
+| `taxi` | تاكسي | taxi |
+| `train` | قطار | train |
+
+Plus the required `none` class (from HaGRID, ignored in
+`GESTURE_WORD_MAP` same as the existing `None`/`none` handling).
+
+Data-quality notes from direct inspection: all 4423 images present, zero
+corrupt files, uniform 224×224. `car` vs. `karhba` were visually
+spot-checked and are genuinely distinct hand shapes (not an accidental
+duplicate). One local-only encoding glitch was found and fixed defensively
+in the pipeline: `metro`'s accented `é` got mangled on a Windows
+extraction — `sanitize_label()` in the training script ASCII-folds it.
 
 Renaming a label, or adding/removing one, means updating both the
-notebook's `TUNSL_ROOT`/`find_leaf_class_dirs()` output **and**
-`GESTURE_WORD_MAP` in [`../lib/gestureDictionary.ts`](../lib/gestureDictionary.ts)
-— the model's output category name and the dictionary key must match
-exactly.
+notebook's `EXPECTED_SIGN_LABELS` **and** `GESTURE_WORD_MAP` in
+[`../lib/gestureDictionary.ts`](../lib/gestureDictionary.ts) — the
+model's output category name and the dictionary key must match exactly.
 
 ## Deploying a newly trained model
 
@@ -80,6 +176,6 @@ Kaggle's Output panel, then locally:
 cp gesture_recognizer.task public/models/gesture_recognizer.task
 ```
 
-Also update `lib/gestureDictionary.ts` to match the new class list — a
-model swap alone is not enough this time, since the entire vocabulary
-changed, not just a few added classes.
+Also update `lib/gestureDictionary.ts` with the table above — a model
+swap alone is not enough this time, since the entire vocabulary changed,
+not just a few added classes.
