@@ -29,7 +29,7 @@ export default function LandingScreen({ onStart, onOnboarding }: LandingScreenPr
     <div className="safe-top safe-x safe-bottom relative mx-auto flex h-[100dvh] w-full max-w-md flex-col items-center justify-center gap-9 overflow-hidden px-6">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-[18%] h-56 w-56 -translate-x-1/2 rounded-full bg-white/10 blur-3xl"
+        className="pointer-events-none absolute left-1/2 top-[18%] h-56 w-56 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl"
       />
 
       <div className="relative flex animate-fade-in-up flex-col items-center gap-3 text-center">

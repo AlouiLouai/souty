@@ -63,7 +63,7 @@ function StepOverlay({ step }: { step: Step }) {
     <>
       {step.spotlightClass ? (
         <div
-          className={`pointer-events-none absolute z-30 shadow-[0_0_0_2000px_rgba(0,0,0,0.72)] ring-2 ring-white/90 transition-all duration-300 ${step.spotlightClass}`}
+          className={`pointer-events-none absolute z-30 shadow-[0_0_0_2000px_rgba(0,0,0,0.72)] ring-2 ring-highlight/90 transition-all duration-300 ${step.spotlightClass}`}
         />
       ) : (
         <div className="pointer-events-none absolute inset-0 z-30 bg-black/60" />
@@ -142,6 +142,7 @@ export default function OnboardingTour({ onFinish, onSkip }: OnboardingTourProps
           speechSupported={speechSupported}
           paused={paused}
           onTogglePaused={() => setPaused((p) => !p)}
+          onRemoveLastWord={() => setSentenceWords((prev) => prev.slice(0, -1))}
           onClearSentence={() => setSentenceWords([])}
           onSpeakSentence={speakSentence}
         />

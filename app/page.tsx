@@ -51,6 +51,10 @@ export default function HomePage() {
     setSentenceWords((prev) => [...prev, word]);
   }, []);
 
+  const removeLastWord = useCallback(() => {
+    setSentenceWords((prev) => prev.slice(0, -1));
+  }, []);
+
   const clearIdleTimers = useCallback(() => {
     if (idleTimerRef.current) {
       clearTimeout(idleTimerRef.current);
@@ -162,7 +166,7 @@ export default function HomePage() {
               <Badge variant={paused ? "outline" : "secondary"} className="gap-1.5">
                 <span
                   className={`h-1.5 w-1.5 rounded-full ${
-                    paused ? "bg-muted-foreground" : "bg-foreground animate-pulse-glow"
+                    paused ? "bg-muted-foreground" : "bg-highlight animate-pulse-glow"
                   }`}
                 />
                 <span dir="rtl">{paused ? "متوقف" : "جارٍ المسح"}</span>
@@ -186,6 +190,7 @@ export default function HomePage() {
               speechSupported={speechSupported}
               paused={paused}
               onTogglePaused={() => setPaused((p) => !p)}
+              onRemoveLastWord={removeLastWord}
               onClearSentence={clearSentence}
               onSpeakSentence={speakSentence}
             />

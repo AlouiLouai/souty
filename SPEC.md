@@ -47,10 +47,10 @@ accumulate into a sentence; the sentence can be read aloud on demand.
    a per-hand ring fills over the hand showing recognition confidence and
    progress → on lock-in, the mapped Arabic word is appended to the
    sentence shown at the bottom. Repeat per word/hand to build a
-   sentence. Tap **Speak sentence** to hear it read aloud, **Clear** to
-   reset, pause/resume to freeze detection, the flip-camera icon to
-   switch front/back camera, or the home icon to return to the landing
-   screen.
+   sentence. Tap **Speak sentence** to hear it read aloud, the undo icon to
+   remove only the last word, **Clear** to reset, pause/resume to freeze
+   detection, the flip-camera icon to switch front/back camera, or the
+   home icon to return to the landing screen.
 5. **Idle reminder**: if no hand has been visible in frame for 5s, a
    purely informational popup reminds the user to put their hand back in
    frame — it does not close the camera or navigate away on its own; it
@@ -111,7 +111,18 @@ recognition would require a different model architecture entirely
 - **Layout:** fixed-height mobile viewport (`100dvh`), safe-area insets
   for notches, camera view takes remaining space after a minimal header
   and the sentence panel.
-- **Theme:** black background, white text/UI, shadcn/ui components.
+- **Theme:** near-black background (`0 0% 4%` - deliberately short of pure
+  `#000` to reduce eye strain over sustained camera use) with
+  Communication Blue (#3B82F6) primary actions (speak/start buttons) and
+  Cyan (#22D3EE) highlights for in-progress recognition feedback (on-hand
+  progress ring, lock-in flash) and the most recently locked word in the
+  sentence panel. The hand-skeleton overlay is drawn with a dark halo
+  behind the white lines/dots so it stays visible against light skin
+  tones or bright clothing/backgrounds, not just dark ones. A paused scan
+  shows a clear indicator directly on the camera view (not just the
+  header badge), since that's where attention actually is. Word lock-in
+  also fires a short haptic vibration where supported. shadcn/ui
+  components.
 
 ## Offline / PWA
 

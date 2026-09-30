@@ -6,7 +6,12 @@
   --font-sans: "Inter", system-ui, sans-serif;
   color-scheme: dark;
 
-  --background: 0 0% 0%;
+  /* Near-black, not pure #000: true black + white text is the highest
+     possible contrast, which reads great for a quick glance but tires the
+     eyes over the sustained camera use this app actually gets. Still dark
+     enough to read as "black theme" at a glance, and stays a shade below
+     --card (7%) so surfaces are still visually distinct from the page. */
+  --background: 0 0% 4%;
   --foreground: 0 0% 100%;
 
   --card: 0 0% 7%;
@@ -15,8 +20,11 @@
   --popover: 0 0% 7%;
   --popover-foreground: 0 0% 100%;
 
-  --primary: 0 0% 100%;
-  --primary-foreground: 0 0% 0%;
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+
+  --highlight: 188 86% 53%;
+  --highlight-foreground: 222 47% 11%;
 
   --secondary: 0 0% 14%;
   --secondary-foreground: 0 0% 100%;
@@ -32,7 +40,7 @@
 
   --border: 0 0% 18%;
   --input: 0 0% 18%;
-  --ring: 0 0% 80%;
+  --ring: 217 91% 60%;
 
   --radius: 1rem;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, RefreshCw, VideoOff } from "lucide-react";
+import { Loader2, Pause, RefreshCw, VideoOff } from "lucide-react";
 import type {
   GestureRecognizer as GestureRecognizerType,
   GestureRecognizerResult,
@@ -20,7 +20,12 @@ const WASM_URL = "/wasm";
 const MODEL_URL = "/models/gesture_recognizer.task";
 const CONFIDENCE_THRESHOLD = 0.65;
 const LOCK_HOLD_MS = 700;
+const LOCK_FLASH_MS = 400;
 const MAX_HANDS = 2;
+
+// Matches the --highlight token in app/globals.css (Cyan #22D3EE) - canvas
+// drawing can't use CSS variables, so the value is duplicated here.
+const HIGHLIGHT_RGB = "34, 211, 238";
 
 type ScannerPhase =
   | "loading-model"
@@ -47,6 +52,9 @@ interface HandInfo {
   label: string;
   confidence: number;
   progress: number;
+  // 0..1 age of the lock-in flash animation, present only right after the
+  // gesture for this hand locked in.
+  lockFlash?: number;
 }
 
 function roundRect(
@@ -85,10 +93,22 @@ function drawHandLabel(
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.stroke();
 
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+  // Cyan progress arc: "actively capturing" feedback, matching the
+  // last-word highlight color in the sentence panel.
+  ctx.strokeStyle = `rgba(${HIGHLIGHT_RGB}, 0.95)`;
   ctx.beginPath();
   ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + info.progress * Math.PI * 2);
   ctx.stroke();
+
+  // Expanding flash ring right after lock-in, so the confirmation is
+  // visible at the hand itself without looking down at the panel.
+  if (info.lockFlash !== undefined && info.lockFlash < 1) {
+    const t = info.lockFlash;
+    ctx.strokeStyle = `rgba(${HIGHLIGHT_RGB}, ${0.9 * (1 - t)})`;
+    ctx.beginPath();
+    ctx.arc(x, y, r + t * r * 1.1, 0, Math.PI * 2);
+    ctx.stroke();
+  }
 
   ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
   ctx.font = `600 ${Math.max(11, r * 0.32)}px sans-serif`;
@@ -109,7 +129,7 @@ function drawHandLabel(
   roundRect(ctx, x - pillWidth / 2, pillY, pillWidth, pillHeight, pillHeight / 2);
   ctx.fill();
 
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = `rgb(${HIGHLIGHT_RGB})`;
   ctx.fillText(label, x, pillY + pillHeight / 2);
   ctx.restore();
 }
@@ -190,6 +210,7 @@ export default function GestureScanner({
     new Map()
   );
   const lastLockedRef = useRef<Map<string, string>>(new Map());
+  const lockFlashRef = useRef<Map<string, number>>(new Map());
   const pausedRef = useRef(paused);
   const onLockedRef = useRef(onLocked);
   const onHandPresenceChangeRef = useRef(onHandPresenceChange);
@@ -249,8 +270,14 @@ export default function GestureScanner({
           : (x: number) => x * canvas.width;
 
       result.landmarks.forEach((landmarks, i) => {
-        ctx.lineWidth = Math.max(2, canvas.width * 0.0035);
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+        // Dark halo behind the white skeleton: a pure-white line/dot on a
+        // camera feed disappears against light skin tones, pale clothing,
+        // or a bright background. Stroking/filling the same path twice -
+        // wider dark pass first, white pass on top - keeps it visible
+        // against both dark and light backgrounds instead of just one.
+        const lineWidth = Math.max(2, canvas.width * 0.0035);
+        const dotRadius = Math.max(2.5, canvas.width * 0.006);
+
         ctx.beginPath();
         for (const [a, b] of HAND_CONNECTIONS) {
           const p1 = landmarks[a];
@@ -259,20 +286,36 @@ export default function GestureScanner({
           ctx.moveTo(mirroredX(p1.x), p1.y * canvas.height);
           ctx.lineTo(mirroredX(p2.x), p2.y * canvas.height);
         }
+        ctx.lineWidth = lineWidth + 2.5;
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.55)";
+        ctx.stroke();
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
         ctx.stroke();
 
-        ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
         let minX = Infinity;
         let maxX = -Infinity;
         let minY = Infinity;
+        const points: Array<{ px: number; py: number }> = [];
         for (const point of landmarks) {
           const px = mirroredX(point.x);
           const py = point.y * canvas.height;
           if (px < minX) minX = px;
           if (px > maxX) maxX = px;
           if (py < minY) minY = py;
+          points.push({ px, py });
+        }
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+        for (const { px, py } of points) {
           ctx.beginPath();
-          ctx.arc(px, py, Math.max(2.5, canvas.width * 0.006), 0, Math.PI * 2);
+          ctx.arc(px, py, dotRadius + 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+        for (const { px, py } of points) {
+          ctx.beginPath();
+          ctx.arc(px, py, dotRadius, 0, Math.PI * 2);
           ctx.fill();
         }
 
@@ -318,10 +361,15 @@ export default function GestureScanner({
         candidatesRef.current.set(handKey, { label: top.categoryName, start });
 
         const progress = Math.min((now - start) / LOCK_HOLD_MS, 1);
+        const flashStart = lockFlashRef.current.get(handKey);
         handInfos[i] = {
           label: gestureToWord(top.categoryName),
           confidence: top.score,
           progress,
+          lockFlash:
+            flashStart !== undefined
+              ? (now - flashStart) / LOCK_FLASH_MS
+              : undefined,
         };
 
         if (
@@ -329,6 +377,10 @@ export default function GestureScanner({
           lastLockedRef.current.get(handKey) !== top.categoryName
         ) {
           lastLockedRef.current.set(handKey, top.categoryName);
+          lockFlashRef.current.set(handKey, now);
+          // Tactile lock-in confirmation (Android Chrome; silently a no-op
+          // where vibration isn't supported, e.g. iOS Safari).
+          navigator.vibrate?.(50);
           onLockedRef.current(gestureToWord(top.categoryName));
         }
       }
@@ -337,7 +389,15 @@ export default function GestureScanner({
         if (!seenKeys.has(key)) {
           candidatesRef.current.delete(key);
           lastLockedRef.current.delete(key);
+          lockFlashRef.current.delete(key);
         }
+      }
+
+      // Drop expired flash entries so the map can't grow unboundedly when
+      // a hand locks in and stays in frame (its key never hits the cleanup
+      // loop above).
+      for (const [key, flashStart] of lockFlashRef.current) {
+        if (now - flashStart > LOCK_FLASH_MS) lockFlashRef.current.delete(key);
       }
 
       drawOverlay(result, handInfos);
@@ -574,6 +634,22 @@ export default function GestureScanner({
         >
           <RefreshCw className="h-4 w-4" />
         </Button>
+      )}
+
+      {/* Paused state was previously only a small dot in the header - easy
+          to miss while looking at the camera, not the header, so the first
+          sign of it was gesturing and nothing happening. This puts the
+          same information where attention actually is. pointer-events-none
+          so the flip-camera button underneath stays tappable. */}
+      {phase === "ready" && paused && (
+        <div className="pointer-events-none absolute inset-0 z-[15] flex flex-col items-center justify-center gap-3 bg-background/65">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-card/90">
+            <Pause className="h-7 w-7 text-foreground" />
+          </div>
+          <p dir="rtl" className="text-base font-semibold text-foreground">
+            المسح متوقف
+          </p>
+        </div>
       )}
 
       {showOverlayMessage && (

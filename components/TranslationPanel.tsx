@@ -1,6 +1,6 @@
 "use client";
 
-import { Pause, Play, Volume2, X } from "lucide-react";
+import { Pause, Play, Undo2, Volume2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
@@ -9,6 +9,7 @@ interface TranslationPanelProps {
   speechSupported: boolean;
   paused: boolean;
   onTogglePaused: () => void;
+  onRemoveLastWord: () => void;
   onClearSentence: () => void;
   onSpeakSentence: (text: string) => void;
 }
@@ -18,6 +19,7 @@ export default function TranslationPanel({
   speechSupported,
   paused,
   onTogglePaused,
+  onRemoveLastWord,
   onClearSentence,
   onSpeakSentence,
 }: TranslationPanelProps) {
@@ -31,14 +33,18 @@ export default function TranslationPanel({
           <p
             dir="rtl"
             lang="ar"
-            className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-3xl font-bold leading-tight text-foreground"
+            className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5 text-4xl font-bold leading-tight text-foreground"
           >
             {sentenceWords.map((word, i) => {
               const isLast = i === sentenceWords.length - 1;
               return (
                 <span
                   key={`${word}-${i}`}
-                  className={isLast ? "animate-float-up" : "text-foreground/80"}
+                  className={
+                    isLast
+                      ? "animate-float-up text-highlight"
+                      : "text-foreground/80"
+                  }
                 >
                   {word}
                 </span>
@@ -60,16 +66,24 @@ export default function TranslationPanel({
           aria-pressed={paused}
           aria-label={paused ? "استئناف المسح" : "إيقاف المسح مؤقتًا"}
         >
-          {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+          {paused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
         </Button>
         <Button
-          variant="secondary"
-          className="flex-1"
+          className="h-12 flex-1 text-base font-semibold"
           disabled={!hasSentence || !speechSupported}
           onClick={() => onSpeakSentence(sentenceText)}
         >
-          <Volume2 className="h-4 w-4" />
+          <Volume2 className="h-5 w-5" />
           انطق الجملة
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          disabled={!hasSentence}
+          onClick={onRemoveLastWord}
+          aria-label="حذف آخر كلمة"
+        >
+          <Undo2 className="h-5 w-5" />
         </Button>
         <Button
           variant="destructive"
@@ -78,7 +92,7 @@ export default function TranslationPanel({
           onClick={onClearSentence}
           aria-label="مسح الجملة"
         >
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         </Button>
       </CardFooter>
     </Card>
