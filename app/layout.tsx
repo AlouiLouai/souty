@@ -32,6 +32,13 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Souty",
   },
+  other: {
+    // Next's `appleWebApp.capable` only emits the newer, generic
+    // "mobile-web-app-capable" tag - not this iOS-specific one, which is
+    // what actually makes "Add to Home Screen" open fullscreen (no Safari
+    // address bar) rather than as a regular bookmarked tab.
+    "apple-mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
