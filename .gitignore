@@ -47,3 +47,4 @@ next-env.d.ts
 # (e.g. the Kaggle connector's bearer token), never commit this
 .mcp.json
 .claude/
+.kimi-code/
