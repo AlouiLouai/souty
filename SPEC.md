@@ -60,14 +60,17 @@ accumulate into a sentence; the sentence can be read aloud on demand.
 
 - **Engine:** `@mediapipe/tasks-vision` `GestureRecognizer`, running
   entirely client-side (GPU delegate, falls back to CPU).
-- **Vocabulary:** the 7 gestures built into MediaPipe's pretrained model
-  (`Open_Palm`, `Closed_Fist`, `Thumb_Up`, `Thumb_Down`, `Victory`,
-  `Pointing_Up`, `ILoveYou`), each mapped to one Arabic word in
-  `lib/gestureDictionary.ts`. A retraining pipeline in `training/` (see
-  `training/README.md`) extends this with further distinguishable static
-  gestures (`OK_Sign`, `Three_Fingers`, `Four_Fingers`, `Shaka_Sign`) —
-  those need a model retrained on real photos before they're actually
-  recognized; the dictionary entries alone are just staged mappings.
+- **Vocabulary:** a custom-trained 34-class model (33 recognized signs +
+  the required `none` negative class), committed at
+  `public/models/gesture_recognizer.task`. Two sources merged in one
+  training run: 23 pruned single-hand signs from the real Tunisian Sign
+  Language dataset, plus 10 HaGRID-derived classes (stock-gesture
+  equivalents + `OK_Sign`, `Three_Fingers`, `Four_Fingers`,
+  `Shaka_Sign`). Each class maps to one Tunisian Arabic word in
+  `lib/gestureDictionary.ts`; the dictionary key must exactly match the
+  model's output category name. Retraining always replaces the whole
+  classifier head, so any vocabulary change means a full retrain — see
+  `docs/TECHNICAL_DOC.md`.
 - **Hands:** up to 2 tracked independently and simultaneously (keyed by
   MediaPipe's left/right handedness classification).
 - **Lock-in logic:** a gesture must stay above a confidence threshold
