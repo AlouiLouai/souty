@@ -1,0 +1,732 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Souty pour tous</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&family=Readex+Pro:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single bright picture-book world. Stacked "pages" with wavy edges, each one a scene with one thing to play with. */
+:root{
+  color-scheme:light;
+  --sky:#E9ECFF;        /* page ground */
+  --paper:#FFFFFF;
+  --plum:#2A1846;       /* ink */
+  --plum-soft:#5D4E7A;
+  --harissa:#FF5A3C;    /* action */
+  --sun:#FFC83A;        /* the voice */
+  --mint:#22BFA0;       /* success / locked */
+  --lilac:#B9A8FF;
+  --pink:#FFB4C8;
+  --skin:#F2B48B; --skin-line:#B9683F;
+  --f-fun:"Baloo Bhaijaan 2","Readex Pro","Segoe UI",system-ui,sans-serif;
+  --f-body:"Readex Pro","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{background:var(--sky);color:var(--plum);font-family:var(--f-body);font-size:17px;line-height:1.6;overflow-x:hidden}
+.wrap{max-width:1080px;margin-inline:auto;padding-inline:20px}
+h1,h2,h3{font-family:var(--f-fun);margin:0;line-height:1.1;text-wrap:balance}
+p{margin:0}
+.dz{font-family:var(--f-fun);direction:rtl;display:block;font-weight:800}
+:focus-visible{outline:4px solid var(--harissa);outline-offset:3px;border-radius:12px}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 24px;border-radius:999px;border:3px solid var(--plum);background:var(--harissa);color:#fff;font-family:var(--f-fun);font-weight:700;font-size:1.1rem;text-decoration:none;cursor:pointer;box-shadow:0 5px 0 var(--plum);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 7px 0 var(--plum)}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--plum)}
+.btn.sun{background:var(--sun);color:var(--plum)}
+.btn.white{background:var(--paper);color:var(--plum)}
+.btn.small{padding:9px 16px;font-size:.95rem}
+.sticker{display:inline-block;white-space:nowrap;padding:6px 14px;border-radius:999px;background:var(--paper);border:2.5px solid var(--plum);font-family:var(--f-fun);font-weight:700;font-size:.9rem;transform:rotate(-3deg);box-shadow:3px 3px 0 var(--plum)}
+.page{position:relative;padding-block:clamp(60px,9vw,110px)}
+.page.paper{background:var(--paper)}
+.page.wave-top::before{content:"";position:absolute;left:0;right:0;top:-28px;height:30px;background:inherit;-webkit-mask:radial-gradient(30px 28px at 30px 30px,#000 98%,transparent) -30px 0/60px 30px repeat-x;mask:radial-gradient(30px 28px at 30px 30px,#000 98%,transparent) -30px 0/60px 30px repeat-x}
+.head{display:grid;gap:6px;margin-bottom:34px;text-align:center;justify-items:center}
+.head .dz{font-size:clamp(2rem,5.2vw,3.4rem);color:var(--plum)}
+.head h2{font-size:clamp(1.15rem,2.4vw,1.45rem);font-family:var(--f-body);font-weight:500;color:var(--plum-soft)}
+.squiggle{width:120px;height:14px;color:var(--harissa)}
+
+/* ---------- HERO ---------- */
+.hero{padding-block:30px 90px;overflow:hidden}
+.top{display:flex;justify-content:space-between;align-items:center;padding-block:14px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-fun);font-weight:800;font-size:1.6rem;text-decoration:none;color:var(--plum)}
+.brand .dz{font-size:1.9rem;color:var(--harissa)}
+.hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;align-items:center;margin-top:20px}
+.hero .dz{font-size:clamp(2.6rem,7vw,5rem);line-height:1.15;color:var(--plum)}
+.hero .dz em{font-style:normal;color:var(--harissa);position:relative;white-space:nowrap}
+.hero .dz em::after{content:"";position:absolute;left:0;right:0;bottom:4px;height:14px;background:var(--sun);z-index:-1;border-radius:8px;transform:rotate(-1.5deg)}
+.hero h1{font-size:clamp(1.4rem,3vw,2rem);margin-top:14px;font-weight:700}
+.hero p{margin-top:14px;font-size:1.1rem;color:var(--plum-soft);max-width:46ch}
+.hero .actions{display:flex;gap:14px;flex-wrap:wrap;margin-top:26px}
+.mascot-stage{position:relative;aspect-ratio:1;max-width:100%}
+.mascot-stage svg{width:100%;height:100%;overflow:visible}
+.blob{animation:blob 9s ease-in-out infinite;transform-origin:50% 50%}
+@keyframes blob{0%,100%{transform:rotate(0) scale(1)}50%{transform:rotate(8deg) scale(1.04)}}
+.bob{animation:bob 3.2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.wavehand{transform-origin:330px 330px;animation:wave 1.6s ease-in-out infinite}
+@keyframes wave{0%,100%{transform:rotate(0)}25%{transform:rotate(-14deg)}75%{transform:rotate(10deg)}}
+.blink{animation:blink 4s infinite;transform-origin:center;transform-box:fill-box}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.sw path{animation:sw 1.8s ease-out infinite;opacity:0}
+.sw path:nth-child(2){animation-delay:.3s}.sw path:nth-child(3){animation-delay:.6s}
+@keyframes sw{0%{opacity:0;transform:translateX(-6px)}30%{opacity:1}100%{opacity:0;transform:translateX(10px)}}
+.bubble-pop{position:absolute;top:2%;left:4%;background:var(--paper);border:3px solid var(--plum);border-radius:24px 24px 24px 6px;padding:8px 18px;font-family:var(--f-fun);font-weight:800;font-size:1.7rem;direction:rtl;box-shadow:4px 4px 0 var(--plum);animation:pop 3.2s ease-in-out infinite}
+@keyframes pop{0%,15%{transform:scale(0) rotate(-10deg)}25%,80%{transform:scale(1) rotate(-4deg)}100%{transform:scale(0) rotate(-10deg)}}
+.tapme{position:absolute;bottom:4%;right:4%}
+@media (max-width:520px){.top .sticker{display:none}}
+@media (max-width:820px){.hero-grid{grid-template-columns:1fr}.mascot-stage{max-width:380px;margin-inline:auto;width:100%}}
+
+/* ---------- COMIC ---------- */
+.comic{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.panel{background:var(--paper);border:3px solid var(--plum);border-radius:22px;overflow:hidden;box-shadow:6px 6px 0 var(--plum);display:grid;grid-template-rows:auto 1fr;transition:transform .3s}
+.panel:nth-child(1){transform:rotate(-1.2deg)}.panel:nth-child(3){transform:rotate(1.2deg)}
+.panel:hover{transform:rotate(0) scale(1.02)}
+.panel svg{width:100%;height:auto;display:block;background:#FFF3D6}
+.panel.p2 svg{background:#E0F7F1}.panel.p3 svg{background:#FFE4EC}
+.panel .cap{padding:14px 16px 18px;display:grid;gap:4px;border-top:3px solid var(--plum)}
+.panel .num{font-family:var(--f-fun);font-weight:800;color:var(--harissa);font-size:.9rem}
+.panel .cap .dz{font-size:1.15rem;line-height:1.35}
+.panel .cap p{font-size:.92rem;color:var(--plum-soft)}
+.shake{animation:shake 2.4s ease-in-out infinite;transform-origin:center;transform-box:fill-box}
+@keyframes shake{0%,70%,100%{transform:rotate(0)}75%{transform:rotate(-8deg)}85%{transform:rotate(8deg)}}
+.float{animation:bob 2.4s ease-in-out infinite}
+.qm{animation:qm 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes qm{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-6px) rotate(6deg)}}
+.heart{animation:heart 1.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes heart{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+@media (max-width:820px){.comic{grid-template-columns:1fr;max-width:420px;margin-inline:auto}}
+
+/* ---------- 3 STEPS + HOLD GAME ---------- */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.step{background:var(--paper);border:3px solid var(--plum);border-radius:26px;padding:24px 20px;display:grid;gap:12px;justify-items:center;text-align:center;box-shadow:6px 6px 0 var(--plum)}
+.step .badge{width:46px;height:46px;border-radius:50%;background:var(--sun);border:3px solid var(--plum);display:grid;place-items:center;font-family:var(--f-fun);font-weight:800;font-size:1.3rem}
+.step .dz{font-size:1.5rem}
+.step p{color:var(--plum-soft);font-size:.95rem}
+.step .ill{width:120px;height:120px}
+.holdbtn{position:relative;width:150px;height:150px;border-radius:50%;border:3px solid var(--plum);background:var(--lilac);cursor:pointer;display:grid;place-items:center;font-family:var(--f-fun);font-weight:800;font-size:1.05rem;color:var(--plum);touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 6px 0 var(--plum);transition:transform .1s}
+.holdbtn:active{transform:translateY(3px);box-shadow:0 3px 0 var(--plum)}
+.holdbtn svg{position:absolute;inset:-12px;width:calc(100% + 24px);height:calc(100% + 24px);transform:rotate(-90deg);pointer-events:none}
+.holdbtn circle{fill:none;stroke-width:9;stroke-linecap:round}
+.holdbtn .tr{stroke:rgba(42,24,70,.12)}
+.holdbtn .fl{stroke:var(--mint)}
+.holdbtn.ok{background:var(--mint);color:#fff}
+.holdbtn .inner{display:grid;gap:0;justify-items:center;line-height:1.1}
+.holdbtn .inner small{font-family:var(--f-body);font-size:.72rem;font-weight:500}
+.speakmini{width:120px;height:120px;border-radius:50%;border:3px solid var(--plum);background:var(--sun);cursor:pointer;display:grid;place-items:center;box-shadow:0 6px 0 var(--plum)}
+.speakmini svg{width:56px;height:56px}
+.speakmini.talk svg .sw2 path{animation:sw 1s ease-out infinite}
+.status{min-height:1.6em;font-family:var(--f-fun);font-weight:700;color:var(--mint)}
+@media (max-width:820px){.steps{grid-template-columns:1fr;max-width:420px;margin-inline:auto}}
+
+/* ---------- PLAY: SIGN THE HAND ---------- */
+.play{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center}
+.stage{position:relative;aspect-ratio:1;border-radius:36px;border:3px solid var(--plum);background:radial-gradient(circle at 50% 40%,#FFE9A8,#FFC83A);box-shadow:8px 8px 0 var(--plum);overflow:hidden;max-width:100%}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.stage .say{position:absolute;top:16px;left:50%;transform:translateX(-50%);background:var(--paper);border:3px solid var(--plum);border-radius:20px;padding:4px 20px;font-family:var(--f-fun);font-weight:800;font-size:1.7rem;direction:rtl;min-width:80px;text-align:center;box-shadow:3px 3px 0 var(--plum);transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.stage .say.bump{animation:bump .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes bump{0%{transform:translateX(-50%) scale(.4)}100%{transform:translateX(-50%) scale(1)}}
+.stage .note{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:.75rem;color:var(--plum-soft)}
+.wordpad{display:grid;gap:16px;min-width:0}
+.wordpad .dz{font-size:1.9rem}
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.wbtn{border:3px solid var(--plum);background:var(--paper);border-radius:16px;padding:8px 6px;cursor:pointer;display:grid;justify-items:center;font:inherit;color:var(--plum);box-shadow:0 4px 0 var(--plum);transition:transform .1s,background .2s}
+.wbtn:hover{background:#FFF6DA}
+.wbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--plum)}
+.wbtn b{font-family:var(--f-fun);font-size:1.35rem;direction:rtl}
+.wbtn small{font-size:.75rem;color:var(--plum-soft)}
+.sentence{background:var(--paper);border:3px dashed var(--plum);border-radius:20px;padding:12px;min-height:66px;display:flex;flex-wrap:wrap;gap:8px;direction:rtl;align-items:center}
+.sentence .empty{direction:ltr;color:var(--plum-soft);font-size:.9rem;margin-inline:auto}
+.chip{font-family:var(--f-fun);font-weight:700;font-size:1.25rem;padding:4px 14px;border-radius:14px;background:var(--lilac);border:2.5px solid var(--plum);animation:chipIn .45s cubic-bezier(.3,1.6,.5,1)}
+.chip:last-child{background:var(--mint);color:#fff}
+@keyframes chipIn{from{transform:scale(0) rotate(-20deg)}to{transform:scale(1) rotate(0)}}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.tiny{font-size:.85rem;color:var(--plum-soft);min-height:1.3em}
+@media (max-width:820px){.play{grid-template-columns:1fr}.stage{max-width:420px;margin-inline:auto;width:100%}}
+
+/* ---------- VRAI OU FAUX ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:18px}
+.flip{display:block;width:100%;perspective:900px;border:0;background:none;padding:0;cursor:pointer;font:inherit;color:inherit;text-align:center;min-height:220px}
+.flip .in{display:block;position:relative;width:100%;height:100%;min-height:220px;transition:transform .6s cubic-bezier(.4,1.4,.5,1);transform-style:preserve-3d}
+.flip.on .in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;width:100%;height:100%;border:3px solid var(--plum);border-radius:24px;padding:20px;display:grid;place-content:center;gap:10px;backface-visibility:hidden;-webkit-backface-visibility:hidden;box-shadow:5px 5px 0 var(--plum)}
+.face.front{background:var(--paper)}
+.face.back{background:var(--mint);color:#fff;transform:rotateY(180deg)}
+.face.back.no{background:var(--harissa)}
+.face .q{font-family:var(--f-fun);font-weight:700;font-size:1.2rem;line-height:1.3}
+.face .dzq{font-family:var(--f-fun);direction:rtl;font-size:1rem;color:var(--plum-soft)}
+.face .verdict{font-family:var(--f-fun);font-weight:800;font-size:2rem;line-height:1}
+.face .tap{font-size:.78rem;color:var(--plum-soft)}
+.face.back p{font-size:.95rem}
+.score{text-align:center;margin-top:20px;font-family:var(--f-fun);font-weight:700;font-size:1.1rem}
+
+/* ---------- OFFLINE ---------- */
+.offline{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center}
+.sky{position:relative;aspect-ratio:16/11;border-radius:30px;border:3px solid var(--plum);background:linear-gradient(#9FD8FF,#DDF1FF);overflow:hidden;box-shadow:8px 8px 0 var(--plum);max-width:100%}
+.sky svg{position:absolute;inset:0;width:100%;height:100%}
+.cloud{animation:drift 18s linear infinite}
+.cloud.c2{animation-duration:26s;animation-delay:-9s}
+@keyframes drift{from{transform:translateX(-30%)}to{transform:translateX(130%)}}
+.plane{transform:translateX(-160px);transition:none}
+.sky.on .plane{animation:fly 3.5s ease-in-out forwards}
+@keyframes fly{0%{transform:translate(-160px,60px) rotate(-8deg)}100%{transform:translate(720px,-40px) rotate(-12deg)}}
+.wifi path{transition:opacity .4s}
+.sky.on .wifi path{opacity:.15}
+.sky.on .xmark{opacity:1}
+.xmark{opacity:0;transition:opacity .4s}
+.toggle{display:flex;align-items:center;gap:14px;cursor:pointer;font-family:var(--f-fun);font-weight:700;font-size:1.2rem;user-select:none}
+.toggle input{appearance:none;-webkit-appearance:none;width:74px;height:40px;border-radius:999px;border:3px solid var(--plum);background:var(--paper);position:relative;cursor:pointer;margin:0;flex:none;transition:background .3s}
+.toggle input::after{content:"";position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:var(--plum);transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.toggle input:checked{background:var(--sun)}
+.toggle input:checked::after{transform:translateX(34px)}
+.offmsg{margin-top:16px;padding:16px 18px;border-radius:20px;background:var(--paper);border:3px solid var(--plum);display:grid;gap:4px}
+.offmsg .dz{font-size:1.4rem}
+.offmsg.on{background:#DDF8F1}
+@media (max-width:820px){.offline{grid-template-columns:1fr}}
+
+/* ---------- REAL STORY ---------- */
+.story{background:var(--plum);color:#fff;text-align:center;overflow:hidden}
+.story .head .dz{color:var(--sun)}
+.story .head h2{color:#D9D0F0}
+.tear{font-family:var(--f-fun);font-weight:700;font-size:clamp(1.5rem,3.6vw,2.4rem);line-height:1.35;max-width:26ch;margin-inline:auto}
+.tear mark{background:none;color:var(--sun)}
+.story p.sub{margin-top:18px;color:#D9D0F0;max-width:54ch;margin-inline:auto}
+.hearts{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.hearts span{position:absolute;bottom:-40px;font-size:24px;color:var(--pink);animation:rise linear infinite}
+@keyframes rise{to{transform:translateY(-120vh) rotate(30deg);opacity:0}}
+.story .wrap{position:relative;z-index:1}
+
+/* ---------- CTA ---------- */
+.cta{text-align:center;display:grid;gap:18px;justify-items:center}
+.cta .dz{font-size:clamp(2.4rem,6vw,4rem);color:var(--harissa)}
+.cta p{max-width:50ch;color:var(--plum-soft)}
+.link-pill{display:inline-flex;align-items:center;gap:10px;background:var(--paper);border:3px solid var(--plum);border-radius:999px;padding:6px 6px 6px 18px;font-weight:600;box-shadow:4px 4px 0 var(--plum)}
+.link-pill span{user-select:all}
+footer{padding-block:30px;text-align:center;font-size:.8rem;color:var(--plum-soft)}
+
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:50;width:100%;height:100%}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  html{scroll-behavior:auto}
+  .bubble-pop{transform:rotate(-4deg)}
+}
+</style>
+
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<!-- ================= HERO ================= -->
+<header class="hero">
+  <div class="wrap">
+    <div class="top">
+      <a class="brand" href="#start"><span class="dz">صوتي</span>Souty</a>
+      <span class="sticker">gratuit · sans Internet</span>
+    </div>
+    <div class="hero-grid" id="start">
+      <div>
+        <span class="dz" lang="ar">يديك تحكي… <em>وصوتي</em> يسمّع الكلام</span>
+        <h1>Tes mains parlent. Souty les fait entendre.</h1>
+        <p>Souty est une appli qui regarde les signes d'une personne sourde et les dit à voix haute, en arabe tunisien. Elle marche sur n'importe quel téléphone, même sans Internet.</p>
+        <div class="actions">
+          <a class="btn" href="#jouer">Essayer ici ✋</a>
+          <a class="btn white" href="https://souty.vercel.app" target="_blank" rel="noopener">Ouvrir l'appli</a>
+        </div>
+      </div>
+      <div class="mascot-stage">
+        <svg viewBox="0 0 440 440" role="img" aria-label="Souty, un téléphone souriant qui fait coucou avec une main">
+          <path class="blob" d="M220 30c80 0 170 40 185 130s-20 190-110 230-210 20-250-60S40 120 90 70 160 30 220 30z" fill="#FFB4C8"/>
+          <circle cx="70" cy="90" r="10" fill="#FFC83A"/><circle cx="390" cy="120" r="7" fill="#22BFA0"/><circle cx="380" cy="360" r="12" fill="#B9A8FF"/>
+          <g class="bob">
+            <!-- phone body -->
+            <rect x="130" y="90" width="180" height="290" rx="38" fill="#2A1846"/>
+            <rect x="143" y="104" width="154" height="262" rx="28" fill="#FFC83A"/>
+            <rect x="196" y="112" width="48" height="10" rx="5" fill="#2A1846"/>
+            <!-- face -->
+            <ellipse class="blink" cx="190" cy="200" rx="13" ry="17" fill="#2A1846"/>
+            <ellipse class="blink" cx="250" cy="200" rx="13" ry="17" fill="#2A1846"/>
+            <circle cx="194" cy="194" r="4" fill="#fff"/><circle cx="254" cy="194" r="4" fill="#fff"/>
+            <ellipse cx="168" cy="238" rx="14" ry="8" fill="#FF8FA8" opacity=".7"/><ellipse cx="272" cy="238" rx="14" ry="8" fill="#FF8FA8" opacity=".7"/>
+            <path d="M190 245q30 30 60 0" stroke="#2A1846" stroke-width="7" fill="none" stroke-linecap="round"/>
+            <!-- sound waves -->
+            <g class="sw" stroke="#FF5A3C" stroke-width="7" fill="none" stroke-linecap="round">
+              <path d="M110 230q-14 -30 0 -60"/><path d="M90 245q-24 -45 0 -90"/><path d="M70 260q-34 -60 0 -120"/>
+            </g>
+            <!-- bottom bar like the app's sentence -->
+            <rect x="160" y="300" width="120" height="40" rx="14" fill="#fff" stroke="#2A1846" stroke-width="4"/>
+            <text x="220" y="328" text-anchor="middle" font-family="Baloo Bhaijaan 2, sans-serif" font-weight="800" font-size="22" fill="#2A1846">صوتي</text>
+            <!-- waving hand -->
+            <g class="wavehand">
+              <path d="M300 300 q30 -20 40 -60" stroke="#2A1846" stroke-width="14" fill="none" stroke-linecap="round"/>
+              <g transform="translate(330 205)">
+                <rect x="-26" y="10" width="52" height="46" rx="20" fill="#F2B48B" stroke="#2A1846" stroke-width="5"/>
+                <rect x="-24" y="-30" width="11" height="48" rx="5.5" fill="#F2B48B" stroke="#2A1846" stroke-width="5"/>
+                <rect x="-11" y="-40" width="11" height="58" rx="5.5" fill="#F2B48B" stroke="#2A1846" stroke-width="5"/>
+                <rect x="2" y="-36" width="11" height="54" rx="5.5" fill="#F2B48B" stroke="#2A1846" stroke-width="5"/>
+                <rect x="15" y="-24" width="11" height="42" rx="5.5" fill="#F2B48B" stroke="#2A1846" stroke-width="5"/>
+                <rect x="-44" y="18" width="30" height="12" rx="6" fill="#F2B48B" stroke="#2A1846" stroke-width="5" transform="rotate(-30 -30 24)"/>
+              </g>
+            </g>
+          </g>
+        </svg>
+        <div class="bubble-pop" lang="ar">عسلامة!</div>
+        <button class="btn sun small tapme" id="sayHi" type="button">Fais-le parler 🔊</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ================= COMIC ================= -->
+<section class="page paper wave-top">
+  <div class="wrap">
+    <div class="head">
+      <span class="dz">تعرّف على سامي</span>
+      <h2>Voici Sami, un personnage inventé. Son histoire est celle de beaucoup de personnes sourdes.</h2>
+      <svg class="squiggle" viewBox="0 0 120 14" aria-hidden="true"><path d="M2 7q10-10 20 0t20 0 20 0 20 0 20 0 20 0" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+    </div>
+    <div class="comic">
+      <article class="panel">
+        <svg viewBox="0 0 300 210" role="img" aria-label="Au guichet, l'agent ne comprend pas les signes de Sami">
+          <rect x="0" y="150" width="300" height="60" fill="#F5D9A8"/>
+          <rect x="150" y="120" width="140" height="60" rx="8" fill="#B9A8FF" stroke="#2A1846" stroke-width="4"/>
+          <!-- clerk -->
+          <circle cx="225" cy="78" r="26" fill="#C98A62" stroke="#2A1846" stroke-width="4"/>
+          <rect x="198" y="100" width="54" height="30" rx="14" fill="#22BFA0" stroke="#2A1846" stroke-width="4"/>
+          <circle cx="216" cy="76" r="7" fill="none" stroke="#2A1846" stroke-width="3"/><circle cx="236" cy="76" r="7" fill="none" stroke="#2A1846" stroke-width="3"/>
+          <path d="M218 92q7 -4 14 0" stroke="#2A1846" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <text class="qm" x="252" y="48" font-family="Baloo Bhaijaan 2, sans-serif" font-weight="800" font-size="40" fill="#FF5A3C">?</text>
+          <!-- Sami -->
+          <circle cx="80" cy="82" r="26" fill="#F2B48B" stroke="#2A1846" stroke-width="4"/>
+          <path d="M56 74q24 -30 48 0" fill="#2A1846"/>
+          <rect x="52" y="104" width="56" height="80" rx="22" fill="#FF5A3C" stroke="#2A1846" stroke-width="4"/>
+          <circle cx="72" cy="84" r="3.5" fill="#2A1846"/><circle cx="90" cy="84" r="3.5" fill="#2A1846"/>
+          <path d="M74 96q7 4 14 0" stroke="#2A1846" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <g class="shake"><circle cx="128" cy="100" r="12" fill="#F2B48B" stroke="#2A1846" stroke-width="4"/><path d="M118 116l-10 10" stroke="#2A1846" stroke-width="10" stroke-linecap="round"/></g>
+          <path d="M140 70q8 -6 16 0M138 58q12 -10 24 0" stroke="#2A1846" stroke-width="3" fill="none" stroke-linecap="round" opacity=".5"/>
+        </svg>
+        <div class="cap"><span class="num">1</span><span class="dz">سامي أصم. جا للإدارة باش يطلب خدمة… والموظّف ما فهموش.</span><p>Sami est sourd. Au guichet, l'agent ne comprend pas sa langue des signes.</p></div>
+      </article>
+      <article class="panel p2">
+        <svg viewBox="0 0 300 210" role="img" aria-label="Sami ouvre Souty et signe devant la caméra du téléphone">
+          <rect x="0" y="150" width="300" height="60" fill="#BDEFE2"/>
+          <circle cx="110" cy="82" r="26" fill="#F2B48B" stroke="#2A1846" stroke-width="4"/>
+          <path d="M86 74q24 -30 48 0" fill="#2A1846"/>
+          <rect x="82" y="104" width="56" height="80" rx="22" fill="#FF5A3C" stroke="#2A1846" stroke-width="4"/>
+          <circle cx="102" cy="84" r="3.5" fill="#2A1846"/><circle cx="120" cy="84" r="3.5" fill="#2A1846"/>
+          <path d="M100 94q10 8 20 0" stroke="#2A1846" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <g class="float">
+            <rect x="180" y="60" width="62" height="110" rx="14" fill="#2A1846"/>
+            <rect x="186" y="68" width="50" height="94" rx="9" fill="#FFC83A"/>
+            <circle cx="211" cy="105" r="18" fill="none" stroke="#22BFA0" stroke-width="4" stroke-dasharray="80 120"/>
+            <circle cx="211" cy="105" r="4" fill="#2A1846"/><circle cx="203" cy="96" r="3" fill="#2A1846"/><circle cx="219" cy="96" r="3" fill="#2A1846"/>
+            <rect x="192" y="140" width="38" height="14" rx="5" fill="#fff"/>
+          </g>
+          <g class="shake"><circle cx="152" cy="92" r="12" fill="#F2B48B" stroke="#2A1846" stroke-width="4"/><path d="M152 80v-14M146 82l-6 -12M158 82l6 -12" stroke="#2A1846" stroke-width="5" stroke-linecap="round"/></g>
+          <path d="M160 110l20 0" stroke="#22BFA0" stroke-width="3" stroke-dasharray="4 5"/>
+        </svg>
+        <div class="cap"><span class="num">2</span><span class="dz">سامي حلّ صوتي وبدا يشير قدّام الكاميرا.</span><p>Sami ouvre Souty et fait ses signes devant la caméra.</p></div>
+      </article>
+      <article class="panel p3">
+        <svg viewBox="0 0 300 210" role="img" aria-label="Le téléphone parle à voix haute et l'agent sourit">
+          <rect x="0" y="150" width="300" height="60" fill="#FFC7D6"/>
+          <rect x="150" y="120" width="140" height="60" rx="8" fill="#B9A8FF" stroke="#2A1846" stroke-width="4"/>
+          <circle cx="225" cy="78" r="26" fill="#C98A62" stroke="#2A1846" stroke-width="4"/>
+          <rect x="198" y="100" width="54" height="30" rx="14" fill="#22BFA0" stroke="#2A1846" stroke-width="4"/>
+          <circle cx="216" cy="76" r="7" fill="none" stroke="#2A1846" stroke-width="3"/><circle cx="236" cy="76" r="7" fill="none" stroke="#2A1846" stroke-width="3"/>
+          <path d="M214 90q11 10 22 0" stroke="#2A1846" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path class="heart" d="M262 40c-6-10-20-4-16 6l16 14 16-14c4-10-10-16-16-6z" fill="#FF5A3C"/>
+          <circle cx="80" cy="82" r="26" fill="#F2B48B" stroke="#2A1846" stroke-width="4"/>
+          <path d="M56 74q24 -30 48 0" fill="#2A1846"/>
+          <rect x="52" y="104" width="56" height="80" rx="22" fill="#FF5A3C" stroke="#2A1846" stroke-width="4"/>
+          <path d="M68 84q4 -4 8 0M86 84q4 -4 8 0" stroke="#2A1846" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <path d="M70 94q11 12 22 0" stroke="#2A1846" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <g class="float"><rect x="112" y="110" width="30" height="50" rx="7" fill="#2A1846"/><rect x="115" y="114" width="24" height="42" rx="4" fill="#FFC83A"/></g>
+          <g class="sw" stroke="#FF5A3C" stroke-width="4" fill="none" stroke-linecap="round"><path d="M150 120q8 10 0 20"/><path d="M160 112q14 18 0 36"/><path d="M170 104q20 26 0 52"/></g>
+          <rect x="96" y="20" width="110" height="40" rx="16" fill="#fff" stroke="#2A1846" stroke-width="4"/>
+          <text x="151" y="48" text-anchor="middle" font-family="Baloo Bhaijaan 2, sans-serif" font-weight="800" font-size="18" fill="#2A1846">أصم · سبيطار</text>
+        </svg>
+        <div class="cap"><span class="num">3</span><span class="dz">التليفون نطق بصوت عالي… والموظّف فهم!</span><p>Le téléphone parle à voix haute. L'agent comprend et peut aider Sami.</p></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 3 STEPS ================= -->
+<section class="page">
+  <div class="wrap">
+    <div class="head">
+      <span class="dz">ساهلة: ثلاثة خطوات</span>
+      <h2>Trois gestes. Essaie le deuxième : appuie et tiens le bouton.</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="badge">1</span>
+        <svg class="ill" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="#FFE4EC"/><rect x="38" y="20" width="44" height="80" rx="12" fill="#2A1846"/><rect x="43" y="27" width="34" height="66" rx="7" fill="#FFC83A"/><circle cx="60" cy="50" r="10" fill="none" stroke="#2A1846" stroke-width="4"/><circle cx="60" cy="50" r="4" fill="#2A1846"/></svg>
+        <span class="dz">وجّه الكاميرا</span>
+        <p>Pose le téléphone devant toi, la caméra vers tes mains.</p>
+      </div>
+      <div class="step">
+        <span class="badge">2</span>
+        <button class="holdbtn" id="hold" type="button" aria-label="Appuie et tiens pour verrouiller un signe">
+          <svg viewBox="0 0 174 174" aria-hidden="true"><circle class="tr" cx="87" cy="87" r="80"/><circle class="fl" id="holdFill" cx="87" cy="87" r="80" stroke-dasharray="503" stroke-dashoffset="503"/></svg>
+          <span class="inner" id="holdTxt"><span class="dz">اضغط وأمسك</span><small>appuie et tiens</small></span>
+        </button>
+        <span class="dz">أشّر واستنى</span>
+        <p>Tiens ton signe un petit moment. L'anneau se remplit, et le mot est validé.</p>
+        <span class="status" id="holdStatus" aria-live="polite"></span>
+      </div>
+      <div class="step">
+        <span class="badge">3</span>
+        <button class="speakmini" id="speakMini" type="button" aria-label="Faire parler le téléphone">
+          <svg viewBox="0 0 60 60" aria-hidden="true"><path d="M8 22v16h10l14 12V10L18 22z" fill="#2A1846"/><g class="sw2" stroke="#FF5A3C" stroke-width="4" fill="none" stroke-linecap="round"><path d="M40 22q6 8 0 16"/><path d="M46 16q12 14 0 28"/></g></svg>
+        </button>
+        <span class="dz">اضغط ويتكلّم</span>
+        <p>Un seul toucher, et le téléphone dit ta phrase à voix haute.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PLAY ================= -->
+<section class="page paper wave-top" id="jouer">
+  <div class="wrap">
+    <div class="head">
+      <span class="dz">إيجا نلعبو!</span>
+      <h2>Choisis des mots : la main fait le signe, la phrase se construit, puis fais parler le téléphone.</h2>
+    </div>
+    <div class="play">
+      <div class="stage">
+        <canvas id="handCanvas" aria-label="Main dessinée qui fait des signes"></canvas>
+        <div class="say" id="say" lang="ar">✋</div>
+        <span class="note">Dessin pour expliquer l'idée : les vrais signes viennent de la Langue des Signes Tunisienne.</span>
+      </div>
+      <div class="wordpad">
+        <span class="dz">اختار كلمة</span>
+        <div class="wgrid" id="wgrid"></div>
+        <div class="sentence" id="sentence" aria-live="polite"><span class="empty">Ta phrase apparaît ici</span></div>
+        <div class="row">
+          <button class="btn sun" id="speakBig" type="button">🔊 انطق الجملة</button>
+          <button class="btn white small" id="reset" type="button">Recommencer</button>
+        </div>
+        <p class="tiny" id="voiceNote"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TRUE / FALSE ================= -->
+<section class="page">
+  <div class="wrap">
+    <div class="head">
+      <span class="dz">صحيح ولا غالط؟</span>
+      <h2>Vrai ou faux ? Touche une carte pour la retourner.</h2>
+    </div>
+    <div class="cards" id="cards"></div>
+    <p class="score" id="score">0 / 5 cartes retournées</p>
+  </div>
+</section>
+
+<!-- ================= OFFLINE ================= -->
+<section class="page paper wave-top">
+  <div class="wrap offline">
+    <div class="sky" id="sky">
+      <svg viewBox="0 0 560 385" aria-hidden="true">
+        <g class="cloud"><ellipse cx="80" cy="80" rx="60" ry="24" fill="#fff"/><ellipse cx="110" cy="66" rx="36" ry="26" fill="#fff"/></g>
+        <g class="cloud c2"><ellipse cx="60" cy="150" rx="46" ry="18" fill="#fff"/><ellipse cx="84" cy="140" rx="28" ry="20" fill="#fff"/></g>
+        <g class="plane"><path d="M0 200l70 -14 30 -34 14 4 -14 32 40 -6 12 -12 10 2 -6 20 6 18 -10 2 -12 -12 -40 -4 14 32 -14 4 -30 -34z" fill="#FF5A3C" stroke="#2A1846" stroke-width="4" stroke-linejoin="round"/></g>
+        <!-- wifi -->
+        <g class="wifi" transform="translate(440 70)" stroke="#2A1846" stroke-width="7" fill="none" stroke-linecap="round"><path d="M-36 -6q36 -30 72 0"/><path d="M-24 8q24 -20 48 0"/><path d="M-12 22q12 -10 24 0"/></g>
+        <g class="xmark" transform="translate(440 82)" stroke="#FF5A3C" stroke-width="8" stroke-linecap="round"><path d="M-30 -30l60 60M30 -30l-60 60"/></g>
+        <!-- ground + phone buddy -->
+        <path d="M0 330q140 -40 280 0t280 0v60H0z" fill="#22BFA0"/>
+        <g transform="translate(250 200)">
+          <rect x="0" y="0" width="70" height="120" rx="16" fill="#2A1846"/>
+          <rect x="6" y="7" width="58" height="104" rx="11" fill="#FFC83A"/>
+          <ellipse cx="24" cy="45" rx="5" ry="7" fill="#2A1846"/><ellipse cx="46" cy="45" rx="5" ry="7" fill="#2A1846"/>
+          <path d="M22 62q13 14 26 0" stroke="#2A1846" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <rect x="14" y="84" width="42" height="16" rx="6" fill="#fff"/>
+        </g>
+      </svg>
+    </div>
+    <div>
+      <div class="head" style="text-align:start;justify-items:start;margin-bottom:18px">
+        <span class="dz">ما فماش إنترنت؟ ماثمّاش مشكل</span>
+        <h2>Pas d'Internet ? Pas de problème.</h2>
+      </div>
+      <p style="color:var(--plum-soft)">Souty fait tout dans le téléphone. Rien n'est envoyé sur Internet, et tes images ne quittent jamais l'appareil. Essaie : coupe le réseau.</p>
+      <label class="toggle" for="air" style="margin-top:20px"><input type="checkbox" id="air"> Mode avion ✈️</label>
+      <div class="offmsg" id="offmsg"><span class="dz" id="offDz">الشبكة خدّامة، وصوتي خدّام</span><span id="offFr">Le réseau marche, et Souty aussi.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= REAL STORY ================= -->
+<section class="page story">
+  <div class="hearts" id="hearts" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="head">
+      <span class="dz">والحكاية الحقيقية؟</span>
+      <h2>Le premier vrai essai</h2>
+    </div>
+    <p class="tear">Un ami sourd a essayé Souty. Il a pleuré en entendant <mark>sa phrase</mark> sortir du téléphone. Puis il a demandé : « encore plus de mots ».</p>
+    <p class="sub">C'est maintenant notre mission : ajouter les mots du quotidien, choisis avec les personnes sourdes elles-mêmes. Il préfère rester anonyme, mais il aide l'équipe à construire la suite.</p>
+  </div>
+</section>
+
+<!-- ================= CTA ================= -->
+<section class="page">
+  <div class="wrap cta">
+    <span class="dz">جرّب صوتي وشاركها</span>
+    <h2 style="font-size:clamp(1.3rem,3vw,1.8rem)">Essaie Souty, et parle-en à quelqu'un qui en a besoin.</h2>
+    <p>Ouvre le lien sur un téléphone, autorise la caméra, et fais un signe. Tu connais une personne sourde, une famille, une association ? Envoie-leur le lien.</p>
+    <div class="row" style="justify-content:center">
+      <a class="btn" href="https://souty.vercel.app" target="_blank" rel="noopener">Ouvrir Souty</a>
+      <span class="link-pill"><span id="link">souty.vercel.app</span><button class="btn sun small" id="copy" type="button">Copier le lien</button></span>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">Souty · Équipe Souty, Meknassy (Sidi Bouzid) · Social Tech Challenge 2026. Sami est un personnage inventé. Signes appris à partir du Tunisian Sign Language Dataset (Chakroun et Jerbi, 2023, avec l'ATILS, CC BY 4.0).</div>
+</footer>
+
+<script>
+(() => {
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- confetti ---------- */
+const cv = document.getElementById('confetti'), cx = cv.getContext('2d');
+let bits = [], raf = null;
+const COLORS = ['#FF5A3C','#FFC83A','#22BFA0','#B9A8FF','#FFB4C8'];
+function confetti(x, y, n = 60){
+  if (RM) return;
+  const dpr = Math.min(2, devicePixelRatio||1);
+  cv.width = innerWidth*dpr; cv.height = innerHeight*dpr; cx.setTransform(dpr,0,0,dpr,0,0);
+  for (let i=0;i<n;i++) bits.push({ x, y, vx:(Math.random()-.5)*9, vy:-Math.random()*9-3, r:Math.random()*6+4, c:COLORS[i%5], a:Math.random()*6, va:(Math.random()-.5)*.3, life:1 });
+  if (!raf) raf = requestAnimationFrame(tick);
+}
+function tick(){
+  cx.clearRect(0,0,innerWidth,innerHeight);
+  bits.forEach(b => { b.vy += .28; b.x += b.vx; b.y += b.vy; b.a += b.va; b.life -= .012;
+    cx.save(); cx.globalAlpha = Math.max(0,b.life); cx.translate(b.x,b.y); cx.rotate(b.a); cx.fillStyle = b.c; cx.fillRect(-b.r/2,-b.r/4,b.r,b.r/2); cx.restore(); });
+  bits = bits.filter(b => b.life > 0 && b.y < innerHeight+40);
+  raf = bits.length ? requestAnimationFrame(tick) : (cx.clearRect(0,0,innerWidth,innerHeight), null);
+}
+const centerOf = el => { const r = el.getBoundingClientRect(); return [r.left + r.width/2, r.top + r.height/2]; };
+
+/* ---------- speech ---------- */
+function arabicVoice(){
+  const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
+  return vs.find(v => /^ar[-_]TN/i.test(v.lang)) || vs.find(v => /^ar/i.test(v.lang)) || null;
+}
+if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => {};
+function say(text, onEnd){
+  const v = arabicVoice();
+  if (window.speechSynthesis && v){
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.voice = v; u.lang = v.lang; u.rate = .9; u.onend = onEnd; u.onerror = onEnd; speechSynthesis.speak(u); return true; } catch(e){}
+  }
+  setTimeout(() => onEnd && onEnd(), 1800);
+  return false;
+}
+
+/* hero */
+document.getElementById('sayHi').addEventListener('click', e => {
+  const ok = say('عسلامة! أنا صوتي');
+  confetti(...centerOf(e.currentTarget), 50);
+  e.currentTarget.textContent = ok ? 'عسلامة ! 👋' : 'عسلامة ! (pas de voix arabe ici)';
+  setTimeout(() => e.currentTarget.textContent = 'Fais-le parler 🔊', 2600);
+});
+
+/* ---------- hold to lock ---------- */
+const hold = document.getElementById('hold'), holdFill = document.getElementById('holdFill'), holdTxt = document.getElementById('holdTxt'), holdStatus = document.getElementById('holdStatus');
+const LEN = 503, HOLD_MS = 700;
+let holdStart = 0, holdRaf = null, holdWords = ['أصم','بابا','سبيطار','الخميس'], hw = 0;
+function holdFrame(now){
+  const t = Math.min(1,(now-holdStart)/HOLD_MS);
+  holdFill.style.strokeDashoffset = LEN*(1-t);
+  if (t >= 1){
+    hold.classList.add('ok'); const w = holdWords[hw++ % holdWords.length];
+    holdTxt.innerHTML = `<span class="dz" style="font-size:1.8rem">${w}</span><small>validé !</small>`;
+    holdStatus.textContent = 'Bravo ! Le mot est validé ✔';
+    confetti(...centerOf(hold), 70);
+    if (navigator.vibrate) { try { navigator.vibrate(40); } catch(e){} }
+    holdRaf = null; return;
+  }
+  holdRaf = requestAnimationFrame(holdFrame);
+}
+function holdDown(e){
+  e.preventDefault();
+  hold.classList.remove('ok'); holdStatus.textContent = 'Tiens… tiens…';
+  holdTxt.innerHTML = '<span class="dz">أمسك…</span><small>continue</small>';
+  holdStart = performance.now(); cancelAnimationFrame(holdRaf); holdRaf = requestAnimationFrame(holdFrame);
+}
+function holdUp(){
+  if (holdRaf){ cancelAnimationFrame(holdRaf); holdRaf = null; holdFill.style.strokeDashoffset = LEN;
+    holdTxt.innerHTML = '<span class="dz">اضغط وأمسك</span><small>appuie et tiens</small>';
+    holdStatus.textContent = 'Un peu plus longtemps !'; }
+}
+hold.addEventListener('pointerdown', holdDown);
+['pointerup','pointerleave','pointercancel'].forEach(ev => hold.addEventListener(ev, holdUp));
+hold.addEventListener('keydown', e => { if ((e.key===' '||e.key==='Enter') && !e.repeat) holdDown(e); });
+hold.addEventListener('keyup', e => { if (e.key===' '||e.key==='Enter') holdUp(); });
+
+const speakMini = document.getElementById('speakMini');
+speakMini.addEventListener('click', () => {
+  speakMini.classList.add('talk');
+  say('أصم، بابا، سبيطار، الخميس', () => speakMini.classList.remove('talk'));
+  confetti(...centerOf(speakMini), 40);
+});
+
+/* ---------- cartoon hand (21 landmarks, thick friendly strokes) ---------- */
+const FINGERS = [
+  { base:[-0.30,0.30,0.06], a:-48, L:[0.34,0.30,0.26], thumb:true },
+  { base:[-0.24,0.86,0], a:-9, L:[0.46,0.28,0.22] },
+  { base:[-0.02,0.92,0], a:0,  L:[0.50,0.32,0.24] },
+  { base:[ 0.19,0.86,0], a:8,  L:[0.46,0.30,0.22] },
+  { base:[ 0.37,0.72,0], a:18, L:[0.36,0.23,0.19] },
+];
+const D = Math.PI/180;
+function handPoints(c, spread){
+  const pts = [[0,0,0]];
+  FINGERS.forEach((f,i) => {
+    let p = f.base.slice(); pts.push(p.slice()); const cu = c[i];
+    if (f.thumb){ for (let k=0;k<3;k++){ const a=(f.a+cu*(55+18*k))*D, th=cu*(22+16*k)*D; p=[p[0]+f.L[k]*Math.sin(a)*Math.cos(th), p[1]+f.L[k]*Math.cos(a)*Math.cos(th), p[2]+f.L[k]*Math.sin(th)]; pts.push(p.slice()); } }
+    else { const a=f.a*spread*D, b=[85,105,75]; let th=0; for (let k=0;k<3;k++){ th+=cu*b[k]*D; p=[p[0]+f.L[k]*Math.sin(a)*Math.cos(th), p[1]+f.L[k]*Math.cos(a)*Math.cos(th), p[2]+f.L[k]*Math.sin(th)]; pts.push(p.slice()); } }
+  });
+  return pts.map(q => [q[0], q[1]-0.72, q[2]]);
+}
+const POSES = [
+  { c:[0,0,0,0,0], s:1.25 }, { c:[0.95,0,0,1,1], s:2.1 }, { c:[0.85,0,1,1,1], s:1 },
+  { c:[0.55,0.52,0,0,0], s:1.4 }, { c:[0.75,1,1,1,1], s:1 }, { c:[0,1,1,1,0], s:1.6 }, { c:[0.9,0,0,0,1], s:1.3 },
+];
+const hc = document.getElementById('handCanvas'), hx = hc.getContext('2d'), stage = hc.parentElement;
+let cur = POSES[0].c.slice(), curS = POSES[0].s, ringP = null;
+function drawHand(){
+  const r = stage.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio||1);
+  if (hc.width !== Math.round(r.width*dpr)){ hc.width = r.width*dpr; hc.height = r.height*dpr; }
+  hx.setTransform(dpr,0,0,dpr,0,0); hx.clearRect(0,0,r.width,r.height);
+  const t = performance.now(), tremor = RM ? 0 : Math.sin(t/400)*0.012;
+  const pts = handPoints(cur.map(v=>Math.max(0,v+tremor)), curS);
+  const S = r.width*0.27, cx0 = r.width/2, cy0 = r.height*0.6;
+  const P = pts.map(p => { const z = 1/(1-p[2]*0.2); return [cx0+p[0]*S*z, cy0-p[1]*S*z]; });
+  // ring
+  if (ringP !== null){
+    const c = [cx0, cy0 - 0.25*S], R = S*1.25;
+    hx.lineWidth = 10; hx.lineCap='round'; hx.strokeStyle='rgba(42,24,70,.12)'; hx.beginPath(); hx.arc(c[0],c[1],R,0,Math.PI*2); hx.stroke();
+    hx.strokeStyle = ringP>=1 ? '#22BFA0' : '#FF5A3C'; hx.beginPath(); hx.arc(c[0],c[1],R,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.min(1,ringP)); hx.stroke();
+  }
+  // arm
+  hx.lineCap='round'; hx.lineJoin='round';
+  const wrist = P[0];
+  const arm = (w,col) => { hx.strokeStyle=col; hx.lineWidth=w; hx.beginPath(); hx.moveTo(wrist[0], wrist[1]); hx.lineTo(wrist[0]+S*0.05, r.height+20); hx.stroke(); };
+  arm(S*0.62,'#2A1846'); arm(S*0.62-10,'#FF5A3C');
+  // palm polygon
+  const palm = [0,1,5,9,13,17].map(i=>P[i]);
+  const finger = idx => idx.map(i=>P[i]);
+  const chains = [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]];
+  const W = S*0.2;
+  // outline pass
+  hx.strokeStyle='#2A1846'; hx.fillStyle='#2A1846'; hx.lineWidth=W+10;
+  chains.forEach(ch => { hx.beginPath(); finger(ch).forEach((p,i)=> i?hx.lineTo(...p):hx.moveTo(...p)); hx.stroke(); });
+  hx.lineWidth=10; hx.beginPath(); palm.forEach((p,i)=> i?hx.lineTo(...p):hx.moveTo(...p)); hx.closePath(); hx.stroke(); hx.fill();
+  // skin pass
+  hx.strokeStyle='#F2B48B'; hx.fillStyle='#F2B48B'; hx.lineWidth=W;
+  hx.beginPath(); palm.forEach((p,i)=> i?hx.lineTo(...p):hx.moveTo(...p)); hx.closePath(); hx.fill();
+  hx.lineWidth=W*0.9; hx.beginPath(); palm.forEach((p,i)=> i?hx.lineTo(...p):hx.moveTo(...p)); hx.closePath(); hx.stroke();
+  hx.lineWidth=W;
+  chains.forEach(ch => { hx.beginPath(); finger(ch).forEach((p,i)=> i?hx.lineTo(...p):hx.moveTo(...p)); hx.stroke(); });
+  // knuckle lines + nails
+  [4,8,12,16,20].forEach(i => { hx.fillStyle='#FFE1CF'; hx.beginPath(); hx.arc(P[i][0],P[i][1],W*0.22,0,Math.PI*2); hx.fill(); });
+}
+function loop(){ drawHand(); if (!RM) requestAnimationFrame(loop); }
+loop(); new ResizeObserver(drawHand).observe(stage);
+const ease = t => t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+function anim(ms, fn){ return new Promise(res => { if (RM){ fn(1); drawHand(); return res(); } const s = performance.now(); (function f(n){ const t=Math.min(1,(n-s)/ms); fn(t); t<1?requestAnimationFrame(f):res(); })(s); }); }
+
+/* word game */
+const WORDS = [
+  ['أصم','sourd'],['بابا','papa'],['طفل','enfant'],['سبيطار','hôpital'],['مستوصف','dispensaire'],
+  ['الخميس','jeudi'],['لواج','louage'],['ايه','oui'],['لا','non'],['لاباس','ça va'],
+];
+const wgrid = document.getElementById('wgrid'), sentenceEl = document.getElementById('sentence'), sayEl = document.getElementById('say'), voiceNote = document.getElementById('voiceNote');
+let sentence = [], queue = [], busy = false, pc = 1;
+WORDS.forEach(([ar, fr]) => {
+  const b = document.createElement('button'); b.className='wbtn'; b.type='button';
+  b.innerHTML = `<b>${ar}</b><small>${fr}</small>`;
+  b.addEventListener('click', () => { queue.push([ar,fr]); run(); });
+  wgrid.appendChild(b);
+});
+function renderSentence(){
+  sentenceEl.innerHTML = sentence.length ? '' : '<span class="empty">Ta phrase apparaît ici</span>';
+  sentence.forEach(([ar]) => { const s = document.createElement('span'); s.className='chip'; s.textContent = ar; sentenceEl.appendChild(s); });
+}
+async function signOne([ar, fr]){
+  const pose = POSES[pc++ % (POSES.length-1) + 1], f = cur.slice(), fs = curS;
+  ringP = 0;
+  await anim(450, t => { const e = ease(t); for (let i=0;i<5;i++) cur[i] = f[i]+(pose.c[i]-f[i])*e; curS = fs+(pose.s-fs)*e; });
+  await anim(700, t => { ringP = t; });
+  ringP = 1; sayEl.textContent = ar; sayEl.classList.remove('bump'); void sayEl.offsetWidth; sayEl.classList.add('bump');
+  sentence.push([ar, fr]); renderSentence();
+  confetti(...centerOf(sayEl), 30);
+  await new Promise(r => setTimeout(r, RM?0:350)); ringP = null; if (RM) drawHand();
+}
+async function run(){ if (busy) return; busy = true; while (queue.length) await signOne(queue.shift()); busy = false; }
+document.getElementById('speakBig').addEventListener('click', e => {
+  if (!sentence.length){ voiceNote.textContent = "Choisis d'abord un ou deux mots."; return; }
+  const ok = say(sentence.map(w=>w[0]).join(' '));
+  const fr = sentence.map(w=>w[1]).join(', ');
+  voiceNote.textContent = ok ? `Le téléphone dit : « ${fr} »` : `Pas de voix arabe sur cet appareil. La phrase veut dire : « ${fr} ».`;
+  confetti(...centerOf(e.currentTarget), 80);
+});
+document.getElementById('reset').addEventListener('click', () => { queue=[]; sentence=[]; renderSentence(); sayEl.textContent='✋'; voiceNote.textContent=''; });
+
+/* ---------- true / false ---------- */
+const FACTS = [
+  { q:"Une personne sourde peut toujours écrire ce qu'elle veut dire.", dz:'الأصم ينجم ديما يكتب؟', ok:false, a:"Pas toujours. Pour beaucoup de personnes sourdes, la langue des signes est la première langue, et l'arabe écrit vient après." },
+  { q:"Il faut Internet pour utiliser Souty.", dz:'لازم إنترنت؟', ok:false, a:"Faux. Une fois installé, Souty marche sans réseau, même en mode avion." },
+  { q:"Souty envoie mes images sur Internet.", dz:'تصاوري تمشي للإنترنت؟', ok:false, a:"Jamais. La caméra est lue dans le téléphone, puis les images sont oubliées." },
+  { q:"N'importe quel smartphone suffit.", dz:'أي تليفون يكفي؟', ok:true, a:"Vrai. Pas besoin d'appareil spécial : la caméra du téléphone suffit." },
+  { q:"La Langue des Signes Tunisienne a ses propres signes.", dz:'لغة الإشارة التونسية عندها إشاراتها؟', ok:true, a:"Vrai. C'est pour ça que Souty apprend avec de vrais signes tunisiens, pas avec la langue des signes américaine." },
+];
+const cardsEl = document.getElementById('cards'), scoreEl = document.getElementById('score');
+let flipped = new Set();
+FACTS.forEach((f,i) => {
+  const b = document.createElement('button'); b.className='flip'; b.type='button'; b.setAttribute('aria-pressed','false');
+  b.innerHTML = `<span class="in"><span class="face front"><span class="dzq">${f.dz}</span><span class="q">${f.q}</span><span class="tap">Touche pour voir la réponse</span></span><span class="face back ${f.ok?'':'no'}"><span class="verdict">${f.ok?'Vrai ✔':'Faux ✘'}</span><p>${f.a}</p></span></span>`;
+  b.addEventListener('click', () => {
+    const on = b.classList.toggle('on'); b.setAttribute('aria-pressed', on);
+    if (on && !flipped.has(i)){ flipped.add(i); confetti(...centerOf(b), 25);
+      scoreEl.textContent = flipped.size === FACTS.length ? '5 / 5 : tu sais tout sur Souty ! 🎉' : `${flipped.size} / 5 cartes retournées`;
+      if (flipped.size === FACTS.length) confetti(innerWidth/2, innerHeight/2, 140);
+    }
+  });
+  cardsEl.appendChild(b);
+});
+
+/* ---------- airplane ---------- */
+const air = document.getElementById('air'), sky = document.getElementById('sky'), offmsg = document.getElementById('offmsg');
+air.addEventListener('change', () => {
+  const on = air.checked;
+  sky.classList.remove('on'); void sky.offsetWidth; if (on) sky.classList.add('on');
+  offmsg.classList.toggle('on', on);
+  document.getElementById('offDz').textContent = on ? 'ما فماش شبكة… وصوتي مازال خدّام!' : 'الشبكة خدّامة، وصوتي خدّام';
+  document.getElementById('offFr').textContent = on ? "Plus de réseau, et Souty traduit toujours. Rien n'avait besoin d'Internet." : 'Le réseau marche, et Souty aussi.';
+  if (on) confetti(...centerOf(offmsg), 40);
+});
+
+/* ---------- floating hearts in the story ---------- */
+if (!RM){
+  const hearts = document.getElementById('hearts');
+  for (let i=0;i<14;i++){ const s = document.createElement('span'); s.textContent='♥'; s.style.left = (Math.random()*100)+'%'; s.style.animationDuration = (9+Math.random()*9)+'s'; s.style.animationDelay = (-Math.random()*14)+'s'; s.style.fontSize = (14+Math.random()*22)+'px'; hearts.appendChild(s); }
+}
+
+/* ---------- copy link ---------- */
+document.getElementById('copy').addEventListener('click', e => {
+  const btn = e.currentTarget, txt = 'https://' + document.getElementById('link').textContent;
+  const done = m => { btn.textContent = m; setTimeout(() => btn.textContent = 'Copier le lien', 1800); };
+  try { navigator.clipboard.writeText(txt).then(() => { done('Copié ✔'); confetti(...centerOf(btn), 30); }, sel); } catch(err){ sel(); }
+  function sel(){ const r = document.createRange(); r.selectNodeContents(document.getElementById('link')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); done('Sélectionné'); }
+});
+})();
+</script>
+
+</body></html>

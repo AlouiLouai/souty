@@ -1,17 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Sans_Arabic } from "next/font/google";
+import { Baloo_Bhaijaan_2, Readex_Pro } from "next/font/google";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
+const readexPro = Readex_Pro({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600"],
   variable: "--font-sans",
   display: "swap",
 });
 
-const notoSansArabic = Noto_Sans_Arabic({
-  subsets: ["arabic"],
-  variable: "--font-arabic",
+const balooBhaijaan2 = Baloo_Bhaijaan_2({
+  subsets: ["arabic", "latin"],
+  weight: ["500", "700", "800"],
+  variable: "--font-display",
   display: "swap",
 });
 
@@ -29,7 +31,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Souty",
   },
   other: {
@@ -47,7 +49,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#000000",
+  themeColor: "#E9ECFF",
 };
 
 export default function RootLayout({
@@ -56,7 +58,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" className={`${inter.variable} ${notoSansArabic.variable}`}>
+    <html lang="ar" className={`${readexPro.variable} ${balooBhaijaan2.variable}`}>
       <body className="font-sans antialiased">
         <ServiceWorkerRegistration />
         {children}

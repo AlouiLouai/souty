@@ -70,13 +70,13 @@ function StepOverlay({ step }: { step: Step }) {
       )}
       <div className={`absolute z-40 ${step.tooltipClass}`}>
         {step.arrow === "up" && (
-          <div className="mx-auto h-2.5 w-2.5 -translate-y-1/2 rotate-45 bg-card" />
+          <div className="mx-auto h-2.5 w-2.5 -translate-y-1/2 rotate-45 border-2 border-border bg-card" />
         )}
-        <div className="rounded-2xl border border-border bg-card p-4 text-center shadow-xl">
-          <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-background">
+        <div className="rounded-[1.5rem] border-2 border-border bg-card p-4 text-center shadow-[5px_5px_0_var(--border)]">
+          <div className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-border bg-highlight text-highlight-foreground">
             <Icon className="h-4 w-4" />
           </div>
-          <p dir="rtl" className="text-sm font-semibold text-foreground">
+          <p dir="rtl" className="font-display text-sm font-bold text-foreground">
             {step.title}
           </p>
           <p dir="rtl" className="mt-1 text-xs leading-relaxed text-muted-foreground">
@@ -84,7 +84,7 @@ function StepOverlay({ step }: { step: Step }) {
           </p>
         </div>
         {step.arrow === "down" && (
-          <div className="mx-auto h-2.5 w-2.5 translate-y-1/2 rotate-45 bg-card" />
+          <div className="mx-auto h-2.5 w-2.5 translate-y-1/2 rotate-45 border-2 border-border bg-card" />
         )}
       </div>
     </>

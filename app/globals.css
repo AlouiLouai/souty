@@ -3,46 +3,59 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: "Inter", system-ui, sans-serif;
-  color-scheme: dark;
+  --font-sans: "Readex Pro", system-ui, sans-serif;
+  --font-display: "Baloo Bhaijaan 2", "Readex Pro", system-ui, sans-serif;
+  color-scheme: light;
 
-  /* Near-black, not pure #000: true black + white text is the highest
-     possible contrast, which reads great for a quick glance but tires the
-     eyes over the sustained camera use this app actually gets. Still dark
-     enough to read as "black theme" at a glance, and stays a shade below
-     --card (7%) so surfaces are still visually distinct from the page. */
-  --background: 0 0% 4%;
-  --foreground: 0 0% 100%;
+  /* Souty's picture-book palette: a bright sky page, white "paper" cards,
+     ink-plum text/borders, and a small set of candy accents (harissa,
+     sun, mint, lilac, pink) - same roles as Souty pour tous.html. */
+  --sky: #e9ecff;
+  --paper: #ffffff;
+  --plum: #2a1846;
+  --plum-soft: #5d4e7a;
+  --harissa: #ff5a3c;
+  --sun: #ffc83a;
+  --mint: #22bfa0;
+  --lilac: #b9a8ff;
+  --pink: #ffb4c8;
+  --skin-line: #b9683f;
 
-  --card: 0 0% 7%;
-  --card-foreground: 0 0% 100%;
+  --background: var(--sky);
+  --foreground: var(--plum);
 
-  --popover: 0 0% 7%;
-  --popover-foreground: 0 0% 100%;
+  --card: var(--paper);
+  --card-foreground: var(--plum);
 
-  --primary: 217 91% 60%;
-  --primary-foreground: 0 0% 100%;
+  --popover: var(--paper);
+  --popover-foreground: var(--plum);
 
-  --highlight: 188 86% 53%;
-  --highlight-foreground: 222 47% 11%;
+  --primary: var(--harissa);
+  --primary-foreground: #ffffff;
 
-  --secondary: 0 0% 14%;
-  --secondary-foreground: 0 0% 100%;
+  /* Reuses harissa: the html itself highlights emphasised words with this
+     color, and it's the only accent in the palette that stays readable as
+     text over a white card. */
+  --highlight: var(--harissa);
+  --highlight-foreground: #ffffff;
 
-  --muted: 0 0% 14%;
-  --muted-foreground: 0 0% 63%;
+  --secondary: var(--lilac);
+  --secondary-foreground: var(--plum);
 
-  --accent: 0 0% 16%;
-  --accent-foreground: 0 0% 100%;
+  --muted: #dcd6f7;
+  --muted-foreground: var(--plum-soft);
 
-  --destructive: 0 63% 44%;
-  --destructive-foreground: 0 0% 100%;
+  --accent: #ddf8f1;
+  --accent-foreground: var(--plum);
 
-  --border: 0 0% 18%;
-  --input: 0 0% 18%;
-  --ring: 217 91% 60%;
+  --destructive: var(--skin-line);
+  --destructive-foreground: #ffffff;
 
-  --radius: 1rem;
+  --border: var(--plum);
+  --input: var(--plum);
+  --ring: var(--harissa);
+
+  --radius: 1.25rem;
 }
 
 @layer base {
@@ -55,7 +68,7 @@
     overscroll-behavior-y: none;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
     -webkit-tap-highlight-color: transparent;
   }
   * {
@@ -68,7 +81,7 @@
   height: 6px;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
+  background: var(--plum-soft);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-track {

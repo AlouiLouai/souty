@@ -643,10 +643,10 @@ export default function GestureScanner({
           so the flip-camera button underneath stays tappable. */}
       {phase === "ready" && paused && (
         <div className="pointer-events-none absolute inset-0 z-[15] flex flex-col items-center justify-center gap-3 bg-background/65">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-card/90">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-border bg-card/90">
             <Pause className="h-7 w-7 text-foreground" />
           </div>
-          <p dir="rtl" className="text-base font-semibold text-foreground">
+          <p dir="rtl" className="font-display text-base font-bold text-foreground">
             المسح متوقف
           </p>
         </div>
@@ -654,7 +654,7 @@ export default function GestureScanner({
 
       {showOverlayMessage && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/85 p-6 backdrop-blur-sm">
-          <div className="w-full max-w-xs rounded-2xl border border-border bg-card p-6 text-center">
+          <div className="w-full max-w-xs rounded-[1.5rem] border-2 border-border bg-card p-6 text-center shadow-[5px_5px_0_var(--border)]">
             {phase === "loading-model" && (
               <>
                 <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-foreground" />
@@ -679,7 +679,7 @@ export default function GestureScanner({
               phase === "unsupported") && (
               <>
                 <VideoOff className="mx-auto mb-3 h-8 w-8 text-destructive" />
-                <p className="text-sm font-semibold text-foreground">
+                <p dir="rtl" className="font-display text-sm font-bold text-foreground">
                   {phase === "camera-denied"
                     ? "الكاميرا محظورة"
                     : phase === "unsupported"

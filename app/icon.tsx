@@ -14,7 +14,7 @@ export default function Icon() {
           alignItems: "center",
           justifyContent: "center",
           borderRadius: 16,
-          background: "#000000",
+          background: "#2A1846",
         }}
       >
         <div
@@ -22,8 +22,8 @@ export default function Icon() {
             width: 34,
             height: 34,
             borderRadius: 10,
-            border: "3px solid rgba(255,255,255,0.9)",
-            background: "rgba(255,255,255,0.15)",
+            border: "3px solid #FFC83A",
+            background: "rgba(255,200,58,0.25)",
           }}
         />
       </div>

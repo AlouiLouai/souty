@@ -33,7 +33,7 @@ export default function TranslationPanel({
           <p
             dir="rtl"
             lang="ar"
-            className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5 text-4xl font-bold leading-tight text-foreground"
+            className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5 font-display text-4xl font-extrabold leading-tight text-foreground"
           >
             {sentenceWords.map((word, i) => {
               const isLast = i === sentenceWords.length - 1;
@@ -52,7 +52,10 @@ export default function TranslationPanel({
             })}
           </p>
         ) : (
-          <p dir="rtl" className="text-2xl font-semibold text-muted-foreground">
+          <p
+            dir="rtl"
+            className="font-display text-2xl font-bold text-muted-foreground"
+          >
             أظهر إشارة…
           </p>
         )}

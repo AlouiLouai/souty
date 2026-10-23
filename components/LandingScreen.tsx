@@ -41,7 +41,7 @@ export default function LandingScreen({ onStart, onOnboarding }: LandingScreenPr
             height={78}
             className="h-14 w-auto"
           />
-          <span className="text-5xl font-bold tracking-tight text-foreground">
+          <span className="font-display text-5xl font-extrabold tracking-tight text-foreground">
             outy
           </span>
         </div>
@@ -55,9 +55,9 @@ export default function LandingScreen({ onStart, onOnboarding }: LandingScreenPr
           <div
             key={text}
             style={{ animationDelay: `${100 + i * 80}ms` }}
-            className="flex animate-fade-in-up items-center gap-3 rounded-2xl border border-border bg-card p-4"
+            className="flex animate-fade-in-up items-center gap-3 rounded-2xl border-2 border-border bg-card p-4 shadow-[3px_3px_0_var(--border)]"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary">
               <Icon className="h-4 w-4 text-foreground" />
             </div>
             <p dir="rtl" className="text-sm text-foreground">

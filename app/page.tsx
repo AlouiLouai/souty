@@ -114,7 +114,7 @@ export default function HomePage() {
               className="h-16 w-auto"
               priority
             />
-            <span className="text-4xl font-bold tracking-tight text-foreground">
+            <span className="font-display text-4xl font-extrabold tracking-tight text-foreground">
               outy
             </span>
           </div>
@@ -139,7 +139,7 @@ export default function HomePage() {
         <div className="safe-top safe-x safe-bottom mx-auto flex h-[100dvh] max-w-md flex-col overflow-hidden">
           <header className="mb-2 flex shrink-0 items-center justify-between px-1 py-1">
             <div>
-              <h1 className="flex items-center gap-0.5 text-lg font-bold tracking-tight text-foreground">
+              <h1 className="flex items-center gap-0.5 font-display text-lg font-extrabold tracking-tight text-foreground">
                 <Image
                   src="/logo-mark.png"
                   alt="Souty"
