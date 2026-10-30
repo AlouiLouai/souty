@@ -8,17 +8,14 @@
   color-scheme: light;
 
   /* Souty's picture-book palette: a bright sky page, white "paper" cards,
-     ink-plum text/borders, and a small set of candy accents (harissa,
-     sun, mint, lilac, pink) - same roles as Souty pour tous.html. */
+     ink-plum text/borders and candy accents - same roles as
+     "Souty pour tous.html". */
   --sky: #e9ecff;
   --paper: #ffffff;
   --plum: #2a1846;
   --plum-soft: #5d4e7a;
   --harissa: #ff5a3c;
-  --sun: #ffc83a;
-  --mint: #22bfa0;
   --lilac: #b9a8ff;
-  --pink: #ffb4c8;
   --skin-line: #b9683f;
 
   --background: var(--sky);
@@ -26,9 +23,6 @@
 
   --card: var(--paper);
   --card-foreground: var(--plum);
-
-  --popover: var(--paper);
-  --popover-foreground: var(--plum);
 
   --primary: var(--harissa);
   --primary-foreground: #ffffff;
@@ -52,15 +46,14 @@
   --destructive-foreground: #ffffff;
 
   --border: var(--plum);
-  --input: var(--plum);
   --ring: var(--harissa);
 
-  --radius: 1.25rem;
 }
 
 @layer base {
   * {
     @apply border-border;
+    -webkit-font-smoothing: antialiased;
   }
   html,
   body {
@@ -70,9 +63,6 @@
   body {
     @apply bg-background text-foreground font-sans;
     -webkit-tap-highlight-color: transparent;
-  }
-  * {
-    -webkit-font-smoothing: antialiased;
   }
 }
 

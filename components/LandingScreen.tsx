@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { Hand, ShieldCheck, Volume2 } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 
 interface LandingScreenProps {
@@ -33,18 +33,7 @@ export default function LandingScreen({ onStart, onOnboarding }: LandingScreenPr
       />
 
       <div className="relative flex animate-fade-in-up flex-col items-center gap-3 text-center">
-        <div className="flex items-center gap-0.5">
-          <Image
-            src="/logo-mark.png"
-            alt=""
-            width={69}
-            height={78}
-            className="h-14 w-auto"
-          />
-          <span className="font-display text-5xl font-extrabold tracking-tight text-foreground">
-            outy
-          </span>
-        </div>
+        <Logo markClassName="h-14" textClassName="text-5xl" />
         <p dir="rtl" className="text-sm text-muted-foreground">
           كوّن جملة بلغة الإشارة والتطبيق ينطقها بالعربي
         </p>

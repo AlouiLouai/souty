@@ -119,17 +119,25 @@ roadmap past this ceiling.
 ```
 app/                     Next.js App Router (layout, page, manifest, error boundary)
 components/
-  GestureScanner.tsx     Camera + MediaPipe recognition + landmark overlay
+  GestureScanner.tsx     Camera + MediaPipe recognition + per-hand lock-in
+  ScannerWorkspace.tsx   Scanner + sentence panel, shared by app and tour
   TranslationPanel.tsx   Growing sentence + speak/undo/clear/pause controls
   LandingScreen.tsx      Entry screen
   OnboardingTour.tsx     3-step interactive tutorial on a live scanner
+  SplashScreen.tsx       Launch splash
   IdleExitPopup.tsx      "Put your hand back in frame" reminder
+  StatusDialog.tsx       Shared loading/error/reminder card
+  Logo.tsx               Logo mark + wordmark
   ServiceWorkerRegistration.tsx
-  ui/                    shadcn/ui primitives
-hooks/useSpeech.ts       Arabic voice selection + speak-on-demand
+  ui/                    Button / Card / Badge primitives
+hooks/
+  useSpeech.ts           Arabic voice selection + speak-on-demand
+  useSentence.ts         Sentence word list state
+  useIdleHandReminder.ts No-hand-in-frame reminder timer
 lib/
   gestureDictionary.ts   Model label -> Tunisian Arabic word (33 signs)
-  handConnections.ts     Hand skeleton graph for the overlay
+  handOverlay.ts         Canvas skeleton + progress ring drawing
+  mediapipeConsole.ts    Filters MediaPipe WASM log noise
 public/
   models/                Custom-trained 34-class gesture model (committed)
   wasm/                  Self-hosted MediaPipe runtime

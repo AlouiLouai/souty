@@ -57,10 +57,12 @@ database, no analytics. Every byte of inference happens on the user's device.
 
 | File | Role |
 |---|---|
-| `components/GestureScanner.tsx` | Camera lifecycle, model loading, detection loop, canvas overlay, per-hand lock-in state |
+| `components/GestureScanner.tsx` | Camera lifecycle, model loading, detection loop, per-hand lock-in state |
+| `lib/handOverlay.ts` | Canvas skeleton + progress ring / label drawing |
 | `lib/gestureDictionary.ts` | Model label → Tunisian Arabic word (`GESTURE_WORD_MAP`), `IGNORED_LABELS` |
-| `hooks/useSpeech.ts` | Arabic voice selection + `speakSentence` |
-| `app/page.tsx` | View orchestration (landing/onboarding/scanner), sentence state, idle reminder |
+| `hooks/useSpeech.ts` | Arabic voice selection + `speak` |
+| `hooks/useSentence.ts`, `hooks/useIdleHandReminder.ts` | Sentence state; no-hand reminder timer |
+| `app/page.tsx` | View orchestration (landing/onboarding/scanner) |
 | `public/sw.js` | Offline caching strategy |
 | `next.config.mjs` | Immutable caching headers for model/WASM; no-store for `sw.js` |
 

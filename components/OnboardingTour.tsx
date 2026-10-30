@@ -1,27 +1,23 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState, type ComponentType } from "react";
 import { Hand, MessageSquareText, RefreshCw, X } from "lucide-react";
-import GestureScanner from "@/components/GestureScanner";
-import TranslationPanel from "@/components/TranslationPanel";
+import ScannerWorkspace from "@/components/ScannerWorkspace";
 import { Button } from "@/components/ui/button";
-import { useSpeech } from "@/hooks/useSpeech";
+import { useSentence } from "@/hooks/useSentence";
 
 interface OnboardingTourProps {
   onFinish: () => void;
   onSkip: () => void;
 }
 
-type Region = "video" | "footer";
-
 interface Step {
-  region: Region;
-  icon: typeof Hand;
+  region: "video" | "footer";
+  icon: ComponentType<{ className?: string }>;
   title: string;
   text: string;
-  // Spotlight box matching the real target's position exactly (Tailwind
-  // classes) - undefined means "no specific target" (step 1: a plain
-  // centered message, since there's nothing precise to point at yet).
+  // Tailwind classes matching the real target's position; omitted for a
+  // plain centered message with nothing specific to point at.
   spotlightClass?: string;
   tooltipClass: string;
   arrow?: "up" | "down";
@@ -93,24 +89,15 @@ function StepOverlay({ step }: { step: Step }) {
 
 export default function OnboardingTour({ onFinish, onSkip }: OnboardingTourProps) {
   const [stepIndex, setStepIndex] = useState(0);
-  const [sentenceWords, setSentenceWords] = useState<string[]>([]);
   const [paused, setPaused] = useState(false);
-
-  const { supported: speechSupported, speakSentence } = useSpeech();
-
-  const handleLocked = useCallback((word: string) => {
-    setSentenceWords((prev) => [...prev, word]);
-  }, []);
+  const sentence = useSentence();
 
   const isLastStep = stepIndex === STEPS.length - 1;
   const step = STEPS[stepIndex];
 
   const handleNext = () => {
-    if (isLastStep) {
-      onFinish();
-      return;
-    }
-    setStepIndex((i) => i + 1);
+    if (isLastStep) onFinish();
+    else setStepIndex((i) => i + 1);
   };
 
   return (
@@ -127,31 +114,15 @@ export default function OnboardingTour({ onFinish, onSkip }: OnboardingTourProps
         </Button>
       </div>
 
-      <div className="relative min-h-0 flex-1">
-        <GestureScanner
-          className="h-full w-full"
-          paused={paused}
-          onLocked={handleLocked}
-        />
-        {step.region === "video" && <StepOverlay step={step} />}
-      </div>
+      <ScannerWorkspace
+        sentence={sentence}
+        paused={paused}
+        onTogglePaused={() => setPaused((p) => !p)}
+        scannerOverlay={step.region === "video" && <StepOverlay step={step} />}
+        panelOverlay={step.region === "footer" && <StepOverlay step={step} />}
+      />
 
-      <div className="relative mt-3 shrink-0">
-        <TranslationPanel
-          sentenceWords={sentenceWords}
-          speechSupported={speechSupported}
-          paused={paused}
-          onTogglePaused={() => setPaused((p) => !p)}
-          onRemoveLastWord={() => setSentenceWords((prev) => prev.slice(0, -1))}
-          onClearSentence={() => setSentenceWords([])}
-          onSpeakSentence={speakSentence}
-        />
-        {step.region === "footer" && <StepOverlay step={step} />}
-      </div>
-
-      {/* z-50 + relative: must stay above the spotlight overlay's dimming
-          (z-30/z-40), otherwise it'd render dimmed/covered despite being
-          the control the user needs to tap next. */}
+      {/* z-50 keeps progress + next above the spotlight dimming (z-30/z-40). */}
       <div className="relative z-50 flex shrink-0 items-center gap-1.5 px-1 py-3">
         {STEPS.map((_, i) => (
           <span

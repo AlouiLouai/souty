@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Baloo_Bhaijaan_2, Readex_Pro } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import "./globals.css";
 
@@ -62,6 +63,9 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <ServiceWorkerRegistration />
         {children}
+        {/* Cookieless page-view counts only (Vercel Web Analytics, free on
+            Hobby). No camera frames, landmarks or sentences are ever sent. */}
+        <Analytics />
       </body>
     </html>
   );

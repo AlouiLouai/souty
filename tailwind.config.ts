@@ -1,17 +1,14 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: ["class"],
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
-    "./lib/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
       colors: {
         border: "var(--border)",
-        input: "var(--input)",
         ring: "var(--ring)",
         background: "var(--background)",
         foreground: "var(--foreground)",
@@ -39,19 +36,10 @@ const config: Config = {
           DEFAULT: "var(--accent)",
           foreground: "var(--accent-foreground)",
         },
-        popover: {
-          DEFAULT: "var(--popover)",
-          foreground: "var(--popover-foreground)",
-        },
         card: {
           DEFAULT: "var(--card)",
           foreground: "var(--card-foreground)",
         },
-      },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 6px)",
-        sm: "calc(var(--radius) - 10px)",
       },
       fontFamily: {
         sans: [
