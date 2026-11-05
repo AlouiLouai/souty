@@ -40,6 +40,8 @@ interface GestureScannerProps {
   onLocked: (word: string) => void;
   /** Fires only when hand presence changes, not every frame. */
   onHandPresenceChange?: (present: boolean) => void;
+  /** Fires after the user successfully switches between front and back camera. */
+  onCameraSwitched?: () => void;
 }
 
 interface HandTracking {
@@ -70,6 +72,7 @@ export default function GestureScanner({
   paused,
   onLocked,
   onHandPresenceChange,
+  onCameraSwitched,
 }: GestureScannerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -89,6 +92,7 @@ export default function GestureScanner({
   const onLockedRef = useLatest(onLocked);
   const onHandPresenceChangeRef = useLatest(onHandPresenceChange);
   const facingModeRef = useLatest(facingMode);
+  const onCameraSwitchedRef = useLatest(onCameraSwitched);
 
   const handleResult = useCallback(
     (result: GestureRecognizerResult) => {
@@ -258,9 +262,12 @@ export default function GestureScanner({
     if (phase !== "ready") return;
     const nextMode: FacingMode = facingModeRef.current === "user" ? "environment" : "user";
     startCamera(nextMode)
-      .then(() => setFacingMode(nextMode))
+      .then(() => {
+        setFacingMode(nextMode);
+        onCameraSwitchedRef.current?.();
+      })
       .catch((err) => console.error("Failed to switch camera", err));
-  }, [facingModeRef, phase, startCamera]);
+  }, [facingModeRef, onCameraSwitchedRef, phase, startCamera]);
 
   // Resume automatically once access is granted from the browser's own UI.
   useEffect(() => {

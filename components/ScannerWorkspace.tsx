@@ -12,6 +12,9 @@ interface ScannerWorkspaceProps {
   paused: boolean;
   onTogglePaused: () => void;
   onHandPresenceChange?: (present: boolean) => void;
+  onCameraSwitched?: () => void;
+  /** Fires when the user presses any sentence-panel button. */
+  onPanelAction?: () => void;
   /** Rendered over the camera area (popups, tour spotlights). */
   scannerOverlay?: ReactNode;
   /** Rendered over the sentence panel (tour spotlights). */
@@ -24,6 +27,8 @@ export default function ScannerWorkspace({
   paused,
   onTogglePaused,
   onHandPresenceChange,
+  onCameraSwitched,
+  onPanelAction,
   scannerOverlay,
   panelOverlay,
 }: ScannerWorkspaceProps) {
@@ -37,6 +42,7 @@ export default function ScannerWorkspace({
           paused={paused}
           onLocked={sentence.addWord}
           onHandPresenceChange={onHandPresenceChange}
+          onCameraSwitched={onCameraSwitched}
         />
         {scannerOverlay}
       </div>
@@ -46,10 +52,22 @@ export default function ScannerWorkspace({
           sentenceWords={sentence.words}
           speechSupported={speech.supported}
           paused={paused}
-          onTogglePaused={onTogglePaused}
-          onRemoveLastWord={sentence.removeLastWord}
-          onClearSentence={sentence.clear}
-          onSpeakSentence={speech.speak}
+          onTogglePaused={() => {
+            onTogglePaused();
+            onPanelAction?.();
+          }}
+          onRemoveLastWord={() => {
+            sentence.removeLastWord();
+            onPanelAction?.();
+          }}
+          onClearSentence={() => {
+            sentence.clear();
+            onPanelAction?.();
+          }}
+          onSpeakSentence={(text) => {
+            speech.speak(text);
+            onPanelAction?.();
+          }}
         />
         {panelOverlay}
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type ComponentType } from "react";
-import { Hand, MessageSquareText, RefreshCw, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
+import { Check, Hand, MessageSquareText, RefreshCw, X } from "lucide-react";
 import ScannerWorkspace from "@/components/ScannerWorkspace";
 import { Button } from "@/components/ui/button";
 import { useSentence } from "@/hooks/useSentence";
@@ -21,6 +21,9 @@ interface Step {
   tooltipClass: string;
   arrow?: "up" | "down";
 }
+
+/** Pause after a step's action so the user sees the checkmark before moving on. */
+const AUTO_ADVANCE_MS = 900;
 
 const STEPS: Step[] = [
   {
@@ -50,8 +53,8 @@ const STEPS: Step[] = [
   },
 ];
 
-function StepOverlay({ step }: { step: Step }) {
-  const Icon = step.icon;
+function StepOverlay({ step, done }: { step: Step; done: boolean }) {
+  const Icon = done ? Check : step.icon;
   return (
     <>
       {step.spotlightClass ? (
@@ -87,7 +90,11 @@ function StepOverlay({ step }: { step: Step }) {
 export default function OnboardingTour({ onFinish, onSkip }: OnboardingTourProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [doneStep, setDoneStep] = useState<number | null>(null);
   const sentence = useSentence();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stepIndexRef = useRef(0);
+  stepIndexRef.current = stepIndex;
 
   const isLastStep = stepIndex === STEPS.length - 1;
   const step = STEPS[stepIndex];
@@ -96,6 +103,33 @@ export default function OnboardingTour({ onFinish, onSkip }: OnboardingTourProps
     if (isLastStep) onFinish();
     else setStepIndex((i) => i + 1);
   };
+
+  /** Marks `index` as done and moves on shortly after; ignored for any other step. */
+  const completeStep = useCallback(
+    (index: number) => {
+      if (stepIndexRef.current !== index || timerRef.current) return;
+      setDoneStep(index);
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
+        setDoneStep(null);
+        if (index === STEPS.length - 1) onFinish();
+        else setStepIndex(index + 1);
+      }, AUTO_ADVANCE_MS);
+    },
+    [onFinish]
+  );
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    []
+  );
+
+  const hasWord = sentence.words.length > 0;
+  useEffect(() => {
+    if (hasWord) completeStep(0);
+  }, [hasWord, completeStep]);
 
   return (
     <div className="safe-top safe-x safe-bottom mx-auto flex h-[100dvh] max-w-md flex-col overflow-hidden">
@@ -115,8 +149,14 @@ export default function OnboardingTour({ onFinish, onSkip }: OnboardingTourProps
         sentence={sentence}
         paused={paused}
         onTogglePaused={() => setPaused((p) => !p)}
-        scannerOverlay={step.region === "video" && <StepOverlay step={step} />}
-        panelOverlay={step.region === "footer" && <StepOverlay step={step} />}
+        onCameraSwitched={() => completeStep(1)}
+        onPanelAction={() => completeStep(2)}
+        scannerOverlay={
+          step.region === "video" && <StepOverlay step={step} done={doneStep === stepIndex} />
+        }
+        panelOverlay={
+          step.region === "footer" && <StepOverlay step={step} done={doneStep === stepIndex} />
+        }
       />
 
       <div className="relative z-50 flex shrink-0 items-center gap-1.5 px-1 py-3">
