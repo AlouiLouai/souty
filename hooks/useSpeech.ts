@@ -8,6 +8,7 @@ function pickArabicVoice(voices: SpeechSynthesisVoice[]) {
   return byPrefix("ar-tn") ?? byPrefix("ar") ?? null;
 }
 
+/** Arabic text-to-speech via the Web Speech API. */
 export function useSpeech() {
   const [supported, setSupported] = useState(false);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
@@ -26,7 +27,7 @@ export function useSpeech() {
     return () => synth.removeEventListener("voiceschanged", updateVoice);
   }, []);
 
-  // Reads text aloud, preferring an installed Arabic voice.
+  /** Reads text aloud, preferring an installed Arabic voice. */
   const speak = useCallback(
     (text: string) => {
       if (!supported || !text) return;
@@ -39,8 +40,6 @@ export function useSpeech() {
         utterance.onerror = (event) => console.error("Speech synthesis error", event);
         window.speechSynthesis.speak(utterance);
       } catch (err) {
-        // Some browsers throw synchronously on edge cases (unsupported
-        // voice/lang combination) - speech is non-essential, never crash.
         console.error("Failed to speak sentence", err);
       }
     },

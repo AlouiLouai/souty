@@ -2,31 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Pause, RefreshCw, VideoOff } from "lucide-react";
-import type {
-  GestureRecognizer,
-  GestureRecognizerResult,
-} from "@mediapipe/tasks-vision";
+import type { GestureRecognizer, GestureRecognizerResult } from "@mediapipe/tasks-vision";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusDialog } from "@/components/StatusDialog";
 import { gestureToWord, IGNORED_LABELS } from "@/lib/gestureDictionary";
 import { drawHandOverlay, type HandInfo } from "@/lib/handOverlay";
-import { silenceMediapipeLogs } from "@/lib/mediapipeConsole";
+import { getRecognizer } from "@/lib/recognizer";
 import { cn } from "@/lib/utils";
 
-// Self-hosted (copied from node_modules/@mediapipe/tasks-vision/wasm) rather
-// than CDN-fetched: required for real offline support and removes a
-// third-party supply-chain dependency.
-const WASM_URL = "/wasm";
-const MODEL_URL = "/models/gesture_recognizer.task";
 const CONFIDENCE_THRESHOLD = 0.65;
 const LOCK_HOLD_MS = 700;
 const LOCK_FLASH_MS = 400;
-const MAX_HANDS = 2;
-
-const CAMERA_DENIED_MESSAGE =
-  "تم رفض الوصول إلى الكاميرا أو أنه غير متاح. فعّل إذن الكاميرا " +
-  "من إعدادات المتصفح — سيستأنف الماسح تلقائيًا فور منح الإذن.";
+/** Caps inference at ~25 fps so low-end phones keep the UI responsive. */
+const MIN_FRAME_INTERVAL_MS = 40;
 
 const FAILURE_TITLES = {
   "camera-denied": "الكاميرا محظورة",
@@ -35,14 +24,21 @@ const FAILURE_TITLES = {
 } as const;
 
 type FailurePhase = keyof typeof FAILURE_TITLES;
-type ScannerPhase = "loading-model" | "requesting-camera" | "ready" | FailurePhase;
+type ScannerPhase = "starting" | "ready" | FailurePhase;
 type FacingMode = "user" | "environment";
+
+const FAILURE_MESSAGES: Record<FailurePhase, string> = {
+  "camera-denied":
+    "تم رفض الوصول إلى الكاميرا أو أنه غير متاح. فعّل إذن الكاميرا من إعدادات المتصفح — سيستأنف الماسح تلقائيًا فور منح الإذن.",
+  unsupported: "هذا المتصفح لا يدعم الوصول إلى الكاميرا.",
+  error: "تعذّر تحميل نموذج التعرف على الإشارات. تحقق من الاتصال وأعد المحاولة.",
+};
 
 interface GestureScannerProps {
   className?: string;
   paused: boolean;
   onLocked: (word: string) => void;
-  /** Called only when hand presence in frame changes, not every frame. */
+  /** Fires only when hand presence changes, not every frame. */
   onHandPresenceChange?: (present: boolean) => void;
 }
 
@@ -50,19 +46,6 @@ interface HandTracking {
   candidate: { label: string; start: number };
   lastLocked?: string;
   flashStart?: number;
-}
-
-async function createRecognizer(): Promise<GestureRecognizer> {
-  const { FilesetResolver, GestureRecognizer } = await import("@mediapipe/tasks-vision");
-  const vision = await FilesetResolver.forVisionTasks(WASM_URL);
-  const create = (delegate: "GPU" | "CPU") =>
-    GestureRecognizer.createFromOptions(vision, {
-      baseOptions: { modelAssetPath: MODEL_URL, delegate },
-      runningMode: "VIDEO",
-      numHands: MAX_HANDS,
-    });
-  // GPU is much faster but unavailable on some devices/browsers.
-  return create("GPU").catch(() => create("CPU"));
 }
 
 function stopStream(stream: MediaStream | null) {
@@ -78,6 +61,10 @@ function useLatest<T>(value: T) {
   return ref;
 }
 
+/**
+ * Live camera feed with on-device gesture recognition. The camera and the
+ * model load in parallel; a word is emitted once a sign is held steady.
+ */
 export default function GestureScanner({
   className,
   paused,
@@ -90,22 +77,18 @@ export default function GestureScanner({
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
   const lastVideoTimeRef = useRef(-1);
+  const lastFrameAtRef = useRef(0);
   const handsRef = useRef<Map<string, HandTracking>>(new Map());
   const lastHandPresentRef = useRef<boolean | null>(null);
 
-  const [phase, setPhase] = useState<ScannerPhase>("loading-model");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [phase, setPhase] = useState<ScannerPhase>("starting");
+  const [modelReady, setModelReady] = useState(false);
   const [facingMode, setFacingMode] = useState<FacingMode>("user");
 
   const pausedRef = useLatest(paused);
   const onLockedRef = useLatest(onLocked);
   const onHandPresenceChangeRef = useLatest(onHandPresenceChange);
   const facingModeRef = useLatest(facingMode);
-
-  const fail = useCallback((nextPhase: FailurePhase, message: string) => {
-    setPhase(nextPhase);
-    setErrorMessage(message);
-  }, []);
 
   const handleResult = useCallback(
     (result: GestureRecognizerResult) => {
@@ -141,7 +124,6 @@ export default function GestureScanner({
         if (progress >= 1 && next.lastLocked !== label) {
           next.lastLocked = label;
           next.flashStart = now;
-          // Tactile confirmation where supported (no-op on iOS Safari).
           navigator.vibrate?.(50);
           onLockedRef.current(gestureToWord(label));
         }
@@ -156,8 +138,7 @@ export default function GestureScanner({
         };
       });
 
-      // A hand that leaves frame (or drops below threshold) resets, so the
-      // same sign can be locked in again when it comes back.
+      // A hand that leaves frame resets, so the same sign can lock again.
       for (const key of hands.keys()) {
         if (!seenKeys.has(key)) hands.delete(key);
       }
@@ -178,14 +159,21 @@ export default function GestureScanner({
   const detectLoop = useCallback(() => {
     const video = videoRef.current;
     const recognizer = recognizerRef.current;
+    const now = performance.now();
 
-    // Always reschedule: one bad frame (transient WASM error) must not
-    // silently kill the loop.
+    // Always reschedule: one bad frame must not kill the loop.
     try {
-      if (!video || !recognizer || video.readyState < 2 || pausedRef.current) return;
-      if (video.currentTime !== lastVideoTimeRef.current) {
+      if (
+        video &&
+        recognizer &&
+        video.readyState >= 2 &&
+        !pausedRef.current &&
+        now - lastFrameAtRef.current >= MIN_FRAME_INTERVAL_MS &&
+        video.currentTime !== lastVideoTimeRef.current
+      ) {
+        lastFrameAtRef.current = now;
         lastVideoTimeRef.current = video.currentTime;
-        handleResult(recognizer.recognizeForVideo(video, performance.now()));
+        handleResult(recognizer.recognizeForVideo(video, now));
       }
     } catch (err) {
       console.error("Gesture detection frame failed, continuing", err);
@@ -194,20 +182,15 @@ export default function GestureScanner({
     }
   }, [handleResult, pausedRef]);
 
-  const startLoop = useCallback(() => {
-    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(detectLoop);
-  }, [detectLoop]);
-
-  // Replaces any running stream. `ideal` (not exact) so devices without a
-  // matching camera degrade gracefully instead of failing.
+  /** Replaces any running stream; `ideal` constraints degrade gracefully. */
   const startCamera = useCallback(async (mode: FacingMode) => {
     stopStream(streamRef.current);
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: { ideal: mode },
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 30, max: 30 },
       },
       audio: false,
     });
@@ -219,11 +202,9 @@ export default function GestureScanner({
     }
   }, []);
 
-  /** Requests the camera and starts detection; returns false if unmounted meanwhile. */
   const connectCamera = useCallback(
     async (isCancelled: () => boolean = () => false) => {
-      setErrorMessage(null);
-      setPhase("requesting-camera");
+      setPhase("starting");
       try {
         await startCamera(facingModeRef.current);
         if (isCancelled()) {
@@ -231,56 +212,43 @@ export default function GestureScanner({
           return;
         }
         setPhase("ready");
-        startLoop();
+        if (rafRef.current === null) rafRef.current = requestAnimationFrame(detectLoop);
       } catch (err) {
         if (isCancelled()) return;
         console.error("Camera permission error", err);
-        fail("camera-denied", CAMERA_DENIED_MESSAGE);
+        setPhase("camera-denied");
       }
     },
-    [facingModeRef, fail, startCamera, startLoop]
+    [detectLoop, facingModeRef, startCamera]
   );
 
-  // Mount-only lifecycle: load model, then camera. Later camera retries go
-  // through connectCamera directly.
+  // Mount-only: camera and model start together, neither waits for the other.
   useEffect(() => {
     let cancelled = false;
-    const isCancelled = () => cancelled;
-    const restoreConsole = silenceMediapipeLogs();
 
-    (async () => {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        fail("unsupported", "هذا المتصفح لا يدعم الوصول إلى الكاميرا.");
-        return;
-      }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setPhase("unsupported");
+      return;
+    }
 
-      try {
-        const recognizer = await createRecognizer();
-        if (cancelled) {
-          recognizer.close();
-          return;
-        }
+    void connectCamera(() => cancelled);
+    getRecognizer()
+      .then((recognizer) => {
+        if (cancelled) return;
         recognizerRef.current = recognizer;
-      } catch (err) {
+        setModelReady(true);
+      })
+      .catch((err) => {
         if (cancelled) return;
         console.error("Failed to load gesture model", err);
-        fail(
-          "error",
-          "تعذّر تحميل نموذج التعرف على الإشارات. تأكد من وجود الملف " +
-            "public/models/gesture_recognizer.task (راجع public/models/README.md)."
-        );
-        return;
-      }
-
-      await connectCamera(isCancelled);
-    })();
+        setPhase("error");
+      });
 
     return () => {
       cancelled = true;
-      restoreConsole();
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
       stopStream(streamRef.current);
-      recognizerRef.current?.close();
       recognizerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -294,8 +262,7 @@ export default function GestureScanner({
       .catch((err) => console.error("Failed to switch camera", err));
   }, [facingModeRef, phase, startCamera]);
 
-  // Resume automatically when the user grants camera access from the
-  // browser's own UI (site settings) after having blocked it.
+  // Resume automatically once access is granted from the browser's own UI.
   useEffect(() => {
     if (phase !== "camera-denied" || !navigator.permissions?.query) return;
 
@@ -312,9 +279,7 @@ export default function GestureScanner({
         status = result;
         status.addEventListener("change", handleChange);
       })
-      .catch(() => {
-        // This browser can't query the "camera" permission.
-      });
+      .catch(() => {});
 
     return () => {
       cancelled = true;
@@ -341,15 +306,23 @@ export default function GestureScanner({
           onClick={switchCamera}
           variant="outline"
           size="icon"
-          className="absolute right-3 top-3 z-10 bg-background/60 backdrop-blur-sm"
+          className="absolute right-3 top-3 z-10 bg-background/60"
           aria-label="تبديل الكاميرا"
         >
           <RefreshCw className="h-4 w-4" />
         </Button>
       )}
 
-      {/* Paused state shown where the user is looking. pointer-events-none
-          keeps the flip-camera button tappable. */}
+      {phase === "ready" && !modelReady && (
+        <div
+          dir="rtl"
+          className="pointer-events-none absolute inset-x-0 bottom-3 z-10 mx-auto flex w-fit items-center gap-2 rounded-full border-2 border-border bg-card px-3 py-1.5 text-xs text-foreground"
+        >
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          جارٍ تحميل نموذج الإشارات…
+        </div>
+      )}
+
       {phase === "ready" && paused && (
         <div className="pointer-events-none absolute inset-0 z-[15] flex flex-col items-center justify-center gap-3 bg-background/65">
           <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-border bg-card/90">
@@ -361,13 +334,12 @@ export default function GestureScanner({
         </div>
       )}
 
-      {(phase === "loading-model" || phase === "requesting-camera") && (
+      {phase === "starting" && (
         <StatusDialog
           className="z-20"
           icon={<Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-foreground" />}
           titleClassName="text-sm font-medium"
-          title={phase === "loading-model" ? "جارٍ تحميل نموذج الإشارات…" : "جارٍ طلب إذن الكاميرا…"}
-          message={phase === "loading-model" ? "قد يستغرق التحميل الأول بضع ثوانٍ." : undefined}
+          title="جارٍ تشغيل الكاميرا…"
         />
       )}
 
@@ -377,7 +349,7 @@ export default function GestureScanner({
           icon={<VideoOff className="mx-auto mb-3 h-8 w-8 text-destructive" />}
           titleClassName="font-display text-sm font-bold"
           title={FAILURE_TITLES[phase as FailurePhase]}
-          message={errorMessage}
+          message={FAILURE_MESSAGES[phase as FailurePhase]}
           action={
             phase === "camera-denied" && (
               <Button onClick={() => void connectCamera()} size="sm">

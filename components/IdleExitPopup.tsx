@@ -8,8 +8,7 @@ interface IdleExitPopupProps {
   onContinue: () => void;
 }
 
-// Purely informational reminder: never closes anything on its own. The
-// parent hides it as soon as a hand reappears, or via the button.
+/** Informational reminder; the parent hides it when a hand reappears. */
 export default function IdleExitPopup({ onContinue }: IdleExitPopupProps) {
   return (
     <StatusDialog

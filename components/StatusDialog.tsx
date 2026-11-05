@@ -12,8 +12,7 @@ interface StatusDialogProps {
   className?: string;
 }
 
-// Centered card over a blurred backdrop - shared by loading, error and
-// idle-reminder states.
+/** Centered card over a dimmed backdrop, shared by loading, error and idle states. */
 export function StatusDialog({
   icon,
   title,
@@ -26,7 +25,7 @@ export function StatusDialog({
     <div
       role="status"
       className={cn(
-        "absolute inset-0 flex items-center justify-center bg-background/85 p-6 backdrop-blur-sm",
+        "absolute inset-0 flex items-center justify-center bg-background/85 p-6",
         className
       )}
     >

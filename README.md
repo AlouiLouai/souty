@@ -137,7 +137,7 @@ hooks/
 lib/
   gestureDictionary.ts   Model label -> Tunisian Arabic word (33 signs)
   handOverlay.ts         Canvas skeleton + progress ring drawing
-  mediapipeConsole.ts    Filters MediaPipe WASM log noise
+  recognizer.ts          Shared, pre-warmed MediaPipe recognizer + log filter
 public/
   models/                Custom-trained 34-class gesture model (committed)
   wasm/                  Self-hosted MediaPipe runtime

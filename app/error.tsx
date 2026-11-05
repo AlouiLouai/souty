@@ -19,7 +19,7 @@ export default function GlobalError({
   return (
     <main className="relative min-h-[100dvh] w-full bg-background">
       <StatusDialog
-        className="bg-background backdrop-blur-none"
+        className="bg-background"
         icon={<AlertTriangle className="mx-auto mb-3 h-8 w-8 text-destructive" />}
         title="حدث خطأ غير متوقع"
         message="صار مشكل في التطبيق. جرب من جديد، وإذا تكرر المشكل أعد فتح الصفحة."

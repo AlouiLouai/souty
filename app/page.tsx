@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Home } from "lucide-react";
 import IdleExitPopup from "@/components/IdleExitPopup";
 import LandingScreen from "@/components/LandingScreen";
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useIdleHandReminder } from "@/hooks/useIdleHandReminder";
 import { useSentence } from "@/hooks/useSentence";
+import { getRecognizer } from "@/lib/recognizer";
 import { cn } from "@/lib/utils";
 
 const IDLE_HAND_TIMEOUT_MS = 5000;
@@ -21,9 +22,14 @@ type View = "landing" | "onboarding" | "scanner";
 export default function HomePage() {
   const [view, setView] = useState<View>("landing");
   const [paused, setPaused] = useState(false);
-  // Lives here (not in the scanner view) so the sentence survives a trip
-  // back to the landing screen.
+  // Owned here so the sentence survives a trip back to the landing screen.
   const sentence = useSentence();
+
+  // Warm the model while the user is still on the splash/landing screens.
+  useEffect(() => {
+    getRecognizer().catch(() => {});
+  }, []);
+
   const idleReminder = useIdleHandReminder(
     view === "scanner" && !paused,
     IDLE_HAND_TIMEOUT_MS

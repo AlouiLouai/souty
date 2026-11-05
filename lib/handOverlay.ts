@@ -1,10 +1,9 @@
 import type { NormalizedLandmark } from "@mediapipe/tasks-vision";
 
-// Cyan #22D3EE: stays legible over any camera feed. Canvas drawing can't
-// read CSS variables, so the value lives here.
+/** Cyan #22D3EE (canvas cannot read CSS variables). */
 const HIGHLIGHT_RGB = "34, 211, 238";
 
-// Standard 21-point hand landmark connection graph used by MediaPipe Hands.
+/** MediaPipe 21-point hand landmark connections. */
 const HAND_CONNECTIONS: ReadonlyArray<readonly [number, number]> = [
   [0, 1], [1, 2], [2, 3], [3, 4],
   [0, 5], [5, 6], [6, 7], [7, 8],
@@ -40,8 +39,7 @@ function roundRect(
   ctx.closePath();
 }
 
-// Progress ring + gesture label anchored just above the hand itself, so the
-// indicator tracks wherever the hand is in frame.
+/** Progress ring and gesture label anchored above the hand. */
 function drawHandLabel(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -63,8 +61,7 @@ function drawHandLabel(
   ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + info.progress * Math.PI * 2);
   ctx.stroke();
 
-  // Expanding flash ring right after lock-in, so the confirmation is
-  // visible at the hand itself without looking down at the panel.
+  // Expanding ring right after lock-in.
   if (info.lockFlash !== undefined && info.lockFlash < 1) {
     const t = info.lockFlash;
     ctx.strokeStyle = `rgba(${HIGHLIGHT_RGB}, ${0.9 * (1 - t)})`;
@@ -96,9 +93,8 @@ function drawHandLabel(
 }
 
 /**
- * Renders each hand's skeleton plus its progress ring/label. `mirrored`
- * must match whether the <video> is CSS-mirrored (front camera), since the
- * canvas itself never is.
+ * Draws each hand's skeleton plus its progress ring and label.
+ * @param mirrored Must match whether the <video> is CSS-mirrored (front camera).
  */
 export function drawHandOverlay(
   ctx: CanvasRenderingContext2D,
@@ -116,8 +112,7 @@ export function drawHandOverlay(
   hands.forEach((landmarks, i) => {
     const points = landmarks.map((p) => ({ px: toX(p.x), py: p.y * height }));
 
-    // Dark halo under the white skeleton keeps it visible against both
-    // light and dark backgrounds (skin tones, clothing, lighting).
+    // Dark halo keeps the white skeleton visible on any background.
     ctx.beginPath();
     for (const [a, b] of HAND_CONNECTIONS) {
       const p1 = points[a];

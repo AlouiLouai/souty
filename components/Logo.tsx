@@ -12,7 +12,7 @@ interface LogoProps {
   className?: string;
 }
 
-// The "S" mark image followed by the "outy" wordmark.
+/** The "S" mark image followed by the "outy" wordmark. */
 export function Logo({ markClassName, textClassName, label, priority, className }: LogoProps) {
   return (
     <span className={cn("flex items-center gap-0.5", className)}>

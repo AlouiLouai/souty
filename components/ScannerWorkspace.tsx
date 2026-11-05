@@ -18,7 +18,7 @@ interface ScannerWorkspaceProps {
   panelOverlay?: ReactNode;
 }
 
-// Camera feed + sentence panel, wired to a shared sentence and speech state.
+/** Camera feed plus sentence panel, wired to shared sentence and speech state. */
 export default function ScannerWorkspace({
   sentence,
   paused,

@@ -36,10 +36,7 @@ export const metadata: Metadata = {
     title: "Souty",
   },
   other: {
-    // Next's `appleWebApp.capable` only emits the newer, generic
-    // "mobile-web-app-capable" tag - not this iOS-specific one, which is
-    // what actually makes "Add to Home Screen" open fullscreen (no Safari
-    // address bar) rather than as a regular bookmarked tab.
+    // iOS-specific tag that Next's `appleWebApp.capable` does not emit.
     "apple-mobile-web-app-capable": "yes",
   },
 };
@@ -63,8 +60,6 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <ServiceWorkerRegistration />
         {children}
-        {/* Cookieless page-view counts only (Vercel Web Analytics, free on
-            Hobby). No camera frames, landmarks or sentences are ever sent. */}
         <Analytics />
       </body>
     </html>

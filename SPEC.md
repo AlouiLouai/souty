@@ -32,7 +32,7 @@ accumulate into a sentence; the sentence can be read aloud on demand.
 ## User flow
 
 1. **Splash** (`app/page.tsx`): the logo/wordmark shows full-screen for
-   ~4s on every app load (fades out over 300ms), while camera/model init
+   ~1.2s on every app load (fades out over 300ms), while camera/model init
    proceeds underneath — the splash doesn't add to actual load time.
 2. **Landing** (`components/LandingScreen.tsx`): a short explainer + two
    entry points — "ابدأ الاستخدام" (go straight to the scanner) or

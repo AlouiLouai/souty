@@ -16,8 +16,7 @@ interface Step {
   icon: ComponentType<{ className?: string }>;
   title: string;
   text: string;
-  // Tailwind classes matching the real target's position; omitted for a
-  // plain centered message with nothing specific to point at.
+  /** Classes positioning the spotlight over its target; omit for a centered message. */
   spotlightClass?: string;
   tooltipClass: string;
   arrow?: "up" | "down";
@@ -36,8 +35,6 @@ const STEPS: Step[] = [
     icon: RefreshCw,
     title: "بدّل الكاميرا",
     text: "دوس هنا باش تبدّل بين الكاميرا الأمامية والخلفية",
-    // Matches the real flip-camera button's own position exactly
-    // (top-3 right-3, 44x44px) with a small margin around it.
     spotlightClass: "right-2 top-2 h-12 w-12 rounded-xl",
     tooltipClass: "left-1/2 top-20 w-60 -translate-x-1/2",
     arrow: "up",
@@ -122,7 +119,6 @@ export default function OnboardingTour({ onFinish, onSkip }: OnboardingTourProps
         panelOverlay={step.region === "footer" && <StepOverlay step={step} />}
       />
 
-      {/* z-50 keeps progress + next above the spotlight dimming (z-30/z-40). */}
       <div className="relative z-50 flex shrink-0 items-center gap-1.5 px-1 py-3">
         {STEPS.map((_, i) => (
           <span
