@@ -138,6 +138,8 @@ lib/
   gestureDictionary.ts   Model label -> Tunisian Arabic word (33 signs)
   handOverlay.ts         Canvas skeleton + progress ring drawing
   recognizer.ts          Shared, pre-warmed MediaPipe recognizer + log filter
+  assets.ts              Parallel model/WASM download, persistent cache, progress
+  offline.ts             Asks the service worker to cache loaded resources
 public/
   models/                Custom-trained 34-class gesture model (committed)
   wasm/                  Self-hosted MediaPipe runtime

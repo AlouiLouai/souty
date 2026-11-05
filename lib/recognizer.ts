@@ -1,7 +1,7 @@
 import type { GestureRecognizer } from "@mediapipe/tasks-vision";
+import { loadAssets, WASM_DIR } from "@/lib/assets";
+import { cacheLoadedResources } from "@/lib/offline";
 
-const WASM_URL = "/wasm";
-const MODEL_URL = "/models/gesture_recognizer.task";
 const MAX_HANDS = 2;
 
 /** MediaPipe logs graph setup through console.error; hide that noise only. */
@@ -24,15 +24,20 @@ function silenceMediapipeLogs() {
 
 async function create(): Promise<GestureRecognizer> {
   silenceMediapipeLogs();
-  const { FilesetResolver, GestureRecognizer } = await import("@mediapipe/tasks-vision");
-  const vision = await FilesetResolver.forVisionTasks(WASM_URL);
+  const [modelAssetBuffer, { FilesetResolver, GestureRecognizer }] = await Promise.all([
+    loadAssets(),
+    import("@mediapipe/tasks-vision"),
+  ]);
+  const vision = await FilesetResolver.forVisionTasks(WASM_DIR);
   const build = (delegate: "GPU" | "CPU") =>
     GestureRecognizer.createFromOptions(vision, {
-      baseOptions: { modelAssetPath: MODEL_URL, delegate },
+      baseOptions: { modelAssetBuffer, delegate },
       runningMode: "VIDEO",
       numHands: MAX_HANDS,
     });
-  return build("GPU").catch(() => build("CPU"));
+  const recognizer = await build("GPU").catch(() => build("CPU"));
+  void cacheLoadedResources();
+  return recognizer;
 }
 
 /**

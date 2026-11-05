@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { StatusDialog } from "@/components/StatusDialog";
 import { gestureToWord, IGNORED_LABELS } from "@/lib/gestureDictionary";
 import { drawHandOverlay, type HandInfo } from "@/lib/handOverlay";
+import { subscribeLoadProgress } from "@/lib/assets";
 import { getRecognizer } from "@/lib/recognizer";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +87,7 @@ export default function GestureScanner({
 
   const [phase, setPhase] = useState<ScannerPhase>("starting");
   const [modelReady, setModelReady] = useState(false);
+  const [loadPercent, setLoadPercent] = useState(0);
   const [facingMode, setFacingMode] = useState<FacingMode>("user");
 
   const pausedRef = useLatest(paused);
@@ -258,6 +260,8 @@ export default function GestureScanner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => subscribeLoadProgress(setLoadPercent), []);
+
   const switchCamera = useCallback(() => {
     if (phase !== "ready") return;
     const nextMode: FacingMode = facingModeRef.current === "user" ? "environment" : "user";
@@ -326,7 +330,7 @@ export default function GestureScanner({
           className="pointer-events-none absolute inset-x-0 bottom-3 z-10 mx-auto flex w-fit items-center gap-2 rounded-full border-2 border-border bg-card px-3 py-1.5 text-xs text-foreground"
         >
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          جارٍ تحميل نموذج الإشارات…
+          جارٍ تحميل نموذج الإشارات… {loadPercent}%
         </div>
       )}
 
