@@ -28,7 +28,7 @@ export const vision = {
     { stage: "world" as PackStage, name: "Indian Sign Language" },
     { stage: "world" as PackStage, name: "Kenyan Sign Language" },
   ],
-  morePacks: "and 300+ more",
+  morePacks: "and hundreds more",
   packsNote: "Only Tunisian Sign Language is live today. The other languages are our plan, and each one will be built with its own deaf community.",
   howTitle: "How a new language is added",
   how: [

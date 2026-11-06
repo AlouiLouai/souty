@@ -5,6 +5,11 @@
  * candy accents. Raw palette first, then the semantic roles components
  * consume through the Tailwind preset (bg-background, text-foreground...).
  * Mirrored as plain values in palette.ts for canvas / image rendering.
+ *
+ * Every colour exists twice: as a hex value (--plum), for direct use in
+ * CSS such as box-shadow, and as space-separated RGB channels (--plum-rgb),
+ * which is what lets Tailwind build translucent variants like
+ * bg-background/60. A test keeps the two in step.
  */
 :root {
   color-scheme: light;
@@ -21,6 +26,23 @@
   --pink: #ffb4c8;
   --skin: #f2b48b;
   --skin-line: #b9683f;
+  --mist: #dcd6f7;
+  --mint-wash: #ddf8f1;
+
+  /* Palette, as RGB channels */
+  --sky-rgb: 233 236 255;
+  --paper-rgb: 255 255 255;
+  --plum-rgb: 42 24 70;
+  --plum-soft-rgb: 93 78 122;
+  --harissa-rgb: 255 90 60;
+  --sun-rgb: 255 200 58;
+  --mint-rgb: 34 191 160;
+  --lilac-rgb: 185 168 255;
+  --pink-rgb: 255 180 200;
+  --skin-rgb: 242 180 139;
+  --skin-line-rgb: 185 104 63;
+  --mist-rgb: 220 214 247;
+  --mint-wash-rgb: 221 248 241;
 
   /* Typefaces. The four --font-*-latin / --font-*-arabic variables are set by
      the class from @souty/brand/fonts on <html>; the Latin face comes first
@@ -36,25 +58,53 @@
   --card-foreground: var(--plum);
 
   --primary: var(--harissa);
-  --primary-foreground: #ffffff;
+  --primary-foreground: var(--paper);
 
   /* Harissa doubles as the highlight: it is the only accent that stays
      readable as text over a white card. */
   --highlight: var(--harissa);
-  --highlight-foreground: #ffffff;
+  --highlight-foreground: var(--paper);
 
   --secondary: var(--lilac);
   --secondary-foreground: var(--plum);
 
-  --muted: #dcd6f7;
+  --muted: var(--mist);
   --muted-foreground: var(--plum-soft);
 
-  --accent: #ddf8f1;
+  --accent: var(--mint-wash);
   --accent-foreground: var(--plum);
 
   --destructive: var(--skin-line);
-  --destructive-foreground: #ffffff;
+  --destructive-foreground: var(--paper);
 
   --border: var(--plum);
   --ring: var(--harissa);
+
+  /* Semantic roles, as RGB channels */
+  --background-rgb: var(--sky-rgb);
+  --foreground-rgb: var(--plum-rgb);
+
+  --card-rgb: var(--paper-rgb);
+  --card-foreground-rgb: var(--plum-rgb);
+
+  --primary-rgb: var(--harissa-rgb);
+  --primary-foreground-rgb: var(--paper-rgb);
+
+  --highlight-rgb: var(--harissa-rgb);
+  --highlight-foreground-rgb: var(--paper-rgb);
+
+  --secondary-rgb: var(--lilac-rgb);
+  --secondary-foreground-rgb: var(--plum-rgb);
+
+  --muted-rgb: var(--mist-rgb);
+  --muted-foreground-rgb: var(--plum-soft-rgb);
+
+  --accent-rgb: var(--mint-wash-rgb);
+  --accent-foreground-rgb: var(--plum-rgb);
+
+  --destructive-rgb: var(--skin-line-rgb);
+  --destructive-foreground-rgb: var(--paper-rgb);
+
+  --border-rgb: var(--plum-rgb);
+  --ring-rgb: var(--harissa-rgb);
 }

@@ -58,7 +58,7 @@ export default function HomePage() {
           <header className="mb-2 flex shrink-0 items-center justify-between px-1 py-1">
             <div>
               <h1>
-                <Logo markClassName="h-7" textClassName="text-lg" label="Souty" priority />
+                <Logo markClassName="h-7" textClassName="text-lg" label="Souty" />
               </h1>
               <p dir="rtl" className="text-xs text-muted-foreground">
                 ماسح الإشارات المباشر
