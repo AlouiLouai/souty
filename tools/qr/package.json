@@ -1,0 +1,28 @@
+{
+  "name": "@souty/qr",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Generates and verifies the print-ready QR codes used in the Souty pitch.",
+  "type": "module",
+  "scripts": {
+    "generate": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@souty/brand": "workspace:*",
+    "qrcode": "catalog:",
+    "@resvg/resvg-js": "2.6.2"
+  },
+  "devDependencies": {
+    "@souty/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/pngjs": "6.0.5",
+    "@types/qrcode": "catalog:",
+    "jsqr": "1.4.0",
+    "pngjs": "7.0.0",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

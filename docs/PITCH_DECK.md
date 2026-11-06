@@ -76,6 +76,10 @@ Demo script (rehearsed, reliable signs only):
 2. Sign: أصم (deaf) → بابا (dad) → سبيطار (hospital) → الخميس (Thursday).
 3. Tap "انطق الجملة" — the phone speaks the sentence.
 
+On the slide: the app QR code (`docs/pitch/qr/souty-app-card.png`), so the
+audience can open souty.vercel.app on their own phones and try it during
+the demo.
+
 **Speaker notes:** Airplane mode is the moment the room understands
 "on-device". Prepare the device: brightness up, voice installed, airplane
 mode, app pre-installed to home screen.
@@ -190,7 +194,13 @@ everyone already has.**
 **"Sign language shouldn't be a barrier to a social service. With Souty,
 it isn't."**
 
-`[Contact]` · `[Demo URL]` · `[GitHub URL]`
+`[Contact]` · **souty.vercel.app** · `[GitHub URL]`
+
+On the slide: place the app QR code (`docs/pitch/qr/souty-app-card.png`)
+beside "souty.vercel.app", large enough to scan from the back of the room.
+Next to it, a second QR code for the marketing site:
+`[Marketing site QR — add its entry to tools/qr/codes.json and run "pnpm qr" once the site is deployed]`.
+Keep this slide up during questions so people have time to scan.
 
 ---
 
@@ -202,3 +212,5 @@ it isn't."**
 - [ ] Arabic TTS voice confirmed installed on the demo phone
 - [ ] App pre-installed to home screen, cache warmed (open once online first)
 - [ ] Backup device with the same setup
+- [ ] Scan-test both QR codes from the back of the room, on the venue projector
+- [ ] Scan-test both QR codes on an iPhone and on an Android phone

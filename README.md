@@ -1,165 +1,172 @@
-# Souty (صوتي) — Live Sign Language Scanner
+# Souty (صوتي)
 
-**Souty** ("my voice" in Tunisian Arabic) is a mobile-first web app that gives
-a voice to deaf and hard-of-hearing people: hold a hand sign up to your
-phone's camera, and the app recognizes it, builds a sentence word by word,
-and reads it aloud in Tunisian Arabic — **entirely on the device**, with no
-internet connection, no account, and no data ever leaving the phone.
+Souty ("my voice" in Tunisian Arabic) is a mobile-first web app for deaf and
+hard-of-hearing people. Hold a hand sign up to the phone camera: the app
+recognizes it, builds a sentence word by word, and speaks it aloud in
+Tunisian Arabic (Derja). Recognition runs entirely on the device: no server,
+no account, works offline as an installable PWA, and camera frames never
+leave the phone.
 
-Built for the **Social Tech Challenge 2026** (Ministry of Social Affairs ×
-UNDP × World Bank) — thematic challenge: *strengthening access to services
-for people with disabilities*.
+Built for the Social Tech Challenge 2026.
 
-## The problem
+## The two apps
 
-A deaf person walking into a social services office, a clinic, or a
-municipality in Tunisia faces a wall: staff don't understand Tunisian Sign
-Language, and written Arabic is often a second language for signers. Simple
-requests — "hospital", "my son", "Thursday", "help" — become a frustrating
-improvisation.
+| App | Package | Folder | Local dev | Deployed at |
+|---|---|---|---|---|
+| Souty PWA (the product) | `@souty/pwa` | [`apps/pwa`](apps/pwa) | `http://localhost:3000` | <https://souty.vercel.app> |
+| Marketing site | `@souty/marketing` | [`apps/marketing`](apps/marketing) | `http://localhost:3001` | To be deployed, see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) |
 
-## The solution
+## Workspace map
 
-Souty turns any smartphone into a real-time sign-to-speech bridge:
+This is a pnpm workspace orchestrated by Turborepo.
 
-1. Point the camera at a hand sign.
-2. A progress ring fills around the hand — hold the sign ~0.7s to lock it in.
-3. The recognized word (in Tunisian Derja, Arabic script) is appended to a
-   growing sentence.
-4. One tap speaks the full sentence aloud for the person across the desk.
+```
+apps/
+  pwa/                 The sign-to-speech PWA (Next.js, on-device MediaPipe model)
+  marketing/           The marketing site (Next.js, English / French / Arabic)
+packages/
+  brand/               @souty/brand: design tokens, Tailwind preset, palette, self-hosted fonts
+  vocabulary/          @souty/vocabulary: the 33 signs, single source of truth
+  tsconfig/            @souty/tsconfig: shared TypeScript bases
+tools/
+  qr/                  @souty/qr: generates and verifies the pitch QR codes
+docs/
+  PITCH_DECK.md        Pitch deck content
+  TECHNICAL_DOC.md     Architecture and model training pipeline
+  DEPLOYMENT.md        Vercel runbook: two projects from this one repository
+  reference/           "Souty pour tous.html", the design reference
+  pitch/qr/            Generated QR codes
+.github/workflows/     CI: lint, typecheck, test, build
+```
 
-**Current vocabulary: 33 recognizable signs** — 23 real Tunisian Sign
-Language signs (family, transport, days, destinations, requests) trained on
-the first-ever Tunisian Sign Language dataset, plus 10 universal hand
-gestures (hello, stop, yes, no, wait, OK, numbers 3–4, congrats…).
+Root files: `package.json` (scripts), `pnpm-workspace.yaml` (workspace globs
+and the dependency catalog), `turbo.json` (task graph), `.nvmrc` (Node
+version), `pnpm-lock.yaml`.
 
-## Key features
+## Prerequisites
 
-- **100% on-device AI** — MediaPipe gesture recognition runs locally
-  (GPU-accelerated, CPU fallback). Camera frames never leave the phone.
-- **Fully offline PWA** — installable to the home screen; the model, the
-  WASM runtime, and the app shell are all self-hosted and cached by a
-  service worker. Works in areas with no connectivity.
-- **Tunisian-first** — real Tunisian Sign Language signs, Tunisian Derja
-  output, Arabic RTL interface, Arabic text-to-speech voice selection.
-- **Two hands tracked simultaneously**, each recognized independently.
-- **Accessible by design** — haptic feedback on word lock-in, high-contrast
-  overlay readable on any skin tone or background, large touch targets,
-  onboarding tour, idle reminder, error states with retry.
-- **Zero backend, zero cost per user** — a static site; deploy once, serve
-  unlimited users.
+| Tool | Version | Source of truth |
+|---|---|---|
+| Node.js | 22 | [`.nvmrc`](.nvmrc) (`engines` allows `>=20.11`) |
+| pnpm | 10.18.3 | `packageManager` in [`package.json`](package.json) |
+
+Corepack ships with Node 22 and installs the pinned pnpm for you:
+
+```bash
+corepack enable
+```
 
 ## Quick start
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev             # both apps: PWA on :3000, marketing on :3001
+pnpm dev:pwa         # PWA only, http://localhost:3000
+pnpm dev:marketing   # marketing site only, http://localhost:3001
 ```
 
-Open `http://localhost:3000`. The trained gesture model
-(`public/models/gesture_recognizer.task`) and the MediaPipe WASM runtime
-(`public/wasm/`) are committed to the repo — no download step needed.
+The trained model and the MediaPipe WASM runtime are committed under
+`apps/pwa/public/`, so there is no download step. To test the camera on a
+physical phone you need HTTPS: see [`apps/pwa/README.md`](apps/pwa/README.md#run-it-locally).
 
-Camera APIs require a secure origin: `localhost` works; a physical phone on
-your LAN needs an HTTPS tunnel:
+## Common commands
 
-```bash
-npx localtunnel --port 3000   # or: ngrok http 3000
-```
+Run these from the repository root.
 
-## Deploy
-
-Any static-capable Next.js host works (Vercel, Netlify, a VPS…):
-
-```bash
-npm run build && npm start
-```
-
-HTTPS is mandatory in production (camera access + service worker). On
-Vercel this is automatic: import the repo, deploy, done.
-
-## Tech stack
-
-| Layer | Choice |
+| Command | What it does |
 |---|---|
-| Framework | Next.js 15 (App Router) + React 19 + TypeScript |
-| On-device ML | `@mediapipe/tasks-vision` `GestureRecognizer` (GPU delegate, CPU fallback), custom 34-class model |
-| UI | Tailwind CSS 3 + shadcn/ui, dark high-contrast theme |
-| Voice | Browser `SpeechSynthesis` (prefers `ar-TN`, then any `ar-*` voice) |
-| Offline | Hand-written service worker (`public/sw.js`), network-first shell / cache-first assets |
-| Backend | None — fully client-side |
+| `pnpm dev` | Starts both apps in watch mode |
+| `pnpm dev:pwa` / `pnpm dev:marketing` | Starts one app |
+| `pnpm build` | Production build of both apps |
+| `pnpm lint` | ESLint in both apps |
+| `pnpm typecheck` | `tsc --noEmit` in every package with TypeScript code (builds the apps first, because Next.js generates route types during the build) |
+| `pnpm test` | Vitest, in the packages that have tests |
+| `pnpm check` | `lint` + `typecheck` + `test` in one run |
+| `pnpm qr` | Generates and verifies the pitch QR codes |
 
-## How recognition works
+To run a script in one package only, filter by package name:
 
-1. `components/GestureScanner.tsx` loads the model and runs
-   `recognizeForVideo` on every animation frame.
-2. A gesture must stay above the confidence threshold (0.65) for 700ms
-   before it locks in as a word — single-frame misfires are rejected.
-3. Locked gestures map to Tunisian Arabic words via
-   `lib/gestureDictionary.ts` and accumulate into a sentence.
-4. "Speak sentence" reads it aloud via on-device text-to-speech.
+```bash
+pnpm --filter @souty/pwa build
+pnpm --filter @souty/vocabulary test
+```
 
-**Known limitation:** the model classifies a single still frame — it
-recognizes *held static hand shapes*, not motion-based signs. Genuinely
-two-handed signs are also beyond this architecture (both training and
-inference see one hand at a time). See
-[`docs/TECHNICAL_DOC.md`](docs/TECHNICAL_DOC.md) for details and the
-roadmap past this ceiling.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs
+`pnpm turbo run lint typecheck test build` on every pull request and on
+every push to `main`.
+
+## Shared packages
+
+| Package | What it holds | Used by |
+|---|---|---|
+| `@souty/brand` | `tokens.css` (palette and semantic color roles), a Tailwind preset, palette constants for canvas and images, and the two typefaces (Readex Pro, Baloo Bhaijaan 2) loaded with `next/font/local` | both apps, `@souty/qr` |
+| `@souty/vocabulary` | The 33 signs: model label, spoken word, English and French gloss, category, data source | both apps |
+| `@souty/tsconfig` | `base.json`, `nextjs.json`, `library.json` | every package |
+
+How they are consumed:
+
+- **Source-only internal packages.** They have no build step. Their
+  `exports` point straight at TypeScript and CSS source, and each app
+  compiles them through `transpilePackages` in its `next.config.mjs`. Edit
+  a package and both apps pick the change up on the next reload.
+- **`workspace:*` links.** Apps depend on them as
+  `"@souty/brand": "workspace:*"`.
+- **One version of every shared dependency.** Versions of Next.js, React,
+  Tailwind, TypeScript and the rest are declared once, in the `catalog`
+  section of [`pnpm-workspace.yaml`](pnpm-workspace.yaml). Packages
+  reference them as `"next": "catalog:"`, so the two apps cannot drift
+  apart. To upgrade a dependency, change the catalog and run `pnpm install`.
+- **Fonts are self-hosted.** The font files and their SIL Open Font
+  Licences live in [`packages/brand/fonts`](packages/brand/fonts). Builds do
+  not call Google Fonts, and the PWA can cache the fonts for offline use.
+- **The vocabulary is pinned by a contract test.**
+  `packages/vocabulary/src/index.test.ts` fixes the label to word mapping
+  of the deployed model. A change there must come with a retrained model.
+
+## Pitch QR codes
+
+`pnpm qr` generates every code listed in `tools/qr/codes.json` into
+[`docs/pitch/qr/`](docs/pitch/qr) as `<name>.svg`, `<name>.png`,
+`<name>-card.svg` and `<name>-card.png`, then checks that each PNG decodes
+back to its URL. The first entry, `souty-app`, points at
+<https://souty.vercel.app>. The code for the marketing site is added once
+that site has a URL ([`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)). Details:
+[`tools/qr/README.md`](tools/qr/README.md).
 
 ## Documentation
 
-- [`docs/PITCH_DECK.md`](docs/PITCH_DECK.md) — pitch deck content (Social Tech Challenge 2026)
-- [`docs/TECHNICAL_DOC.md`](docs/TECHNICAL_DOC.md) — architecture, model training pipeline, deployment, testing
-- [`SPEC.md`](SPEC.md) — product & technical spec
-- [`TESTING.md`](TESTING.md) — manual test protocol per sign
-- [`public/models/README.md`](public/models/README.md) — the model asset
+| Document | Content |
+|---|---|
+| [`apps/pwa/README.md`](apps/pwa/README.md) | The PWA: problem, solution, features, how recognition works |
+| [`apps/pwa/SPEC.md`](apps/pwa/SPEC.md) | Product and technical spec of the PWA |
+| [`apps/pwa/TESTING.md`](apps/pwa/TESTING.md) | Manual test checklist |
+| [`apps/marketing/README.md`](apps/marketing/README.md) | The marketing site: structure, copy, locales |
+| [`docs/TECHNICAL_DOC.md`](docs/TECHNICAL_DOC.md) | Architecture, model training pipeline, configuration |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Vercel runbook and the cutover to this monorepo layout |
+| [`docs/PITCH_DECK.md`](docs/PITCH_DECK.md) | Pitch deck content |
 
-## Project structure
-
-```
-app/                     Next.js App Router (layout, page, manifest, error boundary)
-components/
-  GestureScanner.tsx     Camera + MediaPipe recognition + per-hand lock-in
-  ScannerWorkspace.tsx   Scanner + sentence panel, shared by app and tour
-  TranslationPanel.tsx   Growing sentence + speak/undo/clear/pause controls
-  LandingScreen.tsx      Entry screen
-  OnboardingTour.tsx     3-step interactive tutorial on a live scanner
-  SplashScreen.tsx       Launch splash
-  IdleExitPopup.tsx      "Put your hand back in frame" reminder
-  StatusDialog.tsx       Shared loading/error/reminder card
-  Logo.tsx               Logo mark + wordmark
-  ServiceWorkerRegistration.tsx
-  ui/                    Button / Card / Badge primitives
-hooks/
-  useSpeech.ts           Arabic voice selection + speak-on-demand
-  useSentence.ts         Sentence word list state
-  useIdleHandReminder.ts No-hand-in-frame reminder timer
-lib/
-  gestureDictionary.ts   Model label -> Tunisian Arabic word (33 signs)
-  handOverlay.ts         Canvas skeleton + progress ring drawing
-  recognizer.ts          Shared, pre-warmed MediaPipe recognizer + log filter
-  assets.ts              Parallel model/WASM download, persistent cache, progress
-  offline.ts             Asks the service worker to cache loaded resources
-public/
-  models/                Custom-trained 34-class gesture model (committed)
-  wasm/                  Self-hosted MediaPipe runtime
-  icons/                 PWA icons (192/512 + maskable)
-  sw.js                  Service worker (offline support)
-docs/                    Pitch deck + technical documentation
-```
-
-## Training data & credits
+## Training data and credits
 
 The Tunisian Sign Language classes are trained on the
 [Tunisian Sign Language Dataset](https://www.kaggle.com/datasets/warcoder/tunisian-sign-language-dataset)
-(Chakroun & Jerbi, 2023 — Mendeley Data, DOI `10.17632/fbjjgzgv7f.1`),
+(Chakroun & Jerbi, 2023, Mendeley Data, DOI `10.17632/fbjjgzgv7f.1`),
 collected with **ATILS** (Tunisian Association of Sign Language
-Interpreters), licensed **CC BY 4.0**. Additional gesture classes come from
-[HaGRID](https://github.com/hukenovs/hagrid). The training pipeline is
+Interpreters) and licensed **CC BY 4.0**. The universal gesture classes come
+from [HaGRID](https://github.com/hukenovs/hagrid). The training pipeline is
 documented in [`docs/TECHNICAL_DOC.md`](docs/TECHNICAL_DOC.md).
 
-## License & privacy
+The typefaces Readex Pro and Baloo Bhaijaan 2 are redistributed under the
+SIL Open Font License; the licence texts are in
+[`packages/brand/fonts`](packages/brand/fonts).
 
-Souty collects nothing: no accounts, no analytics, no network calls beyond
-serving the app itself. Camera frames are processed in memory on the device
-and never transmitted or stored.
+## Privacy
+
+Camera frames are processed in memory on the device and are never
+transmitted or stored. Recognition runs on the device, and sentences are
+spoken by the browser's own speech synthesis. There are no accounts. Both
+apps include Vercel Web Analytics, which reports cookieless page views to
+Vercel; see
+[`apps/pwa/README.md`](apps/pwa/README.md#privacy) for exactly what that
+does and does not cover.
+
+Team Souty, Meknassy (Sidi Bouzid), Tunisia.

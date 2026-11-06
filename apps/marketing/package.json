@@ -1,0 +1,41 @@
+{
+  "name": "@souty/marketing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Souty marketing site: the problem, the idea, what is built today and where it is going.",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "start": "next start --port 3001",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@souty/brand": "workspace:*",
+    "@souty/vocabulary": "workspace:*",
+    "@vercel/analytics": "catalog:",
+    "clsx": "catalog:",
+    "lucide-react": "catalog:",
+    "next": "catalog:",
+    "qrcode": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tailwind-merge": "catalog:"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "catalog:",
+    "@souty/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/qrcode": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "autoprefixer": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-next": "catalog:",
+    "postcss": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

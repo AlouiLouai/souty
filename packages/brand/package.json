@@ -1,0 +1,28 @@
+{
+  "name": "@souty/brand",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Souty design system foundations: the picture-book palette, self-hosted typefaces and Tailwind preset shared by every app.",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    "./tokens.css": "./src/tokens.css",
+    "./tailwind-preset": "./src/tailwind-preset.ts",
+    "./palette": "./src/palette.ts",
+    "./fonts": "./src/fonts.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@souty/tsconfig": "workspace:*",
+    "next": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "next": ">=15"
+  }
+}
