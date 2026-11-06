@@ -21,18 +21,23 @@ const HEADING_IDS = {
   offline: "offline-title",
 } as const;
 
-/** Model labels of the words offered in the playground, in display order. */
+/**
+ * Model labels of the words offered in the playground, in display order:
+ * Tunisian Sign Language signs the deployed model recognizes reliably on
+ * the dataset's own photos (an audit on 2026-11-06 found it misses several
+ * others, such as sbitar, mostawsaf and labes).
+ */
 const PLAYGROUND_SIGNS = [
   "assam",
   "bou",
+  "eben",
   "tfol",
-  "sbitar",
-  "mostawsaf",
-  "5mis",
-  "louage",
-  "oui",
   "non",
-  "labes",
+  "5mis",
+  "sebt",
+  "louage",
+  "metro",
+  "train",
 ] as const;
 
 function playgroundWords(locale: Locale): PlaygroundWord[] {

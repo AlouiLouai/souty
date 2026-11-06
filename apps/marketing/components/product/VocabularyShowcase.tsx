@@ -12,6 +12,7 @@ import { Sticker } from "@/components/ui/Sticker";
 import { format, type Dictionary } from "@/content";
 import type { Locale } from "@/i18n/config";
 import { cn } from "@/lib/cn";
+import { SignGlyph } from "./SignGlyph";
 import { glossFor } from "./sign-gloss";
 
 /** Chip colour by where a sign comes from; the legend uses the same pair. */
@@ -27,8 +28,9 @@ interface VocabularyShowcaseProps {
 
 /**
  * Every sign the app recognizes today, straight from the shared vocabulary
- * package and grouped by theme. Tunisian Sign Language signs and universal
- * gestures get different chip colours.
+ * package and grouped by theme, each with a drawing of its hand shape.
+ * Tunisian Sign Language signs and universal gestures get different chip
+ * colours.
  */
 export function VocabularyShowcase({ vocabulary, locale }: VocabularyShowcaseProps) {
   return (
@@ -90,19 +92,22 @@ interface SignChipProps {
   gloss: string | undefined;
 }
 
-/** One sign: its Tunisian Arabic word and, when there is one, its meaning. */
+/** One sign: its hand shape, its Tunisian Arabic word and, when there is one, its meaning. */
 function SignChip({ sign, gloss }: SignChipProps) {
   return (
     <li
       className={cn(
-        "inline-flex max-w-full flex-wrap items-baseline gap-x-1.5 rounded-xl border-[2.5px] border-plum px-2.5 py-1",
+        "inline-flex max-w-full items-center gap-x-1.5 rounded-xl border-[2.5px] border-plum py-1 pe-2.5 ps-1",
         CHIP_TONE[sign.source]
       )}
     >
-      <span lang="ar-TN" dir="rtl" className="font-display text-[1.2rem] font-bold leading-snug">
-        {sign.word}
+      <SignGlyph label={sign.label} className="size-10 rounded-lg bg-paper" />
+      <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
+        <span lang="ar-TN" dir="rtl" className="font-display text-[1.2rem] font-bold leading-snug">
+          {sign.word}
+        </span>
+        {gloss ? <span className="text-[0.88rem] leading-snug">{gloss}</span> : null}
       </span>
-      {gloss ? <span className="text-[0.88rem] leading-snug">{gloss}</span> : null}
     </li>
   );
 }

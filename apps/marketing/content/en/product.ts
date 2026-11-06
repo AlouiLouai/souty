@@ -78,8 +78,9 @@ export const product = {
     derja: "إيجا نلعبو!",
     title: "Try the idea right here",
     lead: "Pick some words. The hand signs them, the sentence builds, then you make the phone speak.",
-    canvasLabel: "A drawn hand that makes signs",
-    disclaimer: "This is a drawing to explain the idea. The real signs come from Tunisian Sign Language.",
+    canvasLabel: "A drawn hand that takes the real hand shape of each sign",
+    disclaimer:
+      "Each hand shape is the real one, taken from the Tunisian Sign Language data the app learned from. A sign also has movement and a place on the body, at the ear or on the chest, which a still drawing leaves out.",
     chooseDerja: "اختار كلمة",
     choose: "Choose a word",
     /** Accessible name of the sentence strip. */
