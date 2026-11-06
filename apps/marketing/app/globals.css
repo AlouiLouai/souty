@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Palette, typefaces and semantic color roles come from
+   @souty/brand/tokens.css, imported ahead of this file in the root layout. */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Keep anchored sections clear of the sticky header. */
+    scroll-padding-top: 5.5rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display;
+    line-height: 1.12;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* One focus style everywhere: thick, high-contrast, never removed. */
+  :focus-visible {
+    outline: 4px solid var(--plum);
+    outline-offset: 3px;
+    border-radius: 12px;
+  }
+
+  ::selection {
+    background: var(--sun);
+    color: var(--plum);
+  }
+}
+
+@layer components {
+  /* Scalloped top edge that makes a section look like a torn-out page.
+     The pseudo-element inherits the section's own background. */
+  .wave-top {
+    position: relative;
+  }
+  .wave-top::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: -28px;
+    height: 30px;
+    background: inherit;
+    -webkit-mask: radial-gradient(30px 28px at 30px 30px, #000 98%, transparent) -30px 0 / 60px 30px repeat-x;
+    mask: radial-gradient(30px 28px at 30px 30px, #000 98%, transparent) -30px 0 / 60px 30px repeat-x;
+    pointer-events: none;
+  }
+
+  /* Scroll-reveal. Content is visible by default; the hidden starting state
+     only applies once JavaScript has opted the element in, so nothing is
+     ever lost without JS or before hydration. */
+  .reveal[data-reveal="pending"] {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  .reveal[data-reveal="shown"] {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 0.6s ease-out,
+      transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+}
+
+@layer utilities {
+  /* SVG parts animate around their own box, not the SVG origin. */
+  .origin-box {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal[data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+}

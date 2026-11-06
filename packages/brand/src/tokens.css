@@ -1,0 +1,60 @@
+/*
+ * Souty design tokens.
+ *
+ * A bright sky page, white "paper" cards, ink-plum text and borders, and
+ * candy accents. Raw palette first, then the semantic roles components
+ * consume through the Tailwind preset (bg-background, text-foreground...).
+ * Mirrored as plain values in palette.ts for canvas / image rendering.
+ */
+:root {
+  color-scheme: light;
+
+  /* Palette */
+  --sky: #e9ecff;
+  --paper: #ffffff;
+  --plum: #2a1846;
+  --plum-soft: #5d4e7a;
+  --harissa: #ff5a3c;
+  --sun: #ffc83a;
+  --mint: #22bfa0;
+  --lilac: #b9a8ff;
+  --pink: #ffb4c8;
+  --skin: #f2b48b;
+  --skin-line: #b9683f;
+
+  /* Typefaces. The four --font-*-latin / --font-*-arabic variables are set by
+     the class from @souty/brand/fonts on <html>; the Latin face comes first
+     and each face is limited to its own script by unicode-range. */
+  --font-sans: var(--font-sans-latin, system-ui), var(--font-sans-arabic, system-ui);
+  --font-display: var(--font-display-latin, system-ui), var(--font-display-arabic, system-ui);
+
+  /* Semantic roles */
+  --background: var(--sky);
+  --foreground: var(--plum);
+
+  --card: var(--paper);
+  --card-foreground: var(--plum);
+
+  --primary: var(--harissa);
+  --primary-foreground: #ffffff;
+
+  /* Harissa doubles as the highlight: it is the only accent that stays
+     readable as text over a white card. */
+  --highlight: var(--harissa);
+  --highlight-foreground: #ffffff;
+
+  --secondary: var(--lilac);
+  --secondary-foreground: var(--plum);
+
+  --muted: #dcd6f7;
+  --muted-foreground: var(--plum-soft);
+
+  --accent: #ddf8f1;
+  --accent-foreground: var(--plum);
+
+  --destructive: var(--skin-line);
+  --destructive-foreground: #ffffff;
+
+  --border: var(--plum);
+  --ring: var(--harissa);
+}

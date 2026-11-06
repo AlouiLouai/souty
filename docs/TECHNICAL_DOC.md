@@ -5,10 +5,34 @@ model training pipeline, deployment, and testing. (The executable training
 notebook is kept out of the public repo — this document preserves
 everything needed to reproduce it.)
 
+## Repository layout
+
+The repository is a pnpm workspace orchestrated by Turborepo. This document
+is about the PWA; file paths are given from the repository root.
+
+| Path | Package | Role |
+|---|---|---|
+| `apps/pwa` | `@souty/pwa` | The sign-to-speech PWA described here (dev server on port 3000) |
+| `apps/marketing` | `@souty/marketing` | The marketing site, English / French / Arabic (dev server on port 3001) |
+| `packages/vocabulary` | `@souty/vocabulary` | The 33 signs: single source of truth for both apps, pinned by a contract test |
+| `packages/brand` | `@souty/brand` | Design tokens, Tailwind preset, palette constants, self-hosted fonts |
+| `packages/tsconfig` | `@souty/tsconfig` | Shared TypeScript bases |
+| `tools/qr` | `@souty/qr` | Generates and verifies the pitch QR codes (`pnpm qr`) |
+| `docs` | | This document, the pitch deck, the deployment runbook, the design reference, the generated QR codes |
+
+The shared packages have no build step: they export TypeScript and CSS
+source, and each Next.js app compiles them through `transpilePackages` in
+its `next.config.mjs`. Versions of shared dependencies are declared once,
+in the `catalog` of `pnpm-workspace.yaml`. Setup and commands are in the
+[root README](../README.md); deployment is in
+[`DEPLOYMENT.md`](DEPLOYMENT.md).
+
 ## 1. Architecture overview
 
 Souty is a fully client-side application — there is no backend, no API, no
-database, no analytics. Every byte of inference happens on the user's device.
+database. Every byte of inference happens on the user's device. The only
+third-party call is Vercel Web Analytics (cookieless page views; see
+[section 3](#3-privacy--security)).
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -34,42 +58,77 @@ database, no analytics. Every byte of inference happens on the user's device.
 │    Sentence state → SpeechSynthesis (ar-TN)  │
 └─────────────────────────────────────────────┘
         ▲ Service worker caches everything:
-        app shell, model (8.1 MB), WASM (~34 MB), icons
+        app shell, fonts, model (8.1 MB), WASM runtime (~12 MB), icons
 ```
 
 ### Stack
 
 - **Next.js 15 (App Router) + React 19 + TypeScript** — static-friendly, PWA
   metadata routes.
-- **Tailwind CSS 3 + shadcn/ui** — dark, high-contrast theme tuned for
-  sustained camera use (near-black `0 0% 4%`, not pure `#000`).
+- **Tailwind CSS 3 + shadcn/ui-style primitives** (`apps/pwa/components/ui`)
+  — a light "picture-book" theme: sky page (`#E9ECFF`), white cards,
+  ink-plum text and borders (`#2A1846`), harissa (`#FF5A3C`) for primary
+  actions and highlights. The palette and the semantic color roles are
+  defined once in `packages/brand/src/tokens.css` and mapped onto Tailwind
+  names by the preset in `packages/brand/src/tailwind-preset.ts`. The
+  on-camera canvas overlay keeps its own colors (white skeleton with a
+  dark halo, cyan `#22D3EE` progress ring), chosen to stay visible over
+  live video.
+- **Self-hosted fonts** — Readex Pro (body) and Baloo Bhaijaan 2 (display),
+  both covering Arabic and Latin, loaded with `next/font/local` from
+  `packages/brand/src/fonts.ts`. The files and their SIL Open Font
+  Licences are committed in `packages/brand/fonts`. They were moved off
+  `next/font/google` because Google Fonts began serving Baloo Bhaijaan 2
+  from extension-less URLs that crash the `next/font/google` loader at
+  build time; self-hosting also removes a build-time network dependency.
 - **`@mediapipe/tasks-vision` 1.0.1** — `GestureRecognizer` in `VIDEO`
-  running mode, `numHands: 2`, GPU delegate with CPU fallback. Dynamic
-  `import()` so the library only loads client-side when the scanner mounts.
+  running mode, `numHands: 2`, GPU delegate with CPU fallback. The library
+  is loaded with a dynamic `import()` in `apps/pwa/lib/recognizer.ts`,
+  client-side only, and warmed up while the landing screen is showing so
+  the scanner opens quickly.
 - **Browser `SpeechSynthesis`** — voice selection prefers `ar-TN`, then any
   `ar-*`, else the OS default. On-demand only (no auto-speak).
-- **Hand-written service worker** (`public/sw.js`) — network-first for
-  navigations (fresh shell online, cached shell offline), cache-first for
-  `/_next/static/`, `/models/`, `/wasm/`, `/icons/`. Registered in
-  production builds only. Bump `CACHE_VERSION` when caching *logic* changes.
+- **Hand-written service worker** (`apps/pwa/public/sw.js`), registered in
+  production builds only:
+  - navigations are network-first (fresh shell online, cached shell
+    offline or when the network takes longer than 4 s);
+  - `/_next/static/` (JS, CSS, fonts), `/icons/` and the manifest are
+    cache-first, in the shell cache;
+  - `/models/` and `/wasm/` are cache-first in a separate asset cache
+    (`souty-assets-v1`) that `apps/pwa/lib/assets.ts` fills and that shell
+    version bumps never purge. The model URL carries `?v=N`
+    (`MODEL_VERSION`), so a new model is a new cache key.
+
+  Bump `SHELL_CACHE` when the caching *logic* changes.
+- **Vercel Web Analytics** (`@vercel/analytics`) — the `<Analytics />`
+  component in `apps/pwa/app/layout.tsx`. Page views only; see
+  [section 3](#3-privacy--security).
 
 ### Key source files
 
 | File | Role |
 |---|---|
-| `components/GestureScanner.tsx` | Camera lifecycle, model loading, detection loop, per-hand lock-in state |
-| `lib/handOverlay.ts` | Canvas skeleton + progress ring / label drawing |
-| `lib/gestureDictionary.ts` | Model label → Tunisian Arabic word (`GESTURE_WORD_MAP`), `IGNORED_LABELS` |
-| `hooks/useSpeech.ts` | Arabic voice selection + `speak` |
-| `hooks/useSentence.ts`, `hooks/useIdleHandReminder.ts` | Sentence state; no-hand reminder timer |
-| `app/page.tsx` | View orchestration (landing/onboarding/scanner) |
-| `public/sw.js` | Offline caching strategy |
-| `next.config.mjs` | Immutable caching headers for model/WASM; no-store for `sw.js` |
+| `apps/pwa/components/GestureScanner.tsx` | Camera lifecycle, detection loop, per-hand lock-in state |
+| `apps/pwa/lib/recognizer.ts` | Shared, pre-warmed MediaPipe recognizer (GPU → CPU fallback, `MAX_HANDS`) |
+| `apps/pwa/lib/assets.ts` | Parallel model/WASM download, persistent Cache API copy, load progress, `MODEL_VERSION` |
+| `apps/pwa/lib/handOverlay.ts` | Canvas skeleton + progress ring / label drawing |
+| `packages/vocabulary/src/index.ts` | The vocabulary: `SIGNS` (model label, Tunisian Arabic word, glosses, category, source), `WORD_BY_LABEL`, `NEGATIVE_LABELS` |
+| `packages/vocabulary/src/index.test.ts` | Contract test pinning the label → word mapping of the deployed model |
+| `apps/pwa/lib/gestureDictionary.ts` | Thin adapter over `@souty/vocabulary`: `gestureToWord`, `IGNORED_LABELS` |
+| `apps/pwa/hooks/useSpeech.ts` | Arabic voice selection + `speak` |
+| `apps/pwa/hooks/useSentence.ts`, `apps/pwa/hooks/useIdleHandReminder.ts` | Sentence state; no-hand reminder timer |
+| `apps/pwa/app/page.tsx` | View orchestration (landing/onboarding/scanner) |
+| `apps/pwa/app/layout.tsx` | Fonts and tokens from `@souty/brand`, service-worker registration, analytics |
+| `apps/pwa/public/sw.js` | Offline caching strategy |
+| `apps/pwa/lib/offline.ts` | Asks the service worker to cache files loaded before it took control |
+| `apps/pwa/next.config.mjs` | `transpilePackages` for the workspace packages; immutable caching headers for model/WASM; `must-revalidate` for `sw.js` |
 
 ### Recognition & lock-in logic
 
-- `recognizeForVideo(video, now)` runs every animation frame, guarded by
-  `video.currentTime` change (no duplicate inference per frame).
+- `recognizeForVideo(video, now)` runs from the animation-frame loop,
+  guarded by `video.currentTime` change (no duplicate inference per frame)
+  and capped at about 25 inferences per second (`MIN_FRAME_INTERVAL_MS`,
+  40 ms) so low-end phones keep the UI responsive.
 - Per hand (keyed by MediaPipe handedness): the top category must score
   ≥ `CONFIDENCE_THRESHOLD` (0.65) and persist for `LOCK_HOLD_MS` (700ms)
   before locking in. The same gesture held continuously locks in only once;
@@ -77,8 +136,8 @@ database, no analytics. Every byte of inference happens on the user's device.
 - A failing frame is caught and logged — the loop always reschedules, so a
   transient WASM error can't silently kill detection.
 - Lock-in feedback: haptic pulse (`navigator.vibrate`, where supported),
-  expanding flash ring at the hand, most-recent word highlighted cyan in
-  the sentence panel.
+  expanding flash ring at the hand, most-recent word highlighted in the
+  sentence panel.
 
 ### Known architectural limits
 
@@ -180,56 +239,91 @@ Retraining replaces the whole classifier head — there is no incremental
 "add a class". Any change means:
 
 1. Update `KEPT_SIGN_LABELS` / `HAGRID_LABEL_MAP` in the notebook.
-2. Update `GESTURE_WORD_MAP` in `lib/gestureDictionary.ts` to match
-   **exactly** (model output category name === dictionary key).
+2. Update `SIGNS` in `packages/vocabulary/src/index.ts` to match
+   **exactly** (model output category name === the entry's `label`), and
+   update `DEPLOYED_MODEL_CONTRACT` in
+   `packages/vocabulary/src/index.test.ts` in the same change. The test
+   fails on any accidental drift; run it with
+   `pnpm --filter @souty/vocabulary test`. `apps/pwa/lib/gestureDictionary.ts`
+   is a thin adapter and needs no edit; the marketing site depends on the
+   same package.
 3. Retrain everything together; download the `.task` from Kaggle's Output
-   panel; replace `public/models/gesture_recognizer.task`.
+   panel; replace `apps/pwa/public/models/gesture_recognizer.task` and
+   bump `MODEL_VERSION` in `apps/pwa/lib/assets.ts`, so returning users
+   download the new model instead of the cached one.
 4. Manually test every sign (per-class aggregate accuracy can hide one
-   badly-confused class) — see `TESTING.md`; drop any sign the model still
-   can't reliably distinguish.
+   badly-confused class) — see `apps/pwa/TESTING.md`; drop any sign the
+   model still can't reliably distinguish.
 
 The combined 34-class problem was assembled from separately-proven halves —
 treat per-sign manual testing as mandatory after any retrain.
 
 ## 3. Privacy & security
 
-- No network calls beyond serving the app: model and WASM are self-hosted
-  (`public/models/`, `public/wasm/`), not CDN-fetched.
 - Camera frames are processed in memory and never stored or transmitted.
-- No accounts, no cookies, no analytics — no personal-data compliance
-  surface, safe for minors.
+  Recognition runs in the browser: no frame, landmark, recognized sign or
+  sentence leaves the device.
+- Model, WASM runtime and fonts are self-hosted
+  (`apps/pwa/public/models/`, `apps/pwa/public/wasm/`,
+  `packages/brand/fonts/`), not CDN-fetched.
+- No accounts, and the app sets no cookies.
+- **One third-party call: Vercel Web Analytics.** `apps/pwa/app/layout.tsx`
+  renders `<Analytics />` from `@vercel/analytics`. On the Vercel
+  deployment it reports cookieless page views to Vercel (per
+  [Vercel's documentation](https://vercel.com/docs/analytics/privacy-policy):
+  timestamp, page URL, referrer, device, OS and browser type, location
+  down to the city; no cookie, no persistent visitor identifier). The app
+  sends no custom events, so nothing about the camera, the signs or the
+  sentences is included. Data is only recorded when Web Analytics is
+  enabled for the project in the Vercel dashboard. The marketing site
+  includes the same component.
 - `.mcp.json`, `.claude/`, `.kimi-code/` (local tooling with live tokens)
   are gitignored and never committed.
 
 ## 4. Deployment
 
-- `npm run build` → any Next.js-capable host (Vercel recommended; zero
-  config). HTTPS is mandatory (camera + service worker).
-- Bundle: ~129 kB first-load JS + 8.1 MB model + ~34 MB WASM (three
-  variants; the browser loads one), all cache-first after first visit.
-- `next.config.mjs` sets immutable caching on `/models` + `/wasm` and
-  `must-revalidate` on `/sw.js` (so updates actually propagate).
+- Production runs on Vercel, one project per app, both built from this
+  repository: Root Directory `apps/pwa` for the PWA, `apps/marketing` for
+  the marketing site. The runbook, including the one-time cutover of the
+  existing project to the monorepo layout, is [`DEPLOYMENT.md`](DEPLOYMENT.md).
+- `pnpm build` builds both apps; `pnpm --filter @souty/pwa build` builds
+  the PWA alone. HTTPS is mandatory (camera + service worker).
+- Bundle: ~130 kB first-load JS + 8.1 MB model + WASM runtime (two
+  variants committed, SIMD and non-SIMD, ~23 MB together; the browser
+  loads one, ~12 MB), all cache-first after first visit.
+- `apps/pwa/next.config.mjs` sets immutable caching on `/models` + `/wasm`
+  and `must-revalidate` on `/sw.js` (so updates actually propagate).
 
 ## 5. Configuration knobs
 
 | What | Where | Value |
 |---|---|---|
-| Confidence threshold | `GestureScanner.tsx` → `CONFIDENCE_THRESHOLD` | 0.65 |
-| Hold-to-lock duration | `GestureScanner.tsx` → `LOCK_HOLD_MS` | 700 ms |
-| Max tracked hands | `GestureScanner.tsx` → `MAX_HANDS` | 2 |
-| Gesture → word map | `lib/gestureDictionary.ts` → `GESTURE_WORD_MAP` | 33 entries |
-| Model file | `public/models/gesture_recognizer.task` | custom 34-class |
-| Splash duration | `app/page.tsx` → `SPLASH_MS` | 4000 ms |
-| Idle reminder delay | `app/page.tsx` → `IDLE_HAND_TIMEOUT_MS` | 5000 ms |
-| SW cache version | `public/sw.js` → `CACHE_VERSION` | `souty-v1` |
+| Confidence threshold | `apps/pwa/components/GestureScanner.tsx` → `CONFIDENCE_THRESHOLD` | 0.65 |
+| Hold-to-lock duration | `apps/pwa/components/GestureScanner.tsx` → `LOCK_HOLD_MS` | 700 ms |
+| Inference rate cap | `apps/pwa/components/GestureScanner.tsx` → `MIN_FRAME_INTERVAL_MS` | 40 ms (~25 fps) |
+| Max tracked hands | `apps/pwa/lib/recognizer.ts` → `MAX_HANDS` | 2 |
+| Gesture → word map | `packages/vocabulary/src/index.ts` → `SIGNS` | 33 entries |
+| Model file | `apps/pwa/public/models/gesture_recognizer.task` | custom 34-class |
+| Model cache version | `apps/pwa/lib/assets.ts` → `MODEL_VERSION` | 1 |
+| Splash duration | `apps/pwa/components/SplashScreen.tsx` → `SPLASH_MS` | 1200 ms (+ 300 ms fade) |
+| Idle reminder delay | `apps/pwa/app/page.tsx` → `IDLE_HAND_TIMEOUT_MS` | 5000 ms |
+| SW shell cache version | `apps/pwa/public/sw.js` → `SHELL_CACHE` | `souty-v3` |
+| SW asset cache | `apps/pwa/public/sw.js` and `apps/pwa/lib/assets.ts` → `ASSET_CACHE` | `souty-assets-v1` |
 
 ## 6. Testing
 
-- `npm run lint` — clean. `npm run build` — clean (verified before release).
-- Manual per-sign protocol: `TESTING.md` — every deployed sign is tested by
-  hand on a real device after any model swap, in varied lighting and
-  against light/dark backgrounds (the overlay is explicitly built to stay
-  readable on both).
+- Automated, from the repository root: `pnpm lint`, `pnpm typecheck`,
+  `pnpm test`, `pnpm build` (or `pnpm check` for the first three). CI
+  (`.github/workflows/ci.yml`) runs
+  `pnpm turbo run lint typecheck test build` on every pull request and on
+  every push to `main`.
+- Vocabulary contract test: `packages/vocabulary/src/index.test.ts` pins
+  the label → word mapping the deployed model was validated against and
+  the 23 + 10 = 33 split.
+- Manual per-sign protocol: `apps/pwa/TESTING.md` — every deployed sign is
+  tested by hand on a real device after any model swap, in varied lighting
+  and against light/dark backgrounds (the overlay is explicitly built to
+  stay readable on both).
 - Resilience paths covered by UI states: camera denied (with Permissions
   API auto-resume when the user grants access from browser settings),
   unsupported browser, model load failure, render crash (error boundary),

@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Palette, typefaces and semantic color roles come from
+   @souty/brand/tokens.css, imported ahead of this file in app/layout.tsx. */
+
+@layer base {
+  * {
+    @apply border-border;
+    -webkit-font-smoothing: antialiased;
+  }
+  html,
+  body {
+    height: 100%;
+    overscroll-behavior-y: none;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--plum-soft);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@layer utilities {
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 0.75rem);
+  }
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+  }
+  .safe-x {
+    padding-left: max(env(safe-area-inset-left), 1rem);
+    padding-right: max(env(safe-area-inset-right), 1rem);
+  }
+}
