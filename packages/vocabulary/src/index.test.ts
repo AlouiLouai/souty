@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  HAND_LANDMARK_COUNT,
   NEGATIVE_LABELS,
   SIGNS,
   SIGN_CATEGORIES,
   SIGN_COUNT,
+  TUNSL_HANDSHAPES,
   TUNSL_SIGN_COUNT,
   UNIVERSAL_SIGN_COUNT,
   WORD_BY_LABEL,
@@ -90,6 +92,41 @@ describe("vocabulary", () => {
   it("keeps universal gestures and the HaGRID source aligned", () => {
     for (const sign of SIGNS) {
       expect(sign.category === "universal", sign.label).toBe(sign.source === "hagrid");
+    }
+  });
+});
+
+describe("negative labels", () => {
+  it("include the empty name the model gives its no-gesture class", () => {
+    expect(NEGATIVE_LABELS.has("")).toBe(true);
+    expect(NEGATIVE_LABELS.has("none")).toBe(true);
+    expect(NEGATIVE_LABELS.has("None")).toBe(true);
+  });
+});
+
+describe("hand shapes", () => {
+  const tunslLabels = SIGNS.filter((sign) => sign.source === "tunsl").map((sign) => sign.label);
+
+  it("exist for every Tunisian Sign Language sign, and for nothing else", () => {
+    expect(Object.keys(TUNSL_HANDSHAPES).sort()).toEqual([...tunslLabels].sort());
+  });
+
+  it("each have 21 finite landmarks, a unit palm, and a sane size", () => {
+    for (const [label, shape] of Object.entries(TUNSL_HANDSHAPES)) {
+      expect(shape, label).toHaveLength(HAND_LANDMARK_COUNT);
+      for (const point of shape) {
+        expect(point, label).toHaveLength(3);
+        for (const value of point) expect(Number.isFinite(value), label).toBe(true);
+      }
+      const wrist = shape[0];
+      const middleKnuckle = shape[9];
+      if (!wrist || !middleKnuckle) throw new Error(`${label} is missing landmarks`);
+      const palm = Math.hypot(middleKnuckle[0] - wrist[0], middleKnuckle[1] - wrist[1]);
+      expect(palm, label).toBeCloseTo(1, 2);
+      for (const [x, y] of shape) {
+        expect(Math.abs(x), label).toBeLessThan(4);
+        expect(Math.abs(y), label).toBeLessThan(4);
+      }
     }
   });
 });

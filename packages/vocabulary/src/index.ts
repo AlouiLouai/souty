@@ -85,8 +85,12 @@ export const SIGNS: readonly Sign[] = [
   { label: "Shaka_Sign", word: "مبروك", gloss: { en: "congratulations", fr: "félicitations" }, category: "universal", source: "hagrid" },
 ];
 
-/** Model categories that mean "no gesture". */
-export const NEGATIVE_LABELS: ReadonlySet<string> = new Set(["None", "none"]);
+/**
+ * Model categories that mean "no gesture". The custom model reports its
+ * "none" class with an empty name, often with high confidence, so the empty
+ * string must be ignored too or a blank word gets locked into the sentence.
+ */
+export const NEGATIVE_LABELS: ReadonlySet<string> = new Set(["", "None", "none"]);
 
 /** Display order for grouped listings. */
 export const SIGN_CATEGORIES: readonly SignCategory[] = [
@@ -110,3 +114,5 @@ export const UNIVERSAL_SIGN_COUNT = SIGNS.filter((sign) => sign.source === "hagr
 export function signsByCategory(category: SignCategory): readonly Sign[] {
   return SIGNS.filter((sign) => sign.category === category);
 }
+
+export { HAND_LANDMARK_COUNT, TUNSL_HANDSHAPES, type HandLandmark } from "./handshapes";

@@ -2,23 +2,22 @@ import {
   HOLD_MS,
   LOCKED_MS,
   POSE_TWEEN_MS,
-  REST_POSE,
+  REST_SHAPE,
   clamp01,
   easeInOutCubic,
-  mixPose,
-  poseForStep,
+  mixShape,
   withTremor,
-  type HandPose,
+  type HandShape,
 } from "@/components/demo/hand-model";
 import { paintHand } from "./paint-hand";
 
 /** Imperative handle on the animated hand, for the component that owns the canvas. */
 export interface HandStage {
   /**
-   * Queues one sign. The hand moves into its next pose, the ring fills, then
-   * `onLock` fires. Quick calls play one after another.
+   * Queues one sign. The hand moves into the sign's shape, the ring fills,
+   * then `onLock` fires. Quick calls play one after another.
    */
-  sign(onLock: () => void): void;
+  sign(shape: HandShape, onLock: () => void): void;
   /** Drops queued signs and relaxes the hand back to an open palm. */
   reset(): void;
   /** Stops every observer, listener, timer and animation frame. */
@@ -26,8 +25,8 @@ export interface HandStage {
 }
 
 interface Tween {
-  readonly from: HandPose;
-  readonly to: HandPose;
+  readonly from: HandShape;
+  readonly to: HandShape;
   readonly startedAt: number;
   /** Whether the hold-to-confirm ring accompanies this movement. */
   readonly ring: boolean;
@@ -54,17 +53,16 @@ export function createHandStage(stage: HTMLElement, canvas: HTMLCanvasElement): 
   let frame: number | null = null;
   let timer: number | null = null;
 
-  let settledPose = REST_POSE;
+  let settledShape = REST_SHAPE;
   let tween: Tween | null = null;
   let locked = false;
-  let step = 0;
   let busy = false;
-  const queue: Array<() => void> = [];
+  const queue: Array<{ shape: HandShape; onLock: () => void }> = [];
 
-  const poseAt = (now: number): HandPose => {
-    if (!tween) return settledPose;
+  const shapeAt = (now: number): HandShape => {
+    if (!tween) return settledShape;
     const progress = clamp01((now - tween.startedAt) / POSE_TWEEN_MS);
-    return mixPose(tween.from, tween.to, easeInOutCubic(progress));
+    return mixShape(tween.from, tween.to, easeInOutCubic(progress));
   };
 
   const ringAt = (now: number): number | null => {
@@ -76,13 +74,13 @@ export function createHandStage(stage: HTMLElement, canvas: HTMLCanvasElement): 
   const draw = () => {
     if (width === 0 || height === 0) return;
     const now = performance.now();
-    const pose = poseAt(now);
+    const shape = shapeAt(now);
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     context.clearRect(0, 0, width, height);
     paintHand(context, {
       width,
       height,
-      pose: reducedMotion.matches ? pose : withTremor(pose, now),
+      shape: reducedMotion.matches ? shape : withTremor(shape, now),
       ring: ringAt(now),
     });
   };
@@ -140,19 +138,18 @@ export function createHandStage(stage: HTMLElement, canvas: HTMLCanvasElement): 
   };
 
   const signNext = () => {
-    const onLock = queue.shift();
-    if (!onLock) {
+    const next = queue.shift();
+    if (!next) {
       busy = false;
       return;
     }
     busy = true;
+    const { shape: target, onLock } = next;
 
-    // Reduced motion: the pose applies at once and the word locks immediately.
+    // Reduced motion: the shape applies at once and the word locks immediately.
     const still = reducedMotion.matches;
     const now = performance.now();
-    const target = poseForStep(step);
-    step += 1;
-    tween = { from: poseAt(now), to: target, startedAt: now, ring: true };
+    tween = { from: shapeAt(now), to: target, startedAt: now, ring: true };
     locked = false;
 
     after(still ? 0 : POSE_TWEEN_MS + HOLD_MS, () => {
@@ -160,7 +157,7 @@ export function createHandStage(stage: HTMLElement, canvas: HTMLCanvasElement): 
       onLock();
       drawIfStill();
       after(still ? 0 : LOCKED_MS, () => {
-        settledPose = target;
+        settledShape = target;
         tween = null;
         locked = false;
         drawIfStill();
@@ -188,8 +185,8 @@ export function createHandStage(stage: HTMLElement, canvas: HTMLCanvasElement): 
   syncLoop();
 
   return {
-    sign(onLock) {
-      queue.push(onLock);
+    sign(shape, onLock) {
+      queue.push({ shape, onLock });
       if (!busy) signNext();
     },
 
@@ -200,11 +197,11 @@ export function createHandStage(stage: HTMLElement, canvas: HTMLCanvasElement): 
       locked = false;
       const now = performance.now();
       if (reducedMotion.matches) {
-        settledPose = REST_POSE;
         tween = null;
       } else {
-        tween = { from: poseAt(now), to: REST_POSE, startedAt: now, ring: false };
+        tween = { from: shapeAt(now), to: REST_SHAPE, startedAt: now, ring: false };
       }
+      settledShape = REST_SHAPE;
       drawIfStill();
     },
 

@@ -4,7 +4,7 @@ import {
   FINGERTIPS,
   PALM_OUTLINE,
   layoutHand,
-  type HandPose,
+  type HandShape,
   type Vec2,
 } from "@/components/demo/hand-model";
 
@@ -12,7 +12,7 @@ export interface HandFrame {
   /** Stage size in CSS pixels. */
   readonly width: number;
   readonly height: number;
-  readonly pose: HandPose;
+  readonly shape: HandShape;
   /** Hold-to-confirm progress from 0 to 1, or null when no ring is shown. */
   readonly ring: number | null;
 }
@@ -67,7 +67,7 @@ function paintRing(
  * The caller clears the canvas and sets the pixel-ratio transform.
  */
 export function paintHand(context: CanvasRenderingContext2D, frame: HandFrame): void {
-  const { points, scale, ring } = layoutHand(frame.pose, frame.width, frame.height);
+  const { points, scale, sleeveEnd, ring } = layoutHand(frame.shape, frame.width, frame.height);
   const wrist = points[0];
   if (!wrist) return;
 
@@ -76,9 +76,8 @@ export function paintHand(context: CanvasRenderingContext2D, frame: HandFrame): 
   context.lineCap = "round";
   context.lineJoin = "round";
 
-  const sleeve: Vec2[] = [wrist, [wrist[0] + scale * 0.05, frame.height + 20]];
-  const sleeveWidth = scale * 0.62;
-  trace(context, sleeve);
+  const sleeveWidth = scale * 0.6;
+  trace(context, [wrist, sleeveEnd]);
   context.strokeStyle = palette.plum;
   context.lineWidth = sleeveWidth;
   context.stroke();

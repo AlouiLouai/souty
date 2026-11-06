@@ -86,8 +86,9 @@ export const product: Dictionary["product"] = {
     derja: "إيجا نلعبو!",
     title: "Essayez l'idée ici même",
     lead: "Choisissez quelques mots. La main fait les signes, la phrase se construit, puis vous faites parler le téléphone.",
-    canvasLabel: "Une main dessinée qui fait des signes",
-    disclaimer: "Ce dessin sert à expliquer l'idée. Les vrais signes viennent de la langue des signes tunisienne.",
+    canvasLabel: "Une main dessinée qui prend la forme réelle de chaque signe",
+    disclaimer:
+      "Chaque forme de main est la vraie, tirée des données de langue des signes tunisienne avec lesquelles l'application a appris. Un signe a aussi un mouvement et une place sur le corps, à l'oreille ou sur la poitrine, que ce dessin immobile ne montre pas.",
     chooseDerja: "اختار كلمة",
     choose: "Choisissez un mot",
     /** Accessible name of the sentence strip. */

@@ -2,7 +2,9 @@
 
 import { Hand, RotateCcw, Volume2 } from "lucide-react";
 import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
+import { REST_SHAPE, shapeForSign } from "@/components/demo/hand-model";
 import { createHandStage, type HandStage } from "@/components/product/playground/hand-stage";
+import { SignGlyph } from "@/components/product/SignGlyph";
 import { Button } from "@/components/ui/Button";
 import { format } from "@/content";
 import { cn } from "@/lib/cn";
@@ -11,6 +13,7 @@ import { speakArabic, warmUpVoices } from "@/lib/speech";
 
 /** One word the visitor can sign in the playground. */
 export interface PlaygroundWord {
+  /** Model label of the sign; it selects the hand shape that is drawn. */
   id: string;
   /** Tunisian Arabic, in Arabic script. */
   word: string;
@@ -42,9 +45,9 @@ interface SignPlaygroundProps {
 }
 
 /**
- * The "sign the hand" toy: tap words, a cartoon hand signs each one while a
- * ring fills (the app's hold-to-confirm), the sentence builds chip by chip,
- * and a button speaks it aloud in Tunisian Arabic.
+ * The "sign the hand" toy: tap words, a cartoon hand takes each sign's real
+ * hand shape while a ring fills (the app's hold-to-confirm), the sentence
+ * builds chip by chip, and a button speaks it aloud in Tunisian Arabic.
  */
 export function SignPlayground({ words, labels }: SignPlaygroundProps) {
   const stageRef = useRef<HTMLDivElement>(null);
@@ -76,7 +79,7 @@ export function SignPlayground({ words, labels }: SignPlaygroundProps) {
       if (bubbleRef.current) confettiFrom(bubbleRef.current, 30);
     };
     // Without a drawable canvas the word still joins the sentence.
-    if (handRef.current) handRef.current.sign(lockIn);
+    if (handRef.current) handRef.current.sign(shapeForSign(word.id) ?? REST_SHAPE, lockIn);
     else lockIn();
   }
 
@@ -158,11 +161,12 @@ export function SignPlayground({ words, labels }: SignPlaygroundProps) {
                 type="button"
                 onClick={() => signWord(word)}
                 className={cn(
-                  "grid min-h-[3.75rem] w-full content-center justify-items-center rounded-2xl border-3 border-plum",
+                  "grid min-h-[3.75rem] w-full content-center justify-items-center gap-0.5 rounded-2xl border-3 border-plum",
                   "bg-paper px-1 py-2 text-plum shadow-press transition-[transform,box-shadow,background-color] duration-100",
                   "hover:bg-[#FFF6DA] active:translate-y-1 active:shadow-press-down"
                 )}
               >
+                <SignGlyph label={word.id} className="size-11" />
                 <span lang="ar-TN" dir="rtl" className="font-display text-[1.35rem] font-bold leading-tight">
                   {word.word}
                 </span>
