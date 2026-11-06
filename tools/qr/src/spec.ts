@@ -103,7 +103,7 @@ function validateCardText(label: string, text: string, maxLength: number): strin
   }
   if (!LATIN_TEXT_PATTERN.test(trimmed)) {
     throw new QrSpecError(
-      `${label} "${trimmed}" must be Latin text only: the card is rendered with Latin system fonts.`,
+      `${label} "${trimmed}" must be Latin text only: that is what the card's fonts cover.`,
     );
   }
   return trimmed;

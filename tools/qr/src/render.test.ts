@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import { palette } from "@souty/brand/palette";
 import { PNG } from "pngjs";
@@ -10,6 +10,7 @@ import { createMatrix, QUIET_ZONE_MODULES, sizeWithQuietZone } from "./matrix";
 import { PLAIN_PNG_WIDTH, rasterizeCard, rasterizePlain } from "./raster";
 import { parseSpec, parseSpecList, type QrSpec } from "./spec";
 import { renderQrSvg } from "./svg";
+import { CAPTION_FONT, CARD_FONT_OPTIONS, measureCentredText, TITLE_FONT } from "./text";
 import { decodePng, pngDimensions, type Rgb } from "./verify";
 
 const APP_URL = "https://souty.vercel.app";
@@ -28,12 +29,27 @@ function pixelAt(image: PNG, x: number, y: number): number[] {
   return Array.from(image.data.subarray(offset, offset + 4));
 }
 
+const OPAQUE_WHITE = 0xffffffff;
+
+/** Packs a colour and an alpha byte into one 0xRRGGBBAA number, as pixelValue returns them. */
+function rgba(colour: Rgb, alpha = 255): number {
+  return ((colour[0] << 24) | (colour[1] << 16) | (colour[2] << 8) | alpha) >>> 0;
+}
+
+/**
+ * Reads one pixel of a decoded PNG as a single 0xRRGGBBAA number. The image
+ * tests visit millions of pixels, so nothing is allocated per pixel.
+ */
+function pixelValue(image: PNG, x: number, y: number): number {
+  return image.data.readUInt32BE((y * image.width + x) * 4);
+}
+
 /** Counts the pixels of a rectangle that are not opaque white. */
 function inkedPixels(image: PNG, left: number, top: number, width: number, height: number): number {
   let inked = 0;
   for (let y = top; y < top + height; y += 1) {
     for (let x = left; x < left + width; x += 1) {
-      if (pixelAt(image, x, y).some((channel) => channel !== 255)) inked += 1;
+      if (pixelValue(image, x, y) !== OPAQUE_WHITE) inked += 1;
     }
   }
   return inked;
@@ -56,17 +72,17 @@ function inkInFrame(image: PNG, left: number, top: number, side: number, thickne
 function shrink(png: Buffer, factor: number): Buffer {
   const source = PNG.sync.read(png);
   const target = new PNG({ width: Math.floor(source.width / factor), height: Math.floor(source.height / factor) });
+  const blockArea = factor * factor;
   for (let y = 0; y < target.height; y += 1) {
     for (let x = 0; x < target.width; x += 1) {
-      const sums = [0, 0, 0, 0];
-      for (let dy = 0; dy < factor; dy += 1) {
-        for (let dx = 0; dx < factor; dx += 1) {
-          pixelAt(source, x * factor + dx, y * factor + dy).forEach((channel, index) => {
-            sums[index] = (sums[index] ?? 0) + channel;
-          });
+      for (let channel = 0; channel < 4; channel += 1) {
+        let sum = 0;
+        for (let dy = 0; dy < factor; dy += 1) {
+          const rowStart = ((y * factor + dy) * source.width + x * factor) * 4 + channel;
+          for (let dx = 0; dx < factor; dx += 1) sum += source.data[rowStart + dx * 4] ?? 0;
         }
+        target.data[(y * target.width + x) * 4 + channel] = Math.round(sum / blockArea);
       }
-      target.data.set(sums.map((sum) => Math.round(sum / (factor * factor))), (y * target.width + x) * 4);
     }
   }
   return PNG.sync.write(target);
@@ -140,11 +156,11 @@ describe("plain PNG", () => {
 
   it("uses hard-edged modules: only plum and white pixels", () => {
     const image = PNG.sync.read(png);
-    const colours = new Set<string>();
+    const colours = new Set<number>();
     for (let offset = 0; offset < image.data.length; offset += 4) {
-      colours.add(Array.from(image.data.subarray(offset, offset + 4)).join(","));
+      colours.add(image.data.readUInt32BE(offset));
     }
-    expect([...colours].sort()).toEqual([[...PLUM, 255].join(","), [...WHITE, 255].join(",")].sort());
+    expect([...colours].sort()).toEqual([rgba(PLUM), rgba(WHITE)].sort());
   });
 
   it("still decodes when seen small, at under five pixels per module", () => {
@@ -233,6 +249,46 @@ describe("card", () => {
     const rows = layout.card.height - 200;
     expect(inkedPixels(image, layout.card.x + borderClearance, top, gutter, rows)).toBe(0);
     expect(inkedPixels(image, textRight, top, gutter, rows)).toBe(0);
+  });
+});
+
+describe("card fonts", () => {
+  /** Tall accents, deep descenders and the widest letters the card text may contain. */
+  const STRESS_TEXT = "ÀÉÎÕÜÇŒŠŽ ABCQJWM gjpqyç |()[]{}@Åß";
+
+  it("come only from the files bundled with the tool, never from the machine", () => {
+    expect(CARD_FONT_OPTIONS.loadSystemFonts).toBe(false);
+    expect(CARD_FONT_OPTIONS.fontFiles).toHaveLength(2);
+    for (const file of CARD_FONT_OPTIONS.fontFiles) expect(existsSync(file), file).toBe(true);
+  });
+
+  it("are two different faces, so each family name resolves to its own file", () => {
+    const title = measureCentredText("Souty", TITLE_FONT);
+    const caption = measureCentredText("Souty", CAPTION_FONT);
+    expect(title.right).toBeGreaterThan(0);
+    expect(caption.right).toBeGreaterThan(0);
+    expect(Math.abs(title.right - caption.right)).toBeGreaterThan(0.01);
+  });
+
+  it("keep every glyph within the ascent and descent the layout reserves", () => {
+    for (const font of [TITLE_FONT, CAPTION_FONT]) {
+      const ink = measureCentredText(STRESS_TEXT, font);
+      expect(ink.above, font.family).toBeGreaterThan(0.6);
+      expect(ink.above, font.family).toBeLessThanOrEqual(font.ascent);
+      expect(ink.below, font.family).toBeLessThanOrEqual(font.descent);
+    }
+  });
+
+  it("keep accented capitals and descenders out of the code's quiet zone", () => {
+    const spec: QrSpec = { ...APP_SPEC, title: "ÉÀÇ gjpqy Çà", caption: "ÉÀÇ gjpqy.example/Ça" };
+    const accented = cardLayout(sizeWithQuietZone(createMatrix(APP_URL)), spec);
+    const image = PNG.sync.read(rasterizeCard(renderCardSvg(spec)));
+    const quietPx = QUIET_ZONE_MODULES * accented.modulePx;
+    expect(inkInFrame(image, accented.qr.x, accented.qr.y, accented.qr.width, quietPx)).toBe(0);
+  });
+
+  it("measure text with no ink as empty", () => {
+    expect(measureCentredText("   ", TITLE_FONT)).toEqual({ left: 0, right: 0, above: 0, below: 0 });
   });
 });
 

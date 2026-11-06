@@ -13,7 +13,7 @@ For every entry in [`codes.json`](./codes.json), four files in
 | `<name>.svg` | The plain code. Plum on white, 4-module quiet zone. | Slides (scales to any size without blurring). |
 | `<name>.png` | The same code, 2048 x 2048 px, opaque white background. | Tools that cannot import SVG. |
 | `<name>-card.png` | The code on a Souty card: title, code, address. 1600 px wide, transparent outside the card. | Dropping straight onto a slide of any colour. |
-| `<name>-card.svg` | Vector source of the card. | Editing in a design tool that has the fonts. |
+| `<name>-card.svg` | Vector source of the card. | Editing in a design tool that has the two brand fonts installed. |
 
 The codes use error correction level Q (about a quarter of the symbol can be
 damaged or badly photographed and it still reads). The app code is a
@@ -102,13 +102,15 @@ photographed it, so generate it for the final address, not a preview one.
 The plain code is fully deterministic: the same address gives byte-identical
 `.svg` and `.png` files on any machine.
 
-The card text is drawn with fonts installed on the machine that runs the
-generator (Segoe UI, then Arial, then Helvetica). The card SVG is identical
-everywhere, but `-card.png` can differ slightly between machines, and on a
-machine with none of those fonts the text could come out in another face.
-The assets are generated once and committed, so this only matters when you
-regenerate: look at the card afterwards. Open `-card.svg` only in a tool
-that has one of those fonts; everywhere else use `-card.png`.
+The card is deterministic too. Its text is drawn with Souty's two brand
+fonts, bundled in [`fonts/`](./fonts) (Baloo Bhaijaan 2 ExtraBold for the
+title, Readex Pro SemiBold for the address, both under the SIL Open Font
+License). The generator never reads the fonts installed on the machine, so
+`-card.png` comes out the same on a laptop and on CI, and each line is
+fitted by measuring its real glyphs.
+
+`-card.svg` only names those fonts, it does not contain them: open it in a
+design tool that has both installed, and use `-card.png` everywhere else.
 
 ## Development
 

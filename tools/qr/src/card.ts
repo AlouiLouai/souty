@@ -9,15 +9,13 @@ import { palette } from "@souty/brand/palette";
 import { createMatrix, matrixPath, sizeWithQuietZone } from "./matrix";
 import type { QrSpec } from "./spec";
 import { escapeXml } from "./svg";
+import { CAPTION_FONT, type CardFont, fontAttributes, measureCentredText, TITLE_FONT } from "./text";
 
 /**
  * Width of the card image. One SVG unit is one pixel of the rasterized PNG,
  * so every QR module lands on whole pixels.
  */
 export const CARD_IMAGE_WIDTH = 1600;
-
-/** Font stack for the card text; resolved against the generating machine's system fonts. */
-const CARD_FONT_FAMILY ="Segoe UI, Arial, Helvetica, sans-serif";
 
 /** Transparent margin around the card so the shadow is never clipped. */
 const MARGIN = 48;
@@ -27,34 +25,12 @@ const BORDER_WIDTH = 12;
 const CORNER_RADIUS = 96;
 /** Square reserved for the code, including its quiet zone. */
 const QR_BOX = 1332;
-/**
- * How far the tallest glyphs rise above the baseline and the deepest ones
- * (g, p, y) drop below it, as shares of the font size. Rounded up from the
- * fonts in the stack so that no stroke can reach into the code's quiet zone.
- */
-const ASCENT_RATIO = 0.76;
-const DESCENT_RATIO = 0.28;
 /** Widest a line of text may run: the code's box minus a little air. */
 const TEXT_MAX_WIDTH = QR_BOX - 96;
-/**
- * Advance widths by class of character, as shares of the font size. Each
- * is the upper bound measured across Segoe UI and Arial at the two weights
- * the card uses, so a line fitted with them can only come out narrower than
- * estimated, never wider. The first matching class wins.
- */
-const GLYPH_WIDTH_CLASSES: ReadonlyArray<readonly [members: RegExp, width: number]> = [
-  [/[ !'(),.:;I[\]`fijlrt{|}]/, 0.4],
-  [/[%&@MWm]/, 1.01],
-  [/[A-Z+<=>^~w]/, 0.8],
-  [/[\x20-\x7E]/, 0.62],
-];
-/** Width assumed for anything outside Basic Latin (accented letters, ligatures). */
-const WIDEST_GLYPH_WIDTH = 1.01;
 
-const TITLE_FONT_SIZE = 116;
-const TITLE_FONT_WEIGHT = 700;
+/** Largest sizes; a long line is set smaller so that it fits. */
+const TITLE_FONT_SIZE = 124;
 const CAPTION_FONT_SIZE = 72;
-const CAPTION_FONT_WEIGHT = 600;
 /** White space between the card's edge and the text, above the title and below the caption. */
 const PADDING_Y = 92;
 
@@ -88,20 +64,16 @@ export interface CardLayout {
   readonly textMaxWidth: number;
 }
 
-/** Upper bound for the advance width of one character, as a share of the font size. */
-function glyphWidth(character: string): number {
-  const match = GLYPH_WIDTH_CLASSES.find(([members]) => members.test(character));
-  return match === undefined ? WIDEST_GLYPH_WIDTH : match[1];
-}
-
 /**
- * Largest font size, up to `maxSize`, at which the text is sure to fit the
- * card, so a long title or caption shrinks instead of running into the
- * border.
+ * Largest whole font size, up to `maxSize`, at which the ink of the centred
+ * text stays within the card's text width, so a long title or caption
+ * shrinks instead of running into the border. Measured on the real glyphs.
  */
-function fitFontSize(text: string, maxSize: number): number {
-  const widthInEms = Array.from(text).reduce((sum, character) => sum + glyphWidth(character), 0);
-  return Math.floor(Math.min(maxSize, TEXT_MAX_WIDTH / widthInEms));
+function fitFontSize(text: string, font: CardFont, maxSize: number): number {
+  const ink = measureCentredText(escapeXml(text), font);
+  const halfWidthInEms = Math.max(ink.left, ink.right);
+  if (halfWidthInEms === 0) return maxSize;
+  return Math.max(1, Math.floor(Math.min(maxSize, TEXT_MAX_WIDTH / 2 / halfWidthInEms)));
 }
 
 /**
@@ -113,14 +85,15 @@ export function cardLayout(side: number, spec: Pick<QrSpec, "title" | "caption">
   const cardWidth = CARD_IMAGE_WIDTH - 2 * MARGIN - SHADOW_OFFSET;
   const modulePx = Math.max(1, Math.floor(QR_BOX / side));
   const qrSize = modulePx * side;
-  const titleSize = fitFontSize(spec.title, TITLE_FONT_SIZE);
-  const captionSize = fitFontSize(spec.caption, CAPTION_FONT_SIZE);
+  const titleSize = fitFontSize(spec.title, TITLE_FONT, TITLE_FONT_SIZE);
+  const captionSize = fitFontSize(spec.caption, CAPTION_FONT, CAPTION_FONT_SIZE);
 
   // The text lines sit flush against the code's box: its quiet zone is the gap.
-  const titleBaseline = MARGIN + PADDING_Y + Math.ceil(TITLE_FONT_SIZE * ASCENT_RATIO);
-  const boxTop = titleBaseline + Math.ceil(TITLE_FONT_SIZE * DESCENT_RATIO);
-  const captionBaseline = boxTop + QR_BOX + Math.ceil(CAPTION_FONT_SIZE * ASCENT_RATIO);
-  const cardHeight = captionBaseline + Math.ceil(CAPTION_FONT_SIZE * DESCENT_RATIO) + PADDING_Y - MARGIN;
+  // Positions use the largest sizes, so the layout does not move when a line shrinks.
+  const titleBaseline = MARGIN + PADDING_Y + Math.ceil(TITLE_FONT_SIZE * TITLE_FONT.ascent);
+  const boxTop = titleBaseline + Math.ceil(TITLE_FONT_SIZE * TITLE_FONT.descent);
+  const captionBaseline = boxTop + QR_BOX + Math.ceil(CAPTION_FONT_SIZE * CAPTION_FONT.ascent);
+  const cardHeight = captionBaseline + Math.ceil(CAPTION_FONT_SIZE * CAPTION_FONT.descent) + PADDING_Y - MARGIN;
   const inset = Math.floor((QR_BOX - qrSize) / 2);
 
   return {
@@ -156,14 +129,14 @@ function insetBox(box: Box, amount: number): Box {
 }
 
 /** A line of text centred on the card. */
-function centredText(text: string, centreX: number, line: TextLine, weight: number): string {
-  return `<text x="${centreX}" y="${line.baseline}" text-anchor="middle" font-family="${CARD_FONT_FAMILY}" font-size="${line.fontSize}" font-weight="${weight}" fill="${palette.plum}">${escapeXml(text)}</text>`;
+function centredText(text: string, centreX: number, line: TextLine, font: CardFont): string {
+  return `<text x="${centreX}" y="${line.baseline}" text-anchor="middle" ${fontAttributes(font, line.fontSize)} fill="${palette.plum}">${escapeXml(text)}</text>`;
 }
 
 /**
  * Renders the slide card for a spec as an SVG document. Outside the card
- * the image is transparent. The SVG text is deterministic; how its two text
- * lines look depends on the fonts of whatever renders it.
+ * the image is transparent. The text names Souty's two brand fonts, which
+ * rasterizeCard draws from the files bundled with this tool.
  */
 export function renderCardSvg(spec: QrSpec): string {
   const matrix = createMatrix(spec.url);
@@ -181,9 +154,9 @@ export function renderCardSvg(spec: QrSpec): string {
       CORNER_RADIUS - BORDER_WIDTH / 2,
       `fill="${palette.paper}" stroke="${palette.plum}" stroke-width="${BORDER_WIDTH}"`,
     ),
-    centredText(spec.title, centreX, layout.title, TITLE_FONT_WEIGHT),
+    centredText(spec.title, centreX, layout.title, TITLE_FONT),
     `<path transform="translate(${qr.x} ${qr.y}) scale(${layout.modulePx})" shape-rendering="crispEdges" fill="${palette.plum}" d="${matrixPath(matrix)}"/>`,
-    centredText(spec.caption, centreX, layout.caption, CAPTION_FONT_WEIGHT),
+    centredText(spec.caption, centreX, layout.caption, CAPTION_FONT),
     `</svg>`,
     ``,
   ].join("\n");
