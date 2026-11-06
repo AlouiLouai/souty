@@ -10,17 +10,17 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@resvg/resvg-js": "2.6.2",
     "@souty/brand": "workspace:*",
-    "qrcode": "catalog:",
-    "@resvg/resvg-js": "2.6.2"
+    "jsqr": "1.4.0",
+    "pngjs": "7.0.0",
+    "qrcode": "catalog:"
   },
   "devDependencies": {
     "@souty/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "@types/pngjs": "6.0.5",
     "@types/qrcode": "catalog:",
-    "jsqr": "1.4.0",
-    "pngjs": "7.0.0",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

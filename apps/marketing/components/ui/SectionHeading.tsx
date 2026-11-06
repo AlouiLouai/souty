@@ -46,6 +46,9 @@ export function SectionHeading({
           dir="rtl"
           className={cn(
             "font-display text-[clamp(1.5rem,3.4vw,2.1rem)] font-extrabold leading-snug",
+            // This line is right-to-left on a left-to-right page, so its "end"
+            // is the page's start: a wrapped line stays on the title's edge.
+            !centered && "text-end",
             inverted ? "text-sun" : "text-plum-soft"
           )}
         >

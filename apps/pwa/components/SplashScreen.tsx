@@ -29,7 +29,7 @@ export default function SplashScreen() {
         phase === "fading" ? "opacity-0" : "opacity-100"
       )}
     >
-      <Logo className="animate-pulse-glow" markClassName="h-16" textClassName="text-4xl" priority />
+      <Logo className="animate-pulse-glow" markClassName="h-16" textClassName="text-4xl" />
     </div>
   );
 }
