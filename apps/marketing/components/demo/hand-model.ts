@@ -54,7 +54,7 @@ function at(shape: HandShape, index: number): Vec3 {
  * scaled to a palm one unit long, then shrunk if a long reach (a pointing
  * finger, a spread hand) would leave the frame.
  */
-export function fitShape(points: readonly Vec3[]): HandShape {
+function fitShape(points: readonly Vec3[]): HandShape {
   const xs = points.map((point) => point[0]);
   const ys = points.map((point) => point[1]);
   const centerX = (Math.min(...xs) + Math.max(...xs)) / 2;
@@ -174,7 +174,7 @@ export function shapeForSign(label: string): HandShape | null {
 
 // ---- Placing a shape on a surface ----
 
-export interface HandLayout {
+interface HandLayout {
   /** The 21 landmarks in surface pixels. */
   readonly points: readonly Vec2[];
   /** Pixels per hand unit. */

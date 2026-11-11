@@ -2,20 +2,22 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Pause, RefreshCw, VideoOff } from "lucide-react";
-import type { GestureRecognizer, GestureRecognizerResult } from "@mediapipe/tasks-vision";
+import type { HandLandmarkerResult } from "@mediapipe/tasks-vision";
+import { frameFromHands, LiveSignReader } from "@souty/sign-model";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusDialog } from "@/components/StatusDialog";
-import { gestureToWord, IGNORED_LABELS } from "@/lib/gestureDictionary";
-import { drawHandOverlay, type HandInfo } from "@/lib/handOverlay";
+import { gestureToWord, hasWord } from "@/lib/gestureDictionary";
+import { drawHandOverlay } from "@/lib/handOverlay";
 import { subscribeLoadProgress } from "@/lib/assets";
-import { getRecognizer } from "@/lib/recognizer";
+import { getRecognizer, type SignRecognizer } from "@/lib/recognizer";
 import { cn } from "@/lib/utils";
 
-const CONFIDENCE_THRESHOLD = 0.65;
-const LOCK_HOLD_MS = 700;
 const LOCK_FLASH_MS = 400;
-/** Caps inference at ~25 fps so low-end phones keep the UI responsive. */
+/**
+ * Caps hand tracking at ~25 fps so low-end phones keep the UI responsive.
+ * The sign model samples these frames down to its own 15 fps.
+ */
 const MIN_FRAME_INTERVAL_MS = 40;
 
 const FAILURE_TITLES = {
@@ -45,12 +47,6 @@ interface GestureScannerProps {
   onCameraSwitched?: () => void;
 }
 
-interface HandTracking {
-  candidate: { label: string; start: number };
-  lastLocked?: string;
-  flashStart?: number;
-}
-
 function stopStream(stream: MediaStream | null) {
   stream?.getTracks().forEach((t) => t.stop());
 }
@@ -65,8 +61,11 @@ function useLatest<T>(value: T) {
 }
 
 /**
- * Live camera feed with on-device gesture recognition. The camera and the
- * model load in parallel; a word is emitted once a sign is held steady.
+ * Live camera feed with on-device sign recognition. The camera and the
+ * model load in parallel. Both hands are tracked every frame, and the sign
+ * model reads the last ~2 s of their shape and movement, so signs can move
+ * and use two hands. A word is emitted once the same sign wins several
+ * readings in a row.
  */
 export default function GestureScanner({
   className,
@@ -77,12 +76,14 @@ export default function GestureScanner({
 }: GestureScannerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const recognizerRef = useRef<GestureRecognizer | null>(null);
+  const recognizerRef = useRef<SignRecognizer | null>(null);
+  const readerRef = useRef<LiveSignReader | null>(null);
+  const flashRef = useRef<{ label: string; start: number } | null>(null);
+  const wasPausedRef = useRef(false);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
   const lastVideoTimeRef = useRef(-1);
   const lastFrameAtRef = useRef(0);
-  const handsRef = useRef<Map<string, HandTracking>>(new Map());
   const lastHandPresentRef = useRef<boolean | null>(null);
 
   const [phase, setPhase] = useState<ScannerPhase>("starting");
@@ -97,67 +98,53 @@ export default function GestureScanner({
   const onCameraSwitchedRef = useLatest(onCameraSwitched);
 
   const handleResult = useCallback(
-    (result: GestureRecognizerResult) => {
-      const now = performance.now();
-      const hands = handsRef.current;
-      const seenKeys = new Set<string>();
-      const handInfos: Array<HandInfo | null> = result.gestures.map(() => null);
-
+    (result: HandLandmarkerResult, video: HTMLVideoElement, now: number) => {
       const handPresent = result.landmarks.length > 0;
       if (lastHandPresentRef.current !== handPresent) {
         lastHandPresentRef.current = handPresent;
         onHandPresenceChangeRef.current?.(handPresent);
       }
 
-      result.gestures.forEach((gestures, i) => {
-        const top = gestures[0];
-        if (!top || IGNORED_LABELS.has(top.categoryName) || top.score < CONFIDENCE_THRESHOLD) {
-          return;
-        }
+      const reader = readerRef.current;
+      const frame = frameFromHands(
+        result.landmarks.map((landmarks, i) => ({
+          landmarks,
+          handedness: result.handedness[i]?.[0]?.categoryName,
+        })),
+        video.videoWidth / video.videoHeight
+      );
+      const state = reader?.push(frame, now);
 
-        const label = top.categoryName;
-        const handKey = result.handedness[i]?.[0]?.categoryName ?? `hand-${i}`;
-        seenKeys.add(handKey);
-
-        const tracking = hands.get(handKey);
-        const start = tracking?.candidate.label === label ? tracking.candidate.start : now;
-        const next: HandTracking = { ...tracking, candidate: { label, start } };
-        if (next.flashStart !== undefined && now - next.flashStart > LOCK_FLASH_MS) {
-          next.flashStart = undefined;
-        }
-
-        const progress = Math.min((now - start) / LOCK_HOLD_MS, 1);
-        if (progress >= 1 && next.lastLocked !== label) {
-          next.lastLocked = label;
-          next.flashStart = now;
-          navigator.vibrate?.(50);
-          onLockedRef.current(gestureToWord(label));
-        }
-        hands.set(handKey, next);
-
-        handInfos[i] = {
-          label: gestureToWord(label),
-          confidence: top.score,
-          progress,
-          lockFlash:
-            next.flashStart !== undefined ? (now - next.flashStart) / LOCK_FLASH_MS : undefined,
-        };
-      });
-
-      // A hand that leaves frame resets, so the same sign can lock again.
-      for (const key of hands.keys()) {
-        if (!seenKeys.has(key)) hands.delete(key);
+      if (state?.emitted) {
+        flashRef.current = { label: state.emitted, start: now };
+        navigator.vibrate?.(50);
+        onLockedRef.current(gestureToWord(state.emitted));
       }
+      const flash = flashRef.current;
+      const flashAge = flash ? (now - flash.start) / LOCK_FLASH_MS : undefined;
+      if (flashAge !== undefined && flashAge >= 1) flashRef.current = null;
 
       const canvas = canvasRef.current;
-      const video = videoRef.current;
       const ctx = canvas?.getContext("2d");
-      if (!canvas || !video || !ctx) return;
+      if (!canvas || !ctx) return;
       if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
       }
-      drawHandOverlay(ctx, result.landmarks, handInfos, facingModeRef.current === "user");
+      const label = state?.label ?? null;
+      drawHandOverlay(
+        ctx,
+        result.landmarks,
+        label && state
+          ? {
+              label: gestureToWord(label),
+              confidence: state.confidence,
+              progress: state.progress,
+              lockFlash: flash?.label === label && flashAge !== undefined && flashAge < 1 ? flashAge : undefined,
+            }
+          : null,
+        facingModeRef.current === "user"
+      );
     },
     [facingModeRef, onHandPresenceChangeRef, onLockedRef]
   );
@@ -169,6 +156,11 @@ export default function GestureScanner({
 
     // Always reschedule: one bad frame must not kill the loop.
     try {
+      // A paused scanner starts from an empty window when it resumes.
+      if (pausedRef.current !== wasPausedRef.current) {
+        wasPausedRef.current = pausedRef.current;
+        readerRef.current?.reset();
+      }
       if (
         video &&
         recognizer &&
@@ -179,10 +171,10 @@ export default function GestureScanner({
       ) {
         lastFrameAtRef.current = now;
         lastVideoTimeRef.current = video.currentTime;
-        handleResult(recognizer.recognizeForVideo(video, now));
+        handleResult(recognizer.landmarker.detectForVideo(video, now), video, now);
       }
     } catch (err) {
-      console.error("Gesture detection frame failed, continuing", err);
+      console.error("Sign detection frame failed, continuing", err);
     } finally {
       rafRef.current = requestAnimationFrame(detectLoop);
     }
@@ -242,11 +234,12 @@ export default function GestureScanner({
       .then((recognizer) => {
         if (cancelled) return;
         recognizerRef.current = recognizer;
+        readerRef.current = new LiveSignReader(recognizer.net, recognizer.meta, hasWord);
         setModelReady(true);
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error("Failed to load gesture model", err);
+        console.error("Failed to load sign model", err);
         setPhase("error");
       });
 
@@ -256,6 +249,7 @@ export default function GestureScanner({
       rafRef.current = null;
       stopStream(streamRef.current);
       recognizerRef.current = null;
+      readerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -267,6 +261,7 @@ export default function GestureScanner({
     const nextMode: FacingMode = facingModeRef.current === "user" ? "environment" : "user";
     startCamera(nextMode)
       .then(() => {
+        readerRef.current?.reset(); // the other camera sees hands mirrored
         setFacingMode(nextMode);
         onCameraSwitchedRef.current?.();
       })

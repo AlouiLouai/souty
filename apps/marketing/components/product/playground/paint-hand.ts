@@ -8,7 +8,7 @@ import {
   type Vec2,
 } from "@/components/demo/hand-model";
 
-export interface HandFrame {
+interface HandFrame {
   /** Stage size in CSS pixels. */
   readonly width: number;
   readonly height: number;

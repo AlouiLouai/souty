@@ -14,7 +14,9 @@ is about the PWA; file paths are given from the repository root.
 |---|---|---|
 | `apps/pwa` | `@souty/pwa` | The sign-to-speech PWA described here (dev server on port 3000) |
 | `apps/marketing` | `@souty/marketing` | The marketing site, English / French / Arabic (dev server on port 3001) |
-| `packages/vocabulary` | `@souty/vocabulary` | The 33 signs: single source of truth for both apps, pinned by a contract test |
+| `packages/vocabulary` | `@souty/vocabulary` | The 33 spoken signs: single source of truth for both apps, pinned by a contract test |
+| `packages/sign-model` | `@souty/sign-model` | Runs the sign model in the browser (hand slots, window features, network forward pass, live decoding), checked against the training notebook's own outputs |
+| `training` | | The Kaggle training notebook and its README |
 | `packages/brand` | `@souty/brand` | Design tokens, Tailwind preset, palette constants, self-hosted fonts |
 | `packages/tsconfig` | `@souty/tsconfig` | Shared TypeScript bases |
 | `tools/qr` | `@souty/qr` | Generates and verifies the pitch QR codes (`pnpm qr`) |
@@ -39,17 +41,19 @@ third-party call is Vercel Web Analytics (cookieless page views; see
 │                 Phone / Browser              │
 │                                              │
 │  Camera ──► <video> ──► MediaPipe WASM       │
-│              │           GestureRecognizer   │
-│              │           (custom 34-class    │
-│              │            .task model,       │
+│              │           HandLandmarker      │
+│              │           (2 hands,           │
 │              │            GPU → CPU fallback)│
+│              │                    │          │
+│              │                    ▼          │
+│              │      @souty/sign-model:       │
+│              │      15 fps, 32-frame window, │
+│              │      SignNet in TypeScript    │
 │              ▼                    │          │
-│         <canvas> overlay ◄────────┘          │
-│         (skeleton + per-hand                 │
-│          progress ring)                      │
-│              │                               │
-│              ▼                               │
-│    Lock-in filter (0.65 conf, 700ms hold)    │
+│         <canvas> overlay ◄────────┤          │
+│         (skeletons + one sign     │          │
+│          progress ring)           ▼          │
+│    Decoder (0.6 conf, 3 wins in a row)       │
 │              │                               │
 │              ▼                               │
 │    gestureDictionary.ts (label → Derja word) │
@@ -58,7 +62,7 @@ third-party call is Vercel Web Analytics (cookieless page views; see
 │    Sentence state → SpeechSynthesis (ar-TN)  │
 └─────────────────────────────────────────────┘
         ▲ Service worker caches everything:
-        app shell, fonts, model (8.1 MB), WASM runtime (~12 MB), icons
+        app shell, fonts, models (8.6 MB), WASM runtime (~12 MB), icons
 ```
 
 ### Stack
@@ -81,8 +85,12 @@ third-party call is Vercel Web Analytics (cookieless page views; see
   `next/font/google` because Google Fonts began serving Baloo Bhaijaan 2
   from extension-less URLs that crash the `next/font/google` loader at
   build time; self-hosting also removes a build-time network dependency.
-- **`@mediapipe/tasks-vision` 1.0.1** — `GestureRecognizer` in `VIDEO`
-  running mode, `numHands: 2`, GPU delegate with CPU fallback. The library
+- **`@mediapipe/tasks-vision` 1.0.1** — `HandLandmarker` in `VIDEO`
+  running mode, `numHands: 2`, GPU delegate with CPU fallback. The sign
+  classifier is not a MediaPipe model: `@souty/sign-model` runs it in
+  plain TypeScript, reading its weights straight from `sign_model.onnx`
+  (onnxruntime-web was rejected: its WASM alone is about 15 MB, for a
+  0.19 M-parameter network). The library
   is loaded with a dynamic `import()` in `apps/pwa/lib/recognizer.ts`,
   client-side only, and warmed up while the landing screen is showing so
   the scanner opens quickly.
@@ -108,13 +116,15 @@ third-party call is Vercel Web Analytics (cookieless page views; see
 
 | File | Role |
 |---|---|
-| `apps/pwa/components/GestureScanner.tsx` | Camera lifecycle, detection loop, per-hand lock-in state |
-| `apps/pwa/lib/recognizer.ts` | Shared, pre-warmed MediaPipe recognizer (GPU → CPU fallback, `MAX_HANDS`) |
-| `apps/pwa/lib/assets.ts` | Parallel model/WASM download, persistent Cache API copy, load progress, `MODEL_VERSION` |
-| `apps/pwa/lib/handOverlay.ts` | Canvas skeleton + progress ring / label drawing |
-| `packages/vocabulary/src/index.ts` | The vocabulary: `SIGNS` (model label, Tunisian Arabic word, glosses, category, source), `WORD_BY_LABEL`, `NEGATIVE_LABELS` |
+| `apps/pwa/components/GestureScanner.tsx` | Camera lifecycle, detection loop, feeds `LiveSignReader`, emits words |
+| `apps/pwa/lib/recognizer.ts` | Shared, pre-warmed `HandLandmarker` (GPU → CPU fallback, `MAX_HANDS`) + `SignNet` + model meta |
+| `apps/pwa/lib/assets.ts` | Parallel download of the three model files and the WASM runtime, persistent Cache API copy, stale-model purge, load progress, `MODEL_VERSION` |
+| `apps/pwa/lib/handOverlay.ts` | Canvas skeletons + one sign progress ring / label above the hands |
+| `packages/sign-model/src/` | `landmarks.ts` (hand slots), `features.ts` (window features), `onnx.ts` (weights from the ONNX file), `signnet.ts` (forward pass), `live.ts` (15 fps sampler, window buffer, decoder, `LiveSignReader`) |
+| `packages/sign-model/test/parity.test.ts` | The TypeScript port must reproduce the notebook's features and probabilities (`parity_fixtures.json`) |
+| `packages/vocabulary/src/index.ts` | The vocabulary: `SIGNS` (model label, Tunisian Arabic word, glosses, category, source), `WORD_BY_LABEL` |
 | `packages/vocabulary/src/index.test.ts` | Contract test pinning the label → word mapping of the deployed model |
-| `apps/pwa/lib/gestureDictionary.ts` | Thin adapter over `@souty/vocabulary`: `gestureToWord`, `IGNORED_LABELS` |
+| `apps/pwa/lib/gestureDictionary.ts` | Thin adapter over `@souty/vocabulary`: `gestureToWord`, `hasWord` |
 | `apps/pwa/hooks/useSpeech.ts` | Arabic voice selection + `speak` |
 | `apps/pwa/hooks/useSentence.ts`, `apps/pwa/hooks/useIdleHandReminder.ts` | Sentence state; no-hand reminder timer |
 | `apps/pwa/app/page.tsx` | View orchestration (landing/onboarding/scanner) |
@@ -123,140 +133,64 @@ third-party call is Vercel Web Analytics (cookieless page views; see
 | `apps/pwa/lib/offline.ts` | Asks the service worker to cache files loaded before it took control |
 | `apps/pwa/next.config.mjs` | `transpilePackages` for the workspace packages; immutable caching headers for model/WASM; `must-revalidate` for `sw.js` |
 
-### Recognition & lock-in logic
+### Recognition & decoding logic
 
-- `recognizeForVideo(video, now)` runs from the animation-frame loop,
-  guarded by `video.currentTime` change (no duplicate inference per frame)
-  and capped at about 25 inferences per second (`MIN_FRAME_INTERVAL_MS`,
-  40 ms) so low-end phones keep the UI responsive.
-- Per hand (keyed by MediaPipe handedness): the top category must score
-  ≥ `CONFIDENCE_THRESHOLD` (0.65) and persist for `LOCK_HOLD_MS` (700ms)
-  before locking in. The same gesture held continuously locks in only once;
-  removing and re-showing it allows a repeat.
+- `HandLandmarker.detectForVideo(video, now)` runs from the animation-frame
+  loop, guarded by `video.currentTime` change (no duplicate inference per
+  frame) and capped at about 25 per second (`MIN_FRAME_INTERVAL_MS`, 40 ms)
+  so low-end phones keep the UI responsive.
+- Each result becomes one frame with two fixed hand slots (MediaPipe
+  "Left" in slot 0, "Right" in slot 1; on a clash the smaller wrist x
+  takes slot 0), x and z scaled by the frame's aspect ratio: the exact
+  rule the training landmarks used.
+- `LiveSignReader` resamples frames to 15 fps (a slow device repeats
+  frames, so movement keeps its speed) and keeps the last 32. Every 2
+  samples, while a hand is visible, it computes the window features and
+  runs SignNet (about 9 ms in Node).
+- `SignDecoder`: a sign is said when it wins 3 readings in a row with at
+  least 0.6 confidence. It is not said again until another sign wins
+  confidently, `none` wins, or the hands are gone for about 200 ms.
+  Classes without a vocabulary word are treated as no sign. All
+  thresholds come from `sign_model.meta.json`.
+- Pausing, switching camera, or a long stall clears the window.
 - A failing frame is caught and logged — the loop always reschedules, so a
   transient WASM error can't silently kill detection.
 - Lock-in feedback: haptic pulse (`navigator.vibrate`, where supported),
-  expanding flash ring at the hand, most-recent word highlighted in the
-  sentence panel.
+  expanding flash ring above the hands, most-recent word highlighted in
+  the sentence panel.
 
 ### Known architectural limits
 
-1. **Static shapes only.** The classifier sees one frame of 21 hand
-   landmarks — no motion, no trajectories, no facial markers.
-2. **One hand at a time.** Both Model Maker's training loader
-   (`num_hands=1`, reads only `hand_landmarks[0]`) and the app's inference
-   treat each hand independently. A genuinely two-handed sign cannot be
-   represented, at any amount of training.
-3. Moving past either limit needs a different architecture (landmark
-   sequences + temporal classifier), scoped in the roadmap.
+1. **Training data is still images.** The model reads movement, but the
+   public Tunisian data has none, so most signs are learned as a held
+   shape and position. Recorded clips fix this with no code change.
+2. **No facial markers**, and no continuous signing (one sign at a time).
+3. The vocabulary speaks 33 of the model's 65 sign classes. The rest need
+   agreed Tunisian Arabic words first.
 
 ## 2. Model training pipeline
 
-Retraining uses **MediaPipe Model Maker on Kaggle** (free GPU, no local
-Python setup). Model Maker is officially "available but no longer actively
-maintained" — it works, don't expect upstream fixes.
+Training runs on Kaggle (free GPU) from `training/kaggle_pipeline.ipynb`.
+The whole pipeline (data sources, two-hand landmark extraction, features,
+network, splits, export, recording protocol) is documented in
+[`training/README.md`](../training/README.md) and in the notebook itself.
+The previous MediaPipe Model Maker pipeline was replaced: it was
+hard-coded to one hand and one still frame.
 
-> **Reproducing:** the notebook (`training/kaggle_pipeline.ipynb`) is not
-> in the public repo. Request it from the team, upload to a Kaggle
-> Notebook (File → Upload Notebook), attach the two datasets below, run
-> top to bottom. Fully self-contained (installs its own deps).
+### Changing the model or the vocabulary
 
-**Known install issue (as of early 2026):** `pip install mediapipe-model-maker`
-fails on Python 3.12 (Kaggle/Colab default) with a PyYAML build error —
-unresolved upstream bug (mediapipe-samples#643). Workaround, already in
-the notebook: install Python 3.10 alongside and run under it.
-
-### Data sources
-
-1. **Tunisian Sign Language Dataset**
-   ([Kaggle](https://www.kaggle.com/datasets/warcoder/tunisian-sign-language-dataset);
-   Chakroun & Jerbi, 2023, Mendeley Data DOI `10.17632/fbjjgzgv7f.1`;
-   collected with **ATILS**; **CC BY 4.0 — credit it publicly**).
-   4,423 images, 57 real Tunisian signs, 7 signers, 5 categories
-   (Demandes 24 / Destinations 8 / Famille 12 / Jours 7 / Transport 6).
-   Uniform 224×224, zero corrupt files.
-2. **HaGRID** (`innominate817/hagrid-classification-512p-no-gesture`) —
-   supplies the required `none` negative class and 10 universal-gesture
-   classes (`palm`, `fist`, `like`, `dislike`, `peace`, `one`, `ok`,
-   `three`, `four`, `call`), capped at 120 images/class to balance against
-   the much smaller TunSL classes.
-
-### Dataset format (verified against official Model Maker docs)
-
-Flat layout: `<dataset_path>/<label_name>/<img_name>.*`, with exactly one
-folder literally named `none`. Model Maker runs its own hand detector while
-loading and **silently drops images with no hand found** — `Dataset.size`
-reflects survivors, and the pipeline prints the drop gap explicitly.
-
-### Why 23 of the 57 TunSL signs
-
-Every one of the 4,423 photos was run through MediaPipe `HandLandmarker`
-(2-hand mode) to audit how many hands each photo actually shows:
-
-| Group | Signs | Verdict |
-|---|---|---|
-| Majority two-handed (e.g. `cv`, `demande`, `om`, `jom3a` at 100%; `wzara`, `n3awnek`, `baladya`, `3aslema`, `se7a` at 70–91%) | 28 | Can never be learned by this architecture — excluded |
-| Reliably single-hand (≥75% single-hand purity, ≥15 clean examples) | 23 | **Kept for training** |
-| Clean but too thin (`mar7ba`: 13 imgs; `karhba`: 9 imgs) | 2 | Excluded for thinness |
-| Mixed/low purity | remainder | Excluded |
-
-Training all 57 naively scored 60.22% test accuracy — a number that was
-*hiding* the two-hand structural problem, not measuring learnability.
-
-### Train/test split leak fix
-
-The dataset's own report states its images are OpenCV key frames from
-videos — perceptual-hash analysis confirms consecutive files are
-near-duplicates (Hamming 1–7 vs 7–28 for distant files). Model Maker's
-`Dataset.from_folder()` shuffles unseeded before a contiguous split, so a
-random split leaks near-identical frames into both sides. The pipeline
-instead splits each class's capture-ordered files into contiguous
-train/val/test blocks *itself* and loads three separate `Dataset` objects.
-Not a true signer-level holdout (no signer IDs documented), but a far more
-honest generalization estimate.
-
-### Deployed vocabulary: 34 classes (33 signs + `none`)
-
-**TunSL (23):** Demandes — `5adamet` خدمات, `assam` أصم, `labes` لاباس,
-`non` لا, `oui` ايه, `siye7a` سياحة, `ta3raf` تعرف · Destinations —
-`mostawsaf` مستوصف, `sbitar` سبيطار · Famille — `bent` بنت, `bou` بابا,
-`eben` ابن, `jad` جد, `jadda` جدة, `mar2a` مرأة, `tfol` طفل · Jours —
-`5mis` الخميس, `sebt` السبت, `thnin` الاثنين · Transport — `car` سيارة,
-`louage` لواج, `metro` مترو, `train` قطار.
-
-**HaGRID-derived (10):** `Open_Palm` عسلامة, `Closed_Fist` وقف, `Thumb_Up`
-ايه, `Thumb_Down` لا, `Victory` بالسلامة, `Pointing_Up` استنى, `OK_Sign`
-باهي, `Three_Fingers` 3, `Four_Fingers` 4, `Shaka_Sign` مبروك. (Mapping
-proven in the original 10-class run: 95.2% accuracy. `ILoveYou` has no
-HaGRID equivalent and stays out.)
-
-Intentional redundancy: `Thumb_Up`/`oui` both mean "yes" — two different
-hand shapes for the same word, not a conflict.
-
-### Changing the vocabulary
-
-Retraining replaces the whole classifier head — there is no incremental
-"add a class". Any change means:
-
-1. Update `KEPT_SIGN_LABELS` / `HAGRID_LABEL_MAP` in the notebook.
-2. Update `SIGNS` in `packages/vocabulary/src/index.ts` to match
-   **exactly** (model output category name === the entry's `label`), and
-   update `DEPLOYED_MODEL_CONTRACT` in
-   `packages/vocabulary/src/index.test.ts` in the same change. The test
-   fails on any accidental drift; run it with
-   `pnpm --filter @souty/vocabulary test`. `apps/pwa/lib/gestureDictionary.ts`
-   is a thin adapter and needs no edit; the marketing site depends on the
-   same package.
-3. Retrain everything together; download the `.task` from Kaggle's Output
-   panel; replace `apps/pwa/public/models/gesture_recognizer.task` and
-   bump `MODEL_VERSION` in `apps/pwa/lib/assets.ts`, so returning users
-   download the new model instead of the cached one.
-4. Manually test every sign (per-class aggregate accuracy can hide one
-   badly-confused class) — see `apps/pwa/TESTING.md`; drop any sign the
-   model still can't reliably distinguish.
-
-The combined 34-class problem was assembled from separately-proven halves —
-treat per-sign manual testing as mandatory after any retrain.
+1. Run the notebook and download its `export/` folder.
+2. Copy the files as described in
+   [`apps/pwa/public/models/README.md`](../apps/pwa/public/models/README.md),
+   run `pnpm --filter @souty/sign-model test` (parity with the notebook),
+   and bump `MODEL_VERSION` in `apps/pwa/lib/assets.ts`.
+3. For every class that should be spoken, add or keep an entry in
+   `packages/vocabulary/src/index.ts`, with its `label` equal to the class
+   name in `sign_model.meta.json`, and update the contract in
+   `packages/vocabulary/src/index.test.ts` in the same change.
+4. Manually test every sign on a phone (`apps/pwa/TESTING.md`). Per-class
+   aggregate accuracy can hide one badly confused class; the notebook's
+   step 9 prints per-class test recall and the most common confusion.
 
 ## 3. Privacy & security
 
@@ -298,13 +232,13 @@ treat per-sign manual testing as mandatory after any retrain.
 
 | What | Where | Value |
 |---|---|---|
-| Confidence threshold | `apps/pwa/components/GestureScanner.tsx` → `CONFIDENCE_THRESHOLD` | 0.65 |
-| Hold-to-lock duration | `apps/pwa/components/GestureScanner.tsx` → `LOCK_HOLD_MS` | 700 ms |
-| Inference rate cap | `apps/pwa/components/GestureScanner.tsx` → `MIN_FRAME_INTERVAL_MS` | 40 ms (~25 fps) |
+| Confidence, wins in a row, model stride | `apps/pwa/public/models/sign_model.meta.json` → `decoding` | 0.6, 3, every 2 samples |
+| Window, sample rate | `apps/pwa/public/models/sign_model.meta.json` → `window_frames`, `fps` | 32 frames, 15 fps |
+| Hand tracking rate cap | `apps/pwa/components/GestureScanner.tsx` → `MIN_FRAME_INTERVAL_MS` | 40 ms (~25 fps) |
 | Max tracked hands | `apps/pwa/lib/recognizer.ts` → `MAX_HANDS` | 2 |
-| Gesture → word map | `packages/vocabulary/src/index.ts` → `SIGNS` | 33 entries |
-| Model file | `apps/pwa/public/models/gesture_recognizer.task` | custom 34-class |
-| Model cache version | `apps/pwa/lib/assets.ts` → `MODEL_VERSION` | 1 |
+| Sign → word map | `packages/vocabulary/src/index.ts` → `SIGNS` | 33 entries |
+| Model files | `apps/pwa/public/models/` | `hand_landmarker.task`, `sign_model.onnx`, `sign_model.meta.json` (66 classes) |
+| Model cache version | `apps/pwa/lib/assets.ts` → `MODEL_VERSION` | 2 |
 | Splash duration | `apps/pwa/components/SplashScreen.tsx` → `SPLASH_MS` | 1200 ms (+ 300 ms fade) |
 | Idle reminder delay | `apps/pwa/app/page.tsx` → `IDLE_HAND_TIMEOUT_MS` | 5000 ms |
 | SW shell cache version | `apps/pwa/public/sw.js` → `SHELL_CACHE` | `souty-v3` |
@@ -320,10 +254,22 @@ treat per-sign manual testing as mandatory after any retrain.
 - Vocabulary contract test: `packages/vocabulary/src/index.test.ts` pins
   the label → word mapping the deployed model was validated against and
   the 23 + 10 = 33 split.
-- Manual per-sign protocol: `apps/pwa/TESTING.md` — every deployed sign is
-  tested by hand on a real device after any model swap, in varied lighting
-  and against light/dark backgrounds (the overlay is explicitly built to
-  stay readable on both).
+- Sign model parity test: `packages/sign-model/test/parity.test.ts` runs
+  the shipped `sign_model.onnx` on the notebook's `parity_fixtures.json`
+  and requires the same features and probabilities (to 1e-4), plus unit
+  tests of hand slotting, sampling and decoding.
+- PWA tests (`apps/pwa`, `pnpm --filter @souty/pwa test`): every
+  vocabulary label must be a class of the shipped model; the model and
+  WASM files declared in `lib/assets.ts` must exist with their declared
+  sizes, on versioned same-origin URLs; the asset cache name and prefixes
+  must match `public/sw.js`; the manifest's icons must exist.
+- Requirements and traceability: `apps/pwa/SPEC.md` gives every
+  requirement an ID (FR-1 to FR-12, NFR-1 to NFR-7), and its section 9
+  maps each one to automated tests and to manual cases.
+- Manual test plan: `apps/pwa/TESTING.md`, cases M-01 to M-16, run on a
+  real phone after any model swap. It covers every spoken sign (with its
+  test recall), two-handed signs, false words while idle, offline start,
+  and the overlay on light and dark skin and backgrounds.
 - Resilience paths covered by UI states: camera denied (with Permissions
   API auto-resume when the user grants access from browser settings),
   unsupported browser, model load failure, render crash (error boundary),

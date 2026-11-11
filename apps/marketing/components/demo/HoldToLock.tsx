@@ -10,7 +10,7 @@ const RING_RADIUS = 80;
 /** Circumference of the progress ring, in SVG units. */
 const RING_LENGTH = Math.ceil(2 * Math.PI * RING_RADIUS);
 
-export interface HoldToLockStrings {
+interface HoldToLockStrings {
   /** Accessible name of the button. */
   label: string;
   /** Tunisian Arabic lines. Leave out on the Arabic page. */

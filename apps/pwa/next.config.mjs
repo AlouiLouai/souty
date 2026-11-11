@@ -9,7 +9,7 @@ const immutable = { key: "Cache-Control", value: "public, max-age=31536000, immu
 const nextConfig = {
   reactStrictMode: true,
   // Workspace packages ship TypeScript source; Next compiles them in place.
-  transpilePackages: ["@souty/brand", "@souty/vocabulary"],
+  transpilePackages: ["@souty/brand", "@souty/sign-model", "@souty/vocabulary"],
   // Trace server files from the monorepo root, not this app's folder.
   outputFileTracingRoot: workspaceRoot,
   async headers() {

@@ -6,16 +6,21 @@
  * the single source of truth shared with the marketing site. Changing the
  * model's classes means updating that list (see docs/TECHNICAL_DOC.md).
  */
-import { NEGATIVE_LABELS, WORD_BY_LABEL } from "@souty/vocabulary";
+import { WORD_BY_LABEL } from "@souty/vocabulary";
 
-/** Categories that mean "no gesture". */
-export const IGNORED_LABELS = NEGATIVE_LABELS;
+/**
+ * Whether a model label has a word to say. The model can know signs the
+ * vocabulary has no agreed word for yet; those are never spoken.
+ */
+export function hasWord(categoryName: string): boolean {
+  return Object.prototype.hasOwnProperty.call(WORD_BY_LABEL, categoryName);
+}
 
 /** Display word for a category name; falls back to the readable label. */
 export function gestureToWord(categoryName: string): string {
   // Own-property check: a label like "constructor" must not resolve to
   // something inherited from Object.prototype.
-  if (Object.prototype.hasOwnProperty.call(WORD_BY_LABEL, categoryName)) {
+  if (hasWord(categoryName)) {
     return WORD_BY_LABEL[categoryName];
   }
   return categoryName.replace(/_/g, " ");

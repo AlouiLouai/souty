@@ -31,7 +31,7 @@ interface StyleProps {
   size?: Size;
 }
 
-export function buttonClassName({ variant = "primary", size = "md" }: StyleProps = {}): string {
+function buttonClassName({ variant = "primary", size = "md" }: StyleProps = {}): string {
   // Small primary buttons would put sub-19px white text on harissa.
   const safeVariant = variant === "primary" && size === "sm" ? "sun" : variant;
   return cn(base, variants[safeVariant], sizes[size]);

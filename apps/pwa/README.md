@@ -75,8 +75,8 @@ or, equivalently, from anywhere in the workspace:
 pnpm --filter @souty/pwa dev
 ```
 
-Open `http://localhost:3000`. The trained gesture model
-(`public/models/gesture_recognizer.task`) and the MediaPipe WASM runtime
+Open `http://localhost:3000`. The trained model files (`public/models/`)
+and the MediaPipe WASM runtime
 (`public/wasm/`) are committed to the repo, so no download step is needed.
 
 Camera APIs require a secure origin: `localhost` works; a physical phone on
@@ -100,11 +100,14 @@ pnpm --filter @souty/pwa start   # http://localhost:3000
 |---|---|
 | `pnpm --filter @souty/pwa lint` | ESLint |
 | `pnpm turbo run typecheck --filter=@souty/pwa` | Builds the app, then runs `tsc --noEmit` (Next.js generates its route types during the build) |
+| `pnpm --filter @souty/pwa test` | The app's own tests: vocabulary versus the shipped model, model file sizes and cache wiring, manifest |
 | `pnpm --filter @souty/vocabulary test` | The vocabulary contract test |
+| `pnpm --filter @souty/sign-model test` | The browser port of the sign model must reproduce the training notebook's features and probabilities |
 | `pnpm check` | Lint, typecheck and tests for the whole workspace |
 
-Recognition itself is tested by hand on a real phone: see
-[`TESTING.md`](TESTING.md).
+Live recognition is tested by hand on a real phone: see
+[`TESTING.md`](TESTING.md). [`SPEC.md`](SPEC.md) section 9 maps every
+requirement to its automated and manual tests.
 
 ## Deploy
 
@@ -119,7 +122,7 @@ full runbook, including the one-time cutover to the monorepo layout, is in
 | Layer | Choice |
 |---|---|
 | Framework | Next.js 15 (App Router) + React 19 + TypeScript |
-| On-device ML | `@mediapipe/tasks-vision` `GestureRecognizer` (GPU delegate, CPU fallback), custom 34-class model (33 signs + `none`), 8 MB |
+| On-device ML | `@mediapipe/tasks-vision` `HandLandmarker` (2 hands, GPU delegate, CPU fallback), 7.8 MB, plus a custom temporal sign model over 2 s of both hands (66 classes, 0.8 MB) run in plain TypeScript by `@souty/sign-model` |
 | Vocabulary | `@souty/vocabulary` (workspace package), shared with the marketing site |
 | UI | Tailwind CSS 3, shadcn/ui-style primitives in `components/ui`, light "picture-book" theme from `@souty/brand` (design tokens + Tailwind preset) |
 | Fonts | Readex Pro and Baloo Bhaijaan 2, self-hosted through `@souty/brand/fonts` (`next/font/local`) |
@@ -130,31 +133,37 @@ full runbook, including the one-time cutover to the monorepo layout, is in
 
 ## How recognition works
 
-1. `lib/recognizer.ts` loads the model and the WASM runtime (warmed up
-   while the landing screen is still showing). `components/GestureScanner.tsx`
-   then runs `recognizeForVideo` on camera frames, capped at about 25
-   frames per second.
-2. MediaPipe locates 21 landmarks per hand, for up to 2 hands, and the
-   custom model classifies each hand's shape.
-3. A gesture must stay above the confidence threshold (0.65) for 700 ms
-   before it locks in as a word, so single-frame misfires are rejected.
-4. Locked gestures map to Tunisian Arabic words through
-   `lib/gestureDictionary.ts`, a thin adapter over `@souty/vocabulary`, and
-   accumulate into a sentence.
-5. "Speak sentence" reads it aloud with the browser's text-to-speech
-   (`SpeechSynthesis`).
+1. `lib/recognizer.ts` loads the model files and the WASM runtime (warmed
+   up while the landing screen is still showing).
+   `components/GestureScanner.tsx` then runs `HandLandmarker.detectForVideo`
+   on camera frames, capped at about 25 frames per second.
+2. MediaPipe finds 21 landmarks per hand, for up to 2 hands. They are put
+   in two fixed slots (left hand, right hand) and resampled to 15 fps.
+3. Every 2 sampled frames, while a hand is visible, `@souty/sign-model`
+   reads the last 32 frames (about 2 s): each hand's shape and where both
+   hands are and how they move. So **signs can move and can use two
+   hands**.
+4. A sign is said once it wins 3 readings in a row with at least 60%
+   confidence (thresholds come from `sign_model.meta.json`). It isn't
+   repeated while held: another sign, no sign, or the hands leaving the
+   frame re-arms it.
+5. Signs map to Tunisian Arabic words through `lib/gestureDictionary.ts`, a
+   thin adapter over `@souty/vocabulary`, and accumulate into a sentence.
+   A sign the model knows but the vocabulary has no word for yet is never
+   spoken.
+6. "Speak sentence" reads the sentence aloud with the browser's
+   text-to-speech (`SpeechSynthesis`).
 
-**Known limitation:** the model classifies a single still frame. It
-recognizes *held static hand shapes*, not motion-based signs. Genuinely
-two-handed signs are also beyond this architecture (both training and
-inference see one hand at a time). See
-[`docs/TECHNICAL_DOC.md`](../../docs/TECHNICAL_DOC.md) for details.
+**Known limitation:** the Tunisian training data is still images, so today
+the model knows most signs as *held* shapes and hand positions. It can
+learn real movement as soon as clips are recorded: see
+[`training/README.md`](../../training/README.md).
 
 ## Documentation
 
 - [`SPEC.md`](SPEC.md): product and technical spec
-- [`TESTING.md`](TESTING.md): manual test checklist
-- [`public/models/README.md`](public/models/README.md): the model asset
+- [`TESTING.md`](TESTING.md): manual test plan
+- [`public/models/README.md`](public/models/README.md): the model files and how to replace them
 - [`docs/TECHNICAL_DOC.md`](../../docs/TECHNICAL_DOC.md): architecture, model training pipeline, configuration
 - [`docs/DEPLOYMENT.md`](../../docs/DEPLOYMENT.md): Vercel runbook
 - [`docs/PITCH_DECK.md`](../../docs/PITCH_DECK.md): pitch deck content
@@ -184,12 +193,12 @@ hooks/
 lib/
   gestureDictionary.ts   Model label -> Tunisian Arabic word (adapter over @souty/vocabulary)
   handOverlay.ts         Canvas skeleton + progress ring drawing
-  recognizer.ts          Shared, pre-warmed MediaPipe recognizer + log filter
+  recognizer.ts          Shared, pre-warmed hand tracker + sign model + log filter
   assets.ts              Parallel model/WASM download, persistent cache, progress
   offline.ts             Asks the service worker to cache loaded resources
   utils.ts               Class name helper
 public/
-  models/                Custom-trained 34-class gesture model (committed)
+  models/                Hand tracker + sign model + its meta file (committed)
   wasm/                  Self-hosted MediaPipe runtime
   icons/                 PWA icons (192/512 + maskable)
   sw.js                  Service worker (offline support)

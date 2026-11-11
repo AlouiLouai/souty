@@ -35,7 +35,7 @@ const CAPTION_FONT_SIZE = 72;
 const PADDING_Y = 92;
 
 /** An axis-aligned rectangle in card image pixels. */
-export interface Box {
+interface Box {
   readonly x: number;
   readonly y: number;
   readonly width: number;
@@ -49,7 +49,7 @@ interface TextLine {
 }
 
 /** Where everything sits on the card image, in pixels. */
-export interface CardLayout {
+interface CardLayout {
   readonly width: number;
   readonly height: number;
   /** The card's outer edge (border included). */

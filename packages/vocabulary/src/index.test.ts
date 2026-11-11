@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   HAND_LANDMARK_COUNT,
-  NEGATIVE_LABELS,
   SIGNS,
   SIGN_CATEGORIES,
   SIGN_COUNT,
@@ -69,12 +68,6 @@ describe("vocabulary", () => {
     expect(new Set(labels).size).toBe(labels.length);
   });
 
-  it("never maps a negative label to a word", () => {
-    for (const label of NEGATIVE_LABELS) {
-      expect(WORD_BY_LABEL[label]).toBeUndefined();
-    }
-  });
-
   it("gives every sign a word and both glosses", () => {
     for (const sign of SIGNS) {
       expect(sign.word.trim(), sign.label).not.toBe("");
@@ -93,14 +86,6 @@ describe("vocabulary", () => {
     for (const sign of SIGNS) {
       expect(sign.category === "universal", sign.label).toBe(sign.source === "hagrid");
     }
-  });
-});
-
-describe("negative labels", () => {
-  it("include the empty name the model gives its no-gesture class", () => {
-    expect(NEGATIVE_LABELS.has("")).toBe(true);
-    expect(NEGATIVE_LABELS.has("none")).toBe(true);
-    expect(NEGATIVE_LABELS.has("None")).toBe(true);
   });
 });
 

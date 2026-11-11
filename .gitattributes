@@ -1,0 +1,7 @@
+# Vendored and generated files are served byte-for-byte: never convert
+# their line endings (core.autocrlf would change their size and content).
+apps/pwa/public/wasm/** -text
+apps/pwa/public/models/*.task binary
+apps/pwa/public/models/*.onnx binary
+apps/pwa/public/models/*.json -text
+packages/sign-model/test/parity_fixtures.json -text

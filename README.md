@@ -27,9 +27,11 @@ apps/
 packages/
   brand/               @souty/brand: design tokens, Tailwind preset, palette, self-hosted fonts
   vocabulary/          @souty/vocabulary: the 33 signs, single source of truth
+  sign-model/          @souty/sign-model: runs the sign model in the browser (features, network, live decoding)
   tsconfig/            @souty/tsconfig: shared TypeScript bases
 tools/
   qr/                  @souty/qr: generates and verifies the pitch QR codes
+training/              The Kaggle training notebook and its README
 docs/
   PITCH_DECK.md        Pitch deck content
   TECHNICAL_DOC.md     Architecture and model training pipeline
@@ -39,7 +41,7 @@ docs/
 .github/workflows/     CI: lint, typecheck, test, build
 ```
 
-Root files: `package.json` (scripts), `pnpm-workspace.yaml` (workspace globs
+Root files: `package.json` (scripts), `.gitattributes` (keeps vendored and model files byte-exact), `pnpm-workspace.yaml` (workspace globs
 and the dependency catalog), `turbo.json` (task graph), `.nvmrc` (Node
 version), `pnpm-lock.yaml`.
 
@@ -139,7 +141,7 @@ that site has a URL ([`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)). Details:
 |---|---|
 | [`apps/pwa/README.md`](apps/pwa/README.md) | The PWA: problem, solution, features, how recognition works |
 | [`apps/pwa/SPEC.md`](apps/pwa/SPEC.md) | Product and technical spec of the PWA |
-| [`apps/pwa/TESTING.md`](apps/pwa/TESTING.md) | Manual test checklist |
+| [`apps/pwa/TESTING.md`](apps/pwa/TESTING.md) | Manual test plan, mapped to the spec's requirements |
 | [`apps/marketing/README.md`](apps/marketing/README.md) | The marketing site: structure, copy, locales |
 | [`docs/TECHNICAL_DOC.md`](docs/TECHNICAL_DOC.md) | Architecture, model training pipeline, configuration |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Vercel runbook and the cutover to this monorepo layout |
