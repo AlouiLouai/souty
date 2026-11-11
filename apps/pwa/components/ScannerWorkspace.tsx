@@ -64,8 +64,8 @@ export default function ScannerWorkspace({
             sentence.clear();
             onPanelAction?.();
           }}
-          onSpeakSentence={(text) => {
-            speech.speak(text);
+          onSpeakSentence={(words) => {
+            speech.speak(words);
             onPanelAction?.();
           }}
         />

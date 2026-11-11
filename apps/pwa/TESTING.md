@@ -24,11 +24,11 @@ speech, and real offline behaviour. Each case verifies requirements in
 |---|---|---|---|
 | **M-01** | FR-1 | Open the app. Tap "ابدأ الاستخدام". Go home, open "كيفاش نستعملها؟" and finish the tour. | Splash, then landing. Both routes reach a working scanner. The tour can be skipped at any step. |
 | **M-02** | FR-3, FR-6, FR-12 | Sign each **one-handed** spoken sign in the table below, once, with a pause between signs. | Each is said within about 1 s of being held. The ring above the hand fills, then flashes; the phone vibrates; the word is appended and highlighted. |
-| **M-03** | FR-3, FR-6 | Sign two-handed signs, for example `sbitar` (hospital), and silent two-handed signs such as `baladya`. | Both hands get a skeleton. Spoken ones are said once. See the known `sbitar` / `baladya` confusion in SPEC.md section 10. |
+| **M-03** | FR-3, FR-6 | Sign two-handed signs, for example `sbitar` (hospital), `baladya` (municipality), `wzara` (ministry), `demande` (request). | Both hands get a skeleton, and each sign is said once. See the known `sbitar` / `baladya` confusion in SPEC.md section 10. |
 | **M-04** | FR-6 | Hold one sign for 5 s. Lower the hands, then make it again. Then make two different signs back to back. | Said once while held; said again after lowering the hands; back-to-back different signs are both said. |
 | **M-05** | FR-7 | With hands in view: rest them, scratch your face, wave at someone, pick up a cup, hold the phone with the other hand, for 1 minute. | No word is added. Note any word that appears and what you were doing: the `none` class needs recorded examples of exactly that. |
 | **M-06** | FR-8 | Build a sentence of 3 words. Tap undo. Go home and back. Tap clear. | Undo removes only the last word; the sentence survives the trip home; clear empties it. |
-| **M-07** | FR-9 | Build a sentence; tap speak. Repeat on a device with no Arabic voice, if available. | The whole sentence is spoken once, by an Arabic voice when one is installed. No word is spoken on its own as it is added. |
+| **M-07** | FR-9 | Build a sentence mixing words with and without a recorded clip (`voice list` shows which have none); tap speak. Repeat offline, and on a device with no Arabic voice if available. | Words are spoken once, in order: recorded words in the Tunisian recording, the others by an Arabic voice when one is installed. Clips also play offline. No word is spoken on its own as it is added. |
 | **M-08** | FR-2, NFR-7 | Tap the flip-camera icon, sign with the back camera, flip back. | The front preview is mirrored, the back one is not; skeletons stay on the hands in both. |
 | **M-09** | FR-10 | Tap pause and keep signing for 5 s. Resume. | Nothing is added while paused, and the camera view shows the paused state. After resume, signs are recognised again. |
 | **M-10** | FR-11 | In the scanner, keep your hands out of view for 6 s. Show a hand. Pause, wait 6 s. | The reminder appears after about 5 s, the camera keeps running, and it closes when a hand returns. It never appears while paused. |
@@ -41,17 +41,19 @@ speech, and real offline behaviour. Each case verifies requirements in
 
 ## Spoken signs for M-02 and M-03
 
-The 33 spoken signs, with test recall from the training run
+All 65 signs, with test recall from the training run
 (`metrics.per_class_recall` in `public/models/sign_model.meta.json`).
 Expect the low-recall ones to fail more often, and note when they do.
+Signs marked † have a draft word: also note whether the signer agrees with
+the word and its meaning.
 
 | Group | Signs (label → word, test recall) |
 |---|---|
-| Requests | `oui` ايه 78%, `non` لا 100%, `labes` لاباس 100%, `ta3raf` تعرف 100%, `assam` أصم 50%, `5adamet` خدمات 50%, `siye7a` سياحة 40% |
-| Places | `sbitar` سبيطار 100%, `mostawsaf` مستوصف 13% |
-| Family | `bou` بابا 100%, `mar2a` مرأة 92%, `jadda` جدة 89%, `jad` جد 86%, `tfol` طفل 86%, `bent` بنت 73%, `eben` ابن 6% |
-| Days | `5mis` الخميس 100%, `thnin` الاثنين 100%, `sebt` السبت 50% |
-| Transport | `car` سيارة 100%, `louage` لواج 100%, `train` قطار 100%, `metro` مترو 33% |
+| Requests | `oui` ايه 78%, `non` لا 100%, `labes` لاباس 100%, `ta3raf` تعرف 100%, `assam` أصم 50%, `5adamet` خدمات 50%, `siye7a` سياحة 40%, `3aslema`† عسلامة 60%, `demande`† مطلب 100%, `cv`† سي في 100%, `n3awnek`† نعاونك 100%, `nekteblk`† نكتبلك 50%, `t7eb`† تحب 100%, `enti`† إنتي 100%, `barnamjk`† برنامجك 100%, `ta9ra`† تقرا 0%, `ta3lim`† تعليم 50%, `se7a`† صحة 58%, `tha9afa`† ثقافة 100%, `chabeb`† شباب 75%, `radio`† راديو 82%, `telvza`† تلفزة 67% |
+| Places | `sbitar` سبيطار 100%, `mostawsaf` مستوصف 13%, `baladya`† بلدية 100%, `wzara`† وزارة 100%, `ma7kma`† محكمة 100%, `banka`† بنكة 86%, `dar`† دار 86%, `bousta`† بوسطة 33% |
+| Family | `bou` بابا 100%, `mar2a` مرأة 92%, `jadda` جدة 89%, `jad` جد 86%, `tfol` طفل 86%, `bent` بنت 73%, `eben` ابن 6%, `om`† ماما 100%, `5al-3am`† عمّ 100%, `3ayla`† عايلة 57%, `o5t`† أخت 43%, `5ou`† خو 17% |
+| Days | `5mis` الخميس 100%, `thnin` الاثنين 100%, `sebt` السبت 50%, `erb3a`† الإربعاء 100%, `lyoum`† اليوم 80%, `jom3a`† الجمعة 67%, `thleth`† الثلاثاء 57%, `a7ad`† الأحد 25% |
+| Transport | `car` سيارة 100%, `louage` لواج 100%, `train` قطار 100%, `metro` مترو 33%, `taxi`† تاكسي 100% |
 | Universal gestures | Open palm عسلامة, fist وقف, thumb up ايه, thumb down لا, V بالسلامة, index up استنى, OK باهي, three fingers 3, four fingers 4, shaka مبروك: 96 to 100% each |
 
 ## Reporting

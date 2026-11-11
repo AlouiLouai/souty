@@ -13,7 +13,12 @@ describe("FR-7 spoken vocabulary", () => {
     expect(hasWord("sbitar")).toBe(true);
     expect(gestureToWord("sbitar")).toBe("سبيطار");
     expect(hasWord(meta.negative_label)).toBe(false);
-    expect(hasWord("baladya")).toBe(false); // a model class with no agreed word yet
+    expect(hasWord("not_a_model_class")).toBe(false);
+  });
+
+  it("has a word for every sign the shipped model knows", () => {
+    const silent = meta.labels.filter((label) => label !== meta.negative_label && !hasWord(label));
+    expect(silent).toEqual([]);
   });
 
   it("never resolves a label through Object.prototype", () => {

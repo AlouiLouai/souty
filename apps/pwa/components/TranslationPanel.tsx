@@ -11,7 +11,7 @@ interface TranslationPanelProps {
   onTogglePaused: () => void;
   onRemoveLastWord: () => void;
   onClearSentence: () => void;
-  onSpeakSentence: (text: string) => void;
+  onSpeakSentence: (words: string[]) => void;
 }
 
 export default function TranslationPanel({
@@ -24,7 +24,6 @@ export default function TranslationPanel({
   onSpeakSentence,
 }: TranslationPanelProps) {
   const hasSentence = sentenceWords.length > 0;
-  const sentenceText = sentenceWords.join(" ");
 
   return (
     <Card className="mt-3">
@@ -74,7 +73,7 @@ export default function TranslationPanel({
         <Button
           className="h-12 flex-1 text-base font-semibold"
           disabled={!hasSentence || !speechSupported}
-          onClick={() => onSpeakSentence(sentenceText)}
+          onClick={() => onSpeakSentence(sentenceWords)}
         >
           <Volume2 className="h-5 w-5" />
           انطق الجملة

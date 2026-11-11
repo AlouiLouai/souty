@@ -110,7 +110,8 @@ has never seen.
 The notebook writes `/kaggle/working/export/`. Download the folder and
 follow [`apps/pwa/public/models/README.md`](../apps/pwa/public/models/README.md).
 In short: copy the three model files into `apps/pwa/public/models/`, copy
-`parity_fixtures.json` into `packages/sign-model/test/`, run
+`parity_fixtures.json` into `packages/sign-model/test/` and `handshapes.ts`
+into `packages/vocabulary/src/`, run
 `pnpm --filter @souty/sign-model test`, and bump `MODEL_VERSION`.
 
 The app runs `HandLandmarker` (2 hands) on every camera frame and buffers
@@ -140,14 +141,14 @@ you know · `mostawsaf` clinic · `sbitar` hospital · `bent` daughter ·
 woman · `tfol` child · `5mis` Thursday · `sebt` Saturday · `thnin` Monday
 · `car` · `louage` shared taxi · `metro` · `train`.
 
-**Newly trainable (previously excluded as two-handed or thin):** `cv`,
-`demande` request, `om` mother, `jom3a` Friday, `mar7ba` welcome,
-`karhba` car, plus `wzara`, `lyoum`, `a7ad`, `n3awnek`, `baladya`,
+**Newly trainable, now in the vocabulary as drafts marked `toConfirm`:**
+`cv`, `demande` request, `om` mother, `jom3a` Friday, plus `wzara`, `lyoum`, `a7ad`, `n3awnek`, `baladya`,
 `thleth`, `t7eb`, `taxi`, `3aslema`, `radio`, `dar`, `barnamjk`, `telvza`,
 `5ou`, `ma7kma`, `enti`, `se7a`, `ta9ra`, `3ayla`, `tha9afa`, `nekteblk`,
 `chabeb`, `erb3a`, `5al-3am`, `bousta`, `o5t`, `ta3lim`, `banka`. Confirm
-the Arabic word for each of these with ATILS before adding it to
-`packages/vocabulary`.
+each draft word with ATILS, then remove its `toConfirm`. (`mar7ba` welcome
+and `karhba` car had too few usable photos and were dropped in the last
+run.)
 
 The step-4 audit printed by the notebook is the authoritative per-class
 list, with category, sample count and two-hand share.

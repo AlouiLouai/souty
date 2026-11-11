@@ -50,6 +50,39 @@ const DEPLOYED_MODEL_CONTRACT: Record<string, string> = {
   Three_Fingers: "3",
   Four_Fingers: "4",
   Shaka_Sign: "مبروك",
+  // Added with the two-hand model. Draft words, marked toConfirm until ATILS confirms them.
+  "3aslema": "عسلامة",
+  demande: "مطلب",
+  cv: "سي في",
+  n3awnek: "نعاونك",
+  nekteblk: "نكتبلك",
+  t7eb: "تحب",
+  enti: "إنتي",
+  barnamjk: "برنامجك",
+  ta9ra: "تقرا",
+  ta3lim: "تعليم",
+  se7a: "صحة",
+  tha9afa: "ثقافة",
+  chabeb: "شباب",
+  radio: "راديو",
+  telvza: "تلفزة",
+  baladya: "بلدية",
+  wzara: "وزارة",
+  ma7kma: "محكمة",
+  bousta: "بوسطة",
+  banka: "بنكة",
+  dar: "دار",
+  om: "ماما",
+  "3ayla": "عايلة",
+  "5ou": "خو",
+  o5t: "أخت",
+  "5al-3am": "عمّ",
+  lyoum: "اليوم",
+  thleth: "الثلاثاء",
+  erb3a: "الإربعاء",
+  jom3a: "الجمعة",
+  a7ad: "الأحد",
+  taxi: "تاكسي",
 };
 
 describe("vocabulary", () => {
@@ -57,9 +90,9 @@ describe("vocabulary", () => {
     expect({ ...WORD_BY_LABEL }).toEqual(DEPLOYED_MODEL_CONTRACT);
   });
 
-  it("has 33 signs: 23 Tunisian Sign Language + 10 universal", () => {
-    expect(SIGN_COUNT).toBe(33);
-    expect(TUNSL_SIGN_COUNT).toBe(23);
+  it("has 65 signs: 55 Tunisian Sign Language + 10 universal", () => {
+    expect(SIGN_COUNT).toBe(65);
+    expect(TUNSL_SIGN_COUNT).toBe(55);
     expect(UNIVERSAL_SIGN_COUNT).toBe(10);
   });
 
@@ -82,6 +115,12 @@ describe("vocabulary", () => {
     expect(grouped).toHaveLength(SIGNS.length);
   });
 
+  it("says what to check on every draft word", () => {
+    for (const sign of SIGNS) {
+      if (sign.toConfirm !== undefined) expect(sign.toConfirm.trim(), sign.label).not.toBe("");
+    }
+  });
+
   it("keeps universal gestures and the HaGRID source aligned", () => {
     for (const sign of SIGNS) {
       expect(sign.category === "universal", sign.label).toBe(sign.source === "hagrid");
@@ -92,8 +131,18 @@ describe("vocabulary", () => {
 describe("hand shapes", () => {
   const tunslLabels = SIGNS.filter((sign) => sign.source === "tunsl").map((sign) => sign.label);
 
-  it("exist for every Tunisian Sign Language sign, and for nothing else", () => {
-    expect(Object.keys(TUNSL_HANDSHAPES).sort()).toEqual([...tunslLabels].sort());
+  it("exist only for Tunisian Sign Language signs", () => {
+    // Signs added after the shapes were generated have none yet; the
+    // marketing site then shows no drawing. The training notebook exports
+    // a shape for every sign (handshapes.ts in its export folder).
+    const extra = Object.keys(TUNSL_HANDSHAPES).filter((label) => !tunslLabels.includes(label));
+    expect(extra).toEqual([]);
+  });
+
+  it("exist for every confirmed Tunisian Sign Language sign", () => {
+    const confirmed = SIGNS.filter((sign) => sign.source === "tunsl" && sign.toConfirm === undefined);
+    const missing = confirmed.map((sign) => sign.label).filter((label) => !(label in TUNSL_HANDSHAPES));
+    expect(missing).toEqual([]);
   });
 
   it("each have 21 finite landmarks, a unit palm, and a sane size", () => {

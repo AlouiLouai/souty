@@ -21,6 +21,7 @@ From the repository root, with the notebook's `export/` folder downloaded:
 ```bash
 cp export/hand_landmarker.task export/sign_model.onnx export/sign_model.meta.json apps/pwa/public/models/
 cp export/parity_fixtures.json packages/sign-model/test/
+cp export/handshapes.ts packages/vocabulary/src/   # the marketing site's hand drawings
 pnpm --filter @souty/sign-model test   # the app must reproduce the notebook's numbers
 ```
 
@@ -31,7 +32,8 @@ Then:
    is part of each URL, so installed apps fetch the new files, and the old
    ones are deleted from their cache.
 2. Add a vocabulary entry for every new label you want spoken. Its `label`
-   must equal the name in `sign_model.meta.json`.
+   must equal the name in `sign_model.meta.json`; `apps/pwa` tests fail
+   while any model class has no word.
 
 If the notebook's network architecture changed, the ONNX reader rejects the
 file with a clear error. Port the change to

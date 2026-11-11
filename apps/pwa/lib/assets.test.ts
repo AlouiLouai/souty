@@ -1,6 +1,7 @@
 import { readFileSync, statSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ASSET_CACHE, MODEL_FILES, MODEL_VERSION, WASM_DIR, WASM_FILES } from "./assets";
+import { VOICE_DIR } from "./voice";
 
 const publicDir = new URL("../public/", import.meta.url);
 const onDisk = (url: string) => new URL(`.${url.split("?")[0]}`, publicDir);
@@ -26,10 +27,11 @@ describe("NFR-2 offline: model caching", () => {
     expect(serviceWorker).toContain(`const ASSET_CACHE = "${ASSET_CACHE}";`);
   });
 
-  it("has the service worker serve /models/ and /wasm/ from that cache", () => {
+  it("has the service worker serve /models/, /wasm/ and the voice clips from that cache", () => {
     const prefixes = /const ASSET_PREFIXES = \[(.*)\];/.exec(serviceWorker)?.[1] ?? "";
     expect(prefixes).toContain('"/models/"');
     expect(prefixes).toContain(`"${WASM_DIR}/"`);
+    expect(prefixes).toContain(`"${VOICE_DIR}/"`);
   });
 });
 

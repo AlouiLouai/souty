@@ -9,8 +9,8 @@
 import { WORD_BY_LABEL } from "@souty/vocabulary";
 
 /**
- * Whether a model label has a word to say. The model can know signs the
- * vocabulary has no agreed word for yet; those are never spoken.
+ * Whether a model label has a word to say. A model class without a
+ * vocabulary entry (for example after a retrain adds signs) is never spoken.
  */
 export function hasWord(categoryName: string): boolean {
   return Object.prototype.hasOwnProperty.call(WORD_BY_LABEL, categoryName);

@@ -31,23 +31,28 @@ Souty turns a smartphone into a real-time sign-to-speech bridge:
    growing sentence.
 4. One tap speaks the full sentence aloud for the person across the desk.
 
-**Current vocabulary: 33 recognizable signs.** 23 real Tunisian Sign
-Language signs (family, transport, days, destinations, requests) trained on
+**Current vocabulary: 65 signs**, one- and two-handed. 55 real Tunisian
+Sign Language signs (requests, public places such as the municipality,
+ministry, court, post office and bank, family, days, transport), trained on
 the Tunisian Sign Language Dataset, plus 10 universal hand gestures (hello,
-stop, yes, no, wait, OK, the numbers 3 and 4, congratulations...). The full
-list lives in [`packages/vocabulary`](../../packages/vocabulary/src/index.ts).
+stop, yes, no, wait, OK, the numbers 3 and 4, congratulations...). The words
+for 32 of the Tunisian signs are drafts marked `toConfirm`, to be confirmed
+with ATILS. The full list lives in
+[`packages/vocabulary`](../../packages/vocabulary/src/index.ts).
 
 ## Key features
 
-- **On-device AI.** MediaPipe gesture recognition runs locally (GPU
-  delegate, CPU fallback). Camera frames never leave the phone.
+- **On-device AI.** MediaPipe hand tracking and the sign model run locally
+  (GPU delegate, CPU fallback). Camera frames never leave the phone.
 - **Offline PWA.** Installable to the home screen. The model, the WASM
   runtime, the fonts and the app shell are all self-hosted and cached by a
   service worker, so it keeps working with no connectivity.
 - **Tunisian first.** Real Tunisian Sign Language signs, Tunisian Derja
-  output, Arabic right-to-left interface, Arabic text-to-speech voice
-  selection.
-- **Two hands tracked at once**, each recognized independently.
+  output, Arabic right-to-left interface. Words with a recorded Tunisian
+  voice clip are played from it; the others use the device's Arabic
+  text-to-speech voice (see [Voice](#voice)).
+- **Two-handed signs and movement.** Both hands are read together over the
+  last two seconds.
 - **Accessible by design.** Haptic feedback on word lock-in, a hand overlay
   drawn in white with a dark halo so it stays visible on light and dark
   backgrounds, large touch targets, an onboarding tour, an idle reminder,
@@ -109,6 +114,27 @@ Live recognition is tested by hand on a real phone: see
 [`TESTING.md`](TESTING.md). [`SPEC.md`](SPEC.md) section 9 maps every
 requirement to its automated and manual tests.
 
+## Voice
+
+Browsers have no Tunisian voice: an Arabic text-to-speech voice reads Derja
+with a standard Arabic accent. So the app plays a short recording of each
+word when one exists, and uses text-to-speech only for the others. A clip
+is a few kilobytes and works offline.
+
+To add or replace recordings (needs `ffmpeg` on the PATH):
+
+1. `pnpm --filter @souty/pwa voice list` prints the words still to record,
+   with the file name to use for each.
+2. Record each word once, in a quiet room, close to the phone: one file per
+   word, named after its label (`baladya.m4a`, `oui.wav`, ...). Any format
+   ffmpeg reads works, including phone voice-recorder files.
+3. `pnpm --filter @souty/pwa voice import <folder>` trims the silence,
+   evens out the loudness, writes `public/audio/<label>.mp3`, and
+   regenerates `lib/voiceClips.ts`. Commit both.
+
+If you delete a clip, run `pnpm --filter @souty/pwa voice sync`. The test
+`lib/voice.test.ts` fails when a clip changed without a sync.
+
 ## Deploy
 
 The app is deployed on Vercel from this monorepo, with the Vercel project's
@@ -126,7 +152,7 @@ full runbook, including the one-time cutover to the monorepo layout, is in
 | Vocabulary | `@souty/vocabulary` (workspace package), shared with the marketing site |
 | UI | Tailwind CSS 3, shadcn/ui-style primitives in `components/ui`, light "picture-book" theme from `@souty/brand` (design tokens + Tailwind preset) |
 | Fonts | Readex Pro and Baloo Bhaijaan 2, self-hosted through `@souty/brand/fonts` (`next/font/local`) |
-| Voice | Browser `SpeechSynthesis` (prefers `ar-TN`, then any `ar-*` voice) |
+| Voice | Recorded Tunisian word clips (`public/audio/`), else browser `SpeechSynthesis` (prefers `ar-TN`, then any `ar-*` voice) |
 | Offline | Hand-written service worker (`public/sw.js`): network-first app shell, cache-first static files, a separate persistent cache for the model and WASM runtime |
 | Analytics | Vercel Web Analytics (`@vercel/analytics`), cookieless page views only, see [Privacy](#privacy) |
 | Backend | None. Fully client-side |
@@ -187,7 +213,7 @@ components/
   ServiceWorkerRegistration.tsx
   ui/                    Button / Card / Badge primitives
 hooks/
-  useSpeech.ts           Arabic voice selection + speak-on-demand
+  useSpeech.ts           Speaks the sentence: recorded clips, then Arabic TTS
   useSentence.ts         Sentence word list state
   useIdleHandReminder.ts No-hand-in-frame reminder timer
 lib/
@@ -196,6 +222,8 @@ lib/
   recognizer.ts          Shared, pre-warmed hand tracker + sign model + log filter
   assets.ts              Parallel model/WASM download, persistent cache, progress
   offline.ts             Asks the service worker to cache loaded resources
+  voice.ts               Which words have a clip; splits a sentence into clips and TTS
+  voiceClips.ts          Generated list of recorded clips (scripts/voice.ts)
   utils.ts               Class name helper
 public/
   models/                Hand tracker + sign model + its meta file (committed)
@@ -208,7 +236,7 @@ Shared code lives outside this folder, in the workspace:
 
 | What | Where |
 |---|---|
-| The 33 signs (label, word, gloss, category) | [`packages/vocabulary/src/index.ts`](../../packages/vocabulary/src/index.ts) |
+| The 65 signs (label, word, gloss, category) | [`packages/vocabulary/src/index.ts`](../../packages/vocabulary/src/index.ts) |
 | Colors, semantic tokens, Tailwind preset | [`packages/brand/src`](../../packages/brand/src) |
 | Font files and their licences | [`packages/brand/fonts`](../../packages/brand/fonts) |
 | Shared TypeScript config | [`packages/tsconfig`](../../packages/tsconfig) |
@@ -232,8 +260,9 @@ What stays on the phone:
 - **Recognition.** The model and the MediaPipe runtime are self-hosted and
   run in the browser. No frame, landmark, recognized sign or sentence is
   sent anywhere.
-- **Speech.** Sentences are spoken with the browser's own `SpeechSynthesis`
-  voices; the app sends the text to no server of its own.
+- **Speech.** Sentences are played from recorded clips shipped with the
+  app, or spoken with the browser's own `SpeechSynthesis` voices; the app
+  sends the text to no server of its own.
 
 There are no accounts and the app sets no cookies.
 

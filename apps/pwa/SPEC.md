@@ -59,7 +59,7 @@ Each requirement is verified by the tests listed in section 9.
 | **FR-6** | Live decoding: frames are resampled to 15 fps; the last 32 form the window; the classifier runs every 2 samples while a hand is visible. A sign is emitted after winning 3 readings in a row with confidence of at least 0.6, and is not emitted again until another sign or `none` wins confidently, the hands are gone for about 200 ms, or the window is reset. |
 | **FR-7** | Only model classes with an entry in `@souty/vocabulary` are ever emitted; every vocabulary entry names a class the shipped model can output; the negative class `none` never has a word. |
 | **FR-8** | An emitted sign appends its word to the sentence; undo removes only the last word; clear empties it; the sentence survives going to the landing screen and back. |
-| **FR-9** | "Speak" reads the whole sentence once, with the first installed `ar-TN` voice, else the first `ar-*` voice, else the device default, at rate 0.95. Words are not spoken automatically. |
+| **FR-9** | "Speak" reads the whole sentence once, in sentence order. A word with a recorded Tunisian clip (`lib/voiceClips.ts`) is played from it; each run of words without one is read by one text-to-speech utterance with the first installed `ar-TN` voice, else the first `ar-*` voice, else the device default, at rate 0.95. A clip that fails to play is read instead. Words are not spoken automatically. |
 | **FR-10** | Pause stops detection (no word can be added) and resume starts again from an empty window. Switching camera also empties the window. |
 | **FR-11** | The idle reminder appears after 5 s with no hand while the scanner is running and not paused, and only then. |
 | **FR-12** | Feedback: the ring shows the leading sign's confidence and progress; an emitted word triggers a 400 ms flash ring and a 50 ms vibration where supported, and is highlighted in the sentence. |
@@ -69,13 +69,13 @@ Each requirement is verified by the tests listed in section 9.
 - The model (`public/models/sign_model.meta.json` → `labels`) has 66
   classes: 55 Tunisian Sign Language signs, 10 universal hand gestures
   (from HaGRID), and the negative class `none`.
-- **33 of them are spoken today**: 23 TunSL signs and the 10 gestures,
-  listed in `packages/vocabulary/src/index.ts`. Its test pins the exact
-  label-to-word contract.
-- The other 32 TunSL classes (for example `baladya`, `wzara`, `demande`,
-  `cv`) are recognised but silent until an agreed Tunisian Arabic word is
-  added for each. Adding one: `docs/TECHNICAL_DOC.md`, "Changing the model
-  or the vocabulary".
+- **Every class has a word**, listed in `packages/vocabulary/src/index.ts`,
+  whose test pins the exact label-to-word contract. A PWA test fails if a
+  model class has no word.
+- **32 words are drafts** (for example `baladya` بلدية, `wzara` وزارة,
+  `demande` مطلب), marked `toConfirm` with what to check. They are spoken,
+  but must be confirmed with ATILS before the app is presented as correct
+  for them; then their `toConfirm` is removed.
 
 ## 6. Recognition pipeline
 
@@ -104,7 +104,7 @@ camera frame ─► HandLandmarker (2 hands) ─► frameFromHands ─► FrameS
 | ID | Requirement |
 |---|---|
 | **NFR-1 Privacy** | Camera frames, landmarks and sentences never leave the device. The models and the MediaPipe WASM runtime are served from this origin (`public/models/`, `public/wasm/`), never from a CDN. The only network beacon is Vercel Web Analytics page views, active only when enabled in the Vercel project. |
-| **NFR-2 Offline** | After one online load, the app starts and recognises signs with no network. Model and WASM files are kept in the persistent `souty-assets-v1` cache; model URLs carry `?v=MODEL_VERSION`, so a new model is downloaded once and older model files are deleted. |
+| **NFR-2 Offline** | After one online load, the app starts and recognises signs with no network. Model, WASM and voice-clip files are kept in the persistent `souty-assets-v1` cache; model URLs carry `?v=MODEL_VERSION` and clip URLs a content hash, so a changed file is downloaded once. Older model files are deleted. |
 | **NFR-3 Model integrity** | The model files declared in `lib/assets.ts` are the files shipped, with matching sizes. The classifier's output count must equal the label count in the meta file, or loading fails with a clear error (`lib/recognizer.ts`). |
 | **NFR-4 Performance** | One classifier pass stays well under one frame budget (test limit: 50 ms in Node). The UI stays responsive on low-end phones because tracking is capped at 25 per second. |
 | **NFR-5 Resilience** | Denied camera permission shows an explanation and a retry button; where the Permissions API exists, granting the camera in browser settings resumes the scanner without a tap. A browser without camera access and a failed model load each show an explanation. A failed model load is not cached, so reopening the scanner or reloading retries it. One failing frame is logged and skipped; the detection loop always continues. `app/error.tsx` catches render errors with a retry screen. |
@@ -120,10 +120,11 @@ camera frame ─► HandLandmarker (2 hands) ─► frameFromHands ─► FrameS
 | Hands tracked | `lib/recognizer.ts` → `MAX_HANDS` | 2 |
 | Tracking rate cap | `components/GestureScanner.tsx` → `MIN_FRAME_INTERVAL_MS` | 40 ms |
 | Model cache version | `lib/assets.ts` → `MODEL_VERSION` | 2 |
-| Label → word | `packages/vocabulary/src/index.ts` → `SIGNS` | 33 entries |
+| Label → word | `packages/vocabulary/src/index.ts` → `SIGNS` | 65 entries (32 marked `toConfirm`) |
+| Recorded voice clips | `public/audio/`, listed in `lib/voiceClips.ts` (`pnpm --filter @souty/pwa voice`) | none yet |
 | Splash | `components/SplashScreen.tsx` → `SPLASH_MS`, `SPLASH_FADE_MS` | 1200 ms, 300 ms |
 | Idle reminder delay | `app/page.tsx` → `IDLE_HAND_TIMEOUT_MS` | 5000 ms |
-| Service-worker shell cache | `public/sw.js` → `SHELL_CACHE` | `souty-v3`; bump when the caching logic changes |
+| Service-worker shell cache | `public/sw.js` → `SHELL_CACHE` | `souty-v4`; bump when the caching logic changes |
 
 ## 9. Verification
 
@@ -139,9 +140,9 @@ Run every automated test from the repository root with `pnpm test`
 | FR-4 | `packages/sign-model/test/features.test.ts` (`windowFeatures`, `frameFromHands`); `parity.test.ts` ("reproduces the features of case …") | |
 | FR-5 | `packages/sign-model/test/parity.test.ts` ("matches the shipped meta file", "reproduces the probabilities of case …", "rejects a file that is not a SignNet export") | |
 | FR-6 | `packages/sign-model/test/live.test.ts` (`FrameSampler`, `WindowBuffer`, `SignDecoder`); `parity.test.ts` ("says a held sign exactly once…") | M-02, M-03, M-04 |
-| FR-7 | `apps/pwa/lib/gestureDictionary.test.ts`; `packages/vocabulary/src/index.test.ts` | M-05 |
+| FR-7 | `apps/pwa/lib/gestureDictionary.test.ts`; `packages/vocabulary/src/index.test.ts` | M-02, M-05 |
 | FR-8 | | M-06 |
-| FR-9 | | M-07 |
+| FR-9 | `apps/pwa/lib/voice.test.ts` | M-07 |
 | FR-10 | `live.test.ts` ("forgets the last sign on reset") | M-09 |
 | FR-11 | | M-10 |
 | FR-12 | | M-02 |
@@ -166,14 +167,17 @@ Test names in `apps/pwa` start with the requirement ID they verify.
    `baladya`: MediaPipe never found its small fist, and its other hand
    matches one hand of `baladya`.
 3. **Accuracy is uneven.** On held-out images: 82.9% accuracy, 78.9% mean
-   per-class recall. Seven spoken signs score below 60%: `eben` 6%,
-   `mostawsaf` 13%, `metro` 33%, `siye7a` 40%, and `assam`, `5adamet` and
-   `sebt` 50% (`metrics.per_class_recall` in `sign_model.meta.json`;
-   each class has only about 10 to 20 test images). The test images come
+   per-class recall. 17 of the 65 signs score below 60%, the worst being
+   `ta9ra` 0%, `eben` 6%, `mostawsaf` 13%, `5ou` 17%, `a7ad` 25%, and
+   `metro` and `bousta` 33% (`metrics.per_class_recall` in
+   `sign_model.meta.json`; each class has only about 10 to 20 test
+   images; the full list is in TESTING.md). The test images come
    from the same 7 signers as training, so accuracy on new signers will
    be lower. It has not been measured.
-4. **Voice quality depends on the device.** Without an installed Arabic
-   voice, the browser's default voice reads the Arabic text.
+4. **The voice is only Tunisian for recorded words.** No recordings exist
+   yet, so today every word uses the device's Arabic text-to-speech, with
+   a standard Arabic accent (or the default voice if no Arabic voice is
+   installed). Recording the 62 distinct words fixes this (README, "Voice").
 5. **No retry button after a failed model load.** The error message asks
    the user to try again, but the only way is to go home and reopen the
    scanner, or reload.

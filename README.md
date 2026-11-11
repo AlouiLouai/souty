@@ -26,7 +26,7 @@ apps/
   marketing/           The marketing site (Next.js, English / French / Arabic)
 packages/
   brand/               @souty/brand: design tokens, Tailwind preset, palette, self-hosted fonts
-  vocabulary/          @souty/vocabulary: the 33 signs, single source of truth
+  vocabulary/          @souty/vocabulary: the 65 signs, single source of truth
   sign-model/          @souty/sign-model: runs the sign model in the browser (features, network, live decoding)
   tsconfig/            @souty/tsconfig: shared TypeScript bases
 tools/
@@ -102,7 +102,7 @@ every push to `main`.
 | Package | What it holds | Used by |
 |---|---|---|
 | `@souty/brand` | `tokens.css` (palette and semantic color roles), a Tailwind preset, palette constants for canvas and images, and the two typefaces (Readex Pro, Baloo Bhaijaan 2) loaded with `next/font/local` | both apps, `@souty/qr` |
-| `@souty/vocabulary` | The 33 signs: model label, spoken word, English and French gloss, category, data source | both apps |
+| `@souty/vocabulary` | The 65 signs: model label, spoken word, English and French gloss, category, data source, and which words still need confirming | both apps |
 | `@souty/tsconfig` | `base.json`, `nextjs.json`, `library.json` | every package |
 
 How they are consumed:

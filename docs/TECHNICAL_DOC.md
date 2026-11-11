@@ -14,7 +14,7 @@ is about the PWA; file paths are given from the repository root.
 |---|---|---|
 | `apps/pwa` | `@souty/pwa` | The sign-to-speech PWA described here (dev server on port 3000) |
 | `apps/marketing` | `@souty/marketing` | The marketing site, English / French / Arabic (dev server on port 3001) |
-| `packages/vocabulary` | `@souty/vocabulary` | The 33 spoken signs: single source of truth for both apps, pinned by a contract test |
+| `packages/vocabulary` | `@souty/vocabulary` | The 65 signs: single source of truth for both apps, pinned by a contract test |
 | `packages/sign-model` | `@souty/sign-model` | Runs the sign model in the browser (hand slots, window features, network forward pass, live decoding), checked against the training notebook's own outputs |
 | `training` | | The Kaggle training notebook and its README |
 | `packages/brand` | `@souty/brand` | Design tokens, Tailwind preset, palette constants, self-hosted fonts |
@@ -94,8 +94,11 @@ third-party call is Vercel Web Analytics (cookieless page views; see
   is loaded with a dynamic `import()` in `apps/pwa/lib/recognizer.ts`,
   client-side only, and warmed up while the landing screen is showing so
   the scanner opens quickly.
-- **Browser `SpeechSynthesis`** — voice selection prefers `ar-TN`, then any
-  `ar-*`, else the OS default. On-demand only (no auto-speak).
+- **Voice** — recorded Tunisian word clips (`apps/pwa/public/audio/`,
+  listed in `lib/voiceClips.ts`) are played with the Web Audio API; runs of
+  words without a clip go to the browser's `SpeechSynthesis` (prefers
+  `ar-TN`, then any `ar-*`, else the OS default). On demand only (no
+  auto-speak). Clips are added with `pnpm --filter @souty/pwa voice`.
 - **Hand-written service worker** (`apps/pwa/public/sw.js`), registered in
   production builds only:
   - navigations are network-first (fresh shell online, cached shell
@@ -125,7 +128,7 @@ third-party call is Vercel Web Analytics (cookieless page views; see
 | `packages/vocabulary/src/index.ts` | The vocabulary: `SIGNS` (model label, Tunisian Arabic word, glosses, category, source), `WORD_BY_LABEL` |
 | `packages/vocabulary/src/index.test.ts` | Contract test pinning the label → word mapping of the deployed model |
 | `apps/pwa/lib/gestureDictionary.ts` | Thin adapter over `@souty/vocabulary`: `gestureToWord`, `hasWord` |
-| `apps/pwa/hooks/useSpeech.ts` | Arabic voice selection + `speak` |
+| `apps/pwa/hooks/useSpeech.ts`, `apps/pwa/lib/voice.ts` | Speaks the sentence: recorded clips first, Arabic TTS for the rest |
 | `apps/pwa/hooks/useSentence.ts`, `apps/pwa/hooks/useIdleHandReminder.ts` | Sentence state; no-hand reminder timer |
 | `apps/pwa/app/page.tsx` | View orchestration (landing/onboarding/scanner) |
 | `apps/pwa/app/layout.tsx` | Fonts and tokens from `@souty/brand`, service-worker registration, analytics |
@@ -165,8 +168,8 @@ third-party call is Vercel Web Analytics (cookieless page views; see
    public Tunisian data has none, so most signs are learned as a held
    shape and position. Recorded clips fix this with no code change.
 2. **No facial markers**, and no continuous signing (one sign at a time).
-3. The vocabulary speaks 33 of the model's 65 sign classes. The rest need
-   agreed Tunisian Arabic words first.
+3. Every sign class has a word, but 32 of them are drafts (`toConfirm` in
+   `packages/vocabulary`) until ATILS confirms them.
 
 ## 2. Model training pipeline
 
@@ -236,7 +239,7 @@ hard-coded to one hand and one still frame.
 | Window, sample rate | `apps/pwa/public/models/sign_model.meta.json` → `window_frames`, `fps` | 32 frames, 15 fps |
 | Hand tracking rate cap | `apps/pwa/components/GestureScanner.tsx` → `MIN_FRAME_INTERVAL_MS` | 40 ms (~25 fps) |
 | Max tracked hands | `apps/pwa/lib/recognizer.ts` → `MAX_HANDS` | 2 |
-| Sign → word map | `packages/vocabulary/src/index.ts` → `SIGNS` | 33 entries |
+| Sign → word map | `packages/vocabulary/src/index.ts` → `SIGNS` | 65 entries |
 | Model files | `apps/pwa/public/models/` | `hand_landmarker.task`, `sign_model.onnx`, `sign_model.meta.json` (66 classes) |
 | Model cache version | `apps/pwa/lib/assets.ts` → `MODEL_VERSION` | 2 |
 | Splash duration | `apps/pwa/components/SplashScreen.tsx` → `SPLASH_MS` | 1200 ms (+ 300 ms fade) |
@@ -252,8 +255,8 @@ hard-coded to one hand and one still frame.
   `pnpm turbo run lint typecheck test build` on every pull request and on
   every push to `main`.
 - Vocabulary contract test: `packages/vocabulary/src/index.test.ts` pins
-  the label → word mapping the deployed model was validated against and
-  the 23 + 10 = 33 split.
+  the label → word mapping and the 55 + 10 = 65 split; every draft word
+  must say what to confirm.
 - Sign model parity test: `packages/sign-model/test/parity.test.ts` runs
   the shipped `sign_model.onnx` on the notebook's `parity_fixtures.json`
   and requires the same features and probabilities (to 1e-4), plus unit
