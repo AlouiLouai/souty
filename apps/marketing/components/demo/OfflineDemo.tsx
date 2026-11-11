@@ -12,7 +12,7 @@ interface OfflineMessage {
   derja?: string;
 }
 
-export interface OfflineDemoLabels {
+interface OfflineDemoLabels {
   toggle: string;
   illustrationAlt: string;
   /** Shown while the network is on. */

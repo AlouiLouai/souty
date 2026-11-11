@@ -1,13 +1,15 @@
 /**
- * The vocabulary Souty recognizes today.
+ * The signs Souty speaks today.
  *
- * Each entry ties one output class of the on-device gesture model to the
- * Tunisian Arabic (Derja) word the app displays and speaks. Words are in
- * Arabic script so text-to-speech voices read them correctly.
+ * Each entry ties one output class of the on-device sign model
+ * (`apps/pwa/public/models/sign_model.meta.json` → `labels`) to the Tunisian
+ * Arabic (Derja) word the app displays and speaks. Words are in Arabic
+ * script so text-to-speech voices read them correctly.
  *
- * `label` must match the model's category name exactly. Retraining replaces
- * the whole classifier head, so changing the model's classes means updating
- * this list (see docs/TECHNICAL_DOC.md).
+ * `label` must match the model's class name exactly. The model may know
+ * more classes than this list: a class without an entry is recognised but
+ * never spoken (see docs/TECHNICAL_DOC.md, "Changing the model or the
+ * vocabulary").
  */
 
 export type SignCategory =
@@ -84,13 +86,6 @@ export const SIGNS: readonly Sign[] = [
   { label: "Four_Fingers", word: "4", gloss: { en: "four", fr: "quatre" }, category: "universal", source: "hagrid" },
   { label: "Shaka_Sign", word: "مبروك", gloss: { en: "congratulations", fr: "félicitations" }, category: "universal", source: "hagrid" },
 ];
-
-/**
- * Model categories that mean "no gesture". The custom model reports its
- * "none" class with an empty name, often with high confidence, so the empty
- * string must be ignored too or a blank word gets locked into the sentence.
- */
-export const NEGATIVE_LABELS: ReadonlySet<string> = new Set(["", "None", "none"]);
 
 /** Display order for grouped listings. */
 export const SIGN_CATEGORIES: readonly SignCategory[] = [

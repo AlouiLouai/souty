@@ -49,5 +49,3 @@ export const sectionIds = {
   vision: "vision",
   cta: "start",
 } as const;
-
-export type SectionId = keyof typeof sectionIds;

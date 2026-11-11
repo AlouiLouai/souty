@@ -19,7 +19,7 @@ const ERROR_CORRECTION_LEVEL = "Q";
 export const QUIET_ZONE_MODULES = 4;
 
 /** A QR symbol as a square grid of dark and light modules. */
-export interface QrMatrix {
+interface QrMatrix {
   /** Modules per side, excluding the quiet zone. */
   readonly size: number;
   /** QR version, 1 (21 modules) to 40 (177 modules). */

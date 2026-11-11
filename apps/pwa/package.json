@@ -8,11 +8,13 @@
     "build": "next build",
     "start": "next start --port 3000",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.0.1",
     "@souty/brand": "workspace:*",
+    "@souty/sign-model": "workspace:*",
     "@souty/vocabulary": "workspace:*",
     "@vercel/analytics": "catalog:",
     "class-variance-authority": "catalog:",
@@ -34,6 +36,7 @@
     "eslint-config-next": "catalog:",
     "postcss": "catalog:",
     "tailwindcss": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

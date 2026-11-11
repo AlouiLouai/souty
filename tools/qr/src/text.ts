@@ -43,7 +43,7 @@ export const CARD_FONT_OPTIONS: NonNullable<ResvgRenderOptions["font"]> & { font
 };
 
 /** Where the ink of a centred line of text lands, relative to its anchor point. */
-export interface InkExtents {
+interface InkExtents {
   /** Furthest ink to the left of the centre. */
   readonly left: number;
   /** Furthest ink to the right of the centre. */

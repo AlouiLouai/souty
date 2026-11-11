@@ -1,4 +1,4 @@
-import { defaultLocale, isLocale, locales, type Locale } from "./config";
+import { defaultLocale, isLocale, type Locale } from "./config";
 
 /**
  * Picks the best supported locale for an Accept-Language header.
@@ -44,5 +44,3 @@ export function withLocale(pathname: string, locale: Locale): string {
   const suffix = rest === "/" || rest === "" ? "" : rest;
   return `/${locale}${suffix}`;
 }
-
-export { locales };

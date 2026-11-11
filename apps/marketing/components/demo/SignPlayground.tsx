@@ -21,7 +21,7 @@ export interface PlaygroundWord {
   gloss?: string;
 }
 
-export interface SignPlaygroundLabels {
+interface SignPlaygroundLabels {
   canvasLabel: string;
   disclaimer: string;
   /** Derja line above the word pad; absent on the Arabic page. */

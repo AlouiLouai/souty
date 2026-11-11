@@ -80,7 +80,7 @@ function tick(): void {
 }
 
 /** Bursts confetti from a point in viewport coordinates. */
-export function confettiAt(x: number, y: number, count = 60): void {
+function confettiAt(x: number, y: number, count = 60): void {
   if (typeof window === "undefined") return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   if (!ensureCanvas()) return;

@@ -13,10 +13,11 @@ const HAND_CONNECTIONS: ReadonlyArray<readonly [number, number]> = [
   [0, 17],
 ];
 
-export interface HandInfo {
+/** The sign being read from both hands' movement over the last window. */
+interface SignInfo {
   label: string;
   confidence: number;
-  /** 0..1 progress towards locking in the current gesture. */
+  /** 0..1 progress towards saying the current sign. */
   progress: number;
   /** 0..1 age of the lock-in flash, present only right after a lock-in. */
   lockFlash?: number;
@@ -39,12 +40,12 @@ function roundRect(
   ctx.closePath();
 }
 
-/** Progress ring and gesture label anchored above the hand. */
+/** Progress ring and sign label. */
 function drawHandLabel(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  info: HandInfo,
+  info: SignInfo,
   canvasWidth: number
 ) {
   const r = Math.max(20, canvasWidth * 0.035);
@@ -93,13 +94,14 @@ function drawHandLabel(
 }
 
 /**
- * Draws each hand's skeleton plus its progress ring and label.
+ * Draws each hand's skeleton, plus one progress ring and label for the sign
+ * above all visible hands (a sign is read from both hands together).
  * @param mirrored Must match whether the <video> is CSS-mirrored (front camera).
  */
 export function drawHandOverlay(
   ctx: CanvasRenderingContext2D,
   hands: NormalizedLandmark[][],
-  handInfos: ReadonlyArray<HandInfo | null>,
+  sign: SignInfo | null,
   mirrored: boolean
 ) {
   const { width, height } = ctx.canvas;
@@ -108,9 +110,11 @@ export function drawHandOverlay(
   const toX = mirrored ? (x: number) => width - x * width : (x: number) => x * width;
   const lineWidth = Math.max(2, width * 0.0035);
   const dotRadius = Math.max(2.5, width * 0.006);
+  const allPoints: Array<{ px: number; py: number }> = [];
 
-  hands.forEach((landmarks, i) => {
+  for (const landmarks of hands) {
     const points = landmarks.map((p) => ({ px: toX(p.x), py: p.y * height }));
+    allPoints.push(...points);
 
     // Dark halo keeps the white skeleton visible on any background.
     ctx.beginPath();
@@ -139,13 +143,12 @@ export function drawHandOverlay(
         ctx.fill();
       }
     }
+  }
 
-    const info = handInfos[i];
-    if (!info || points.length === 0) return;
-    const xs = points.map((p) => p.px);
-    const minY = Math.min(...points.map((p) => p.py));
-    const anchorX = (Math.min(...xs) + Math.max(...xs)) / 2;
-    const anchorY = Math.max(minY - height * 0.08, height * 0.08);
-    drawHandLabel(ctx, anchorX, anchorY, info, width);
-  });
+  if (!sign || allPoints.length === 0) return;
+  const xs = allPoints.map((p) => p.px);
+  const minY = Math.min(...allPoints.map((p) => p.py));
+  const anchorX = (Math.min(...xs) + Math.max(...xs)) / 2;
+  const anchorY = Math.max(minY - height * 0.08, height * 0.08);
+  drawHandLabel(ctx, anchorX, anchorY, sign, width);
 }

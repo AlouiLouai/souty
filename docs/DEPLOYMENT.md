@@ -103,7 +103,7 @@ Open the preview URL on a phone, over mobile data or Wi-Fi.
 | Check | Expected |
 |---|---|
 | Camera | The browser asks for the camera; the live preview appears |
-| Recognition | Hold an open palm: the ring fills and `عسلامة` locks in after about 0.7 s |
+| Recognition | Hold an open palm: the ring fills and `عسلامة` is added within about a second |
 | Sentence and voice | Lock two or three words, tap speak: the sentence is read aloud |
 | Camera flip | Front and back cameras both work, the overlay stays on the hand |
 | Install | "Add to Home screen" works and the app opens full screen |
