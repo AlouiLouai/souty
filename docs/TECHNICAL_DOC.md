@@ -52,7 +52,7 @@ third-party call is Vercel Web Analytics (cookieless page views; see
 │              ▼                    │          │
 │         <canvas> overlay ◄────────┤          │
 │         (skeletons + one sign     │          │
-│          progress ring)           ▼          │
+│          ring over both hands)    ▼          │
 │    Decoder (0.6 conf, 3 wins in a row)       │
 │              │                               │
 │              ▼                               │
@@ -75,9 +75,13 @@ third-party call is Vercel Web Analytics (cookieless page views; see
   actions and highlights. The palette and the semantic color roles are
   defined once in `packages/brand/src/tokens.css` and mapped onto Tailwind
   names by the preset in `packages/brand/src/tailwind-preset.ts`. The
-  on-camera canvas overlay keeps its own colors (white skeleton with a
-  dark halo, cyan `#22D3EE` progress ring), chosen to stay visible over
-  live video.
+  on-camera canvas overlay keeps its own colors (dark halos and a dark
+  disc behind the ring; white while reading, cyan `#22D3EE` while a sign
+  fills, mint `#22BFA0` once it is said), chosen to stay visible over
+  live video. The interface shows no text but the signed words: every
+  instruction is a pictogram (`apps/pwa/components/Pictograms.tsx`) and
+  every control a `lucide-react` icon with an Arabic `aria-label`
+  (NFR-8 in `apps/pwa/SPEC.md`).
 - **Self-hosted fonts** — Readex Pro (body) and Baloo Bhaijaan 2 (display),
   both covering Arabic and Latin, loaded with `next/font/local` from
   `packages/brand/src/fonts.ts`. The files and their SIL Open Font
@@ -122,7 +126,8 @@ third-party call is Vercel Web Analytics (cookieless page views; see
 | `apps/pwa/components/GestureScanner.tsx` | Camera lifecycle, detection loop, feeds `LiveSignReader`, emits words |
 | `apps/pwa/lib/recognizer.ts` | Shared, pre-warmed `HandLandmarker` (GPU → CPU fallback, `MAX_HANDS`) + `SignNet` + model meta |
 | `apps/pwa/lib/assets.ts` | Parallel download of the three model files and the WASM runtime, persistent Cache API copy, stale-model purge, load progress, `MODEL_VERSION` |
-| `apps/pwa/lib/handOverlay.ts` | Canvas skeletons + one sign progress ring / label above the hands |
+| `apps/pwa/lib/handOverlay.ts` | `HandOverlay`: canvas skeletons, a dashed link between two hands, and one ring above both hands (reading / candidate / said) with the sign's word under it |
+| `apps/pwa/components/SignGuide.tsx`, `SignGlyph.tsx` | Sign guide: every sign by category icon, with its hand shape (from `@souty/vocabulary`'s `shapeForSign`) and word, tap to hear |
 | `packages/sign-model/src/` | `landmarks.ts` (hand slots), `features.ts` (window features), `onnx.ts` (weights from the ONNX file), `signnet.ts` (forward pass), `live.ts` (15 fps sampler, window buffer, decoder, `LiveSignReader`) |
 | `packages/sign-model/test/parity.test.ts` | The TypeScript port must reproduce the notebook's features and probabilities (`parity_fixtures.json`) |
 | `packages/vocabulary/src/index.ts` | The vocabulary: `SIGNS` (model label, Tunisian Arabic word, glosses, category, source), `WORD_BY_LABEL` |
@@ -130,7 +135,7 @@ third-party call is Vercel Web Analytics (cookieless page views; see
 | `apps/pwa/lib/gestureDictionary.ts` | Thin adapter over `@souty/vocabulary`: `gestureToWord`, `hasWord` |
 | `apps/pwa/hooks/useSpeech.ts`, `apps/pwa/lib/voice.ts` | Speaks the sentence: recorded clips first, Arabic TTS for the rest |
 | `apps/pwa/hooks/useSentence.ts`, `apps/pwa/hooks/useIdleHandReminder.ts` | Sentence state; no-hand reminder timer |
-| `apps/pwa/app/page.tsx` | View orchestration (landing/onboarding/scanner) |
+| `apps/pwa/app/page.tsx` | View orchestration (landing/onboarding/scanner/sign guide) |
 | `apps/pwa/app/layout.tsx` | Fonts and tokens from `@souty/brand`, service-worker registration, analytics |
 | `apps/pwa/public/sw.js` | Offline caching strategy |
 | `apps/pwa/lib/offline.ts` | Asks the service worker to cache files loaded before it took control |
@@ -158,9 +163,20 @@ third-party call is Vercel Web Analytics (cookieless page views; see
 - Pausing, switching camera, or a long stall clears the window.
 - A failing frame is caught and logged — the loop always reschedules, so a
   transient WASM error can't silently kill detection.
-- Lock-in feedback: haptic pulse (`navigator.vibrate`, where supported),
-  expanding flash ring above the hands, most-recent word highlighted in
-  the sentence panel.
+- Feedback (`HandOverlay`, one instance per canvas): whenever a hand is in
+  view, one ring sits above both hands. It spins (with one dot per hand)
+  while no sign leads, fills in cyan with the leading sign's progress and
+  shows its word in a pill, and turns into a full mint ring with a check
+  once said. The ring's position is smoothed, flips below the hands when
+  they are near the top (with hysteresis), is sized in CSS pixels and kept
+  inside the part of the frame `object-fit: cover` shows (`visibleRect`).
+  A word that stops leading fades out over 450 ms. No percentage is drawn.
+  The overlay is cleared on pause and camera switch.
+- Lock-in feedback: a 60 ms haptic pulse (`navigator.vibrate`, where
+  supported), a 500 ms burst ring, most-recent word highlighted in the
+  sentence panel.
+- Camera and model load in parallel with separate status; a failed model
+  load has its own retry button (`loadModel`).
 
 ### Known architectural limits
 
@@ -265,14 +281,18 @@ hard-coded to one hand and one still frame.
   vocabulary label must be a class of the shipped model; the model and
   WASM files declared in `lib/assets.ts` must exist with their declared
   sizes, on versioned same-origin URLs; the asset cache name and prefixes
-  must match `public/sw.js`; the manifest's icons must exist.
+  must match `public/sw.js`; the manifest's icons must exist; the
+  feedback ring is drawn whenever a hand is visible and draws no text but
+  the word (`lib/handOverlay.test.ts`); no component shows visible text
+  (`components/noVisibleText.test.ts`).
 - Requirements and traceability: `apps/pwa/SPEC.md` gives every
-  requirement an ID (FR-1 to FR-12, NFR-1 to NFR-7), and its section 9
+  requirement an ID (FR-1 to FR-12, NFR-1 to NFR-8), and its section 9
   maps each one to automated tests and to manual cases.
-- Manual test plan: `apps/pwa/TESTING.md`, cases M-01 to M-16, run on a
+- Manual test plan: `apps/pwa/TESTING.md`, cases M-01 to M-19, run on a
   real phone after any model swap. It covers every spoken sign (with its
-  test recall), two-handed signs, false words while idle, offline start,
-  and the overlay on light and dark skin and backgrounds.
+  test recall), two-handed signs and their ring feedback, false words
+  while idle, offline start, the sign guide, and the overlay on light and
+  dark skin and backgrounds.
 - Resilience paths covered by UI states: camera denied (with Permissions
   API auto-resume when the user grants access from browser settings),
   unsupported browser, model load failure, render crash (error boundary),

@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Logo } from "@/components/Logo";
+import { LogoMark } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 
 const SPLASH_MS = 1200;
 const SPLASH_FADE_MS = 300;
 
-/** Brief branded intro; the model preloads behind it. */
+/** Brief branded intro (the mark only, no text); the model preloads behind it. */
 export default function SplashScreen() {
   const [phase, setPhase] = useState<"visible" | "fading" | "done">("visible");
 
@@ -29,7 +29,7 @@ export default function SplashScreen() {
         phase === "fading" ? "opacity-0" : "opacity-100"
       )}
     >
-      <Logo className="animate-pulse-glow" markClassName="h-16" textClassName="text-4xl" />
+      <LogoMark className="h-24 animate-pulse-glow" ariaLabel="Souty" />
     </div>
   );
 }

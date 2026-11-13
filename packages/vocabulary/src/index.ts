@@ -148,3 +148,13 @@ export function signsByCategory(category: SignCategory): readonly Sign[] {
 }
 
 export { HAND_LANDMARK_COUNT, TUNSL_HANDSHAPES, type HandLandmark } from "./handshapes";
+export {
+  FINGER_CHAINS,
+  FINGERTIPS,
+  PALM_OUTLINE,
+  REST_SHAPE,
+  shapeForSign,
+  type HandShape,
+  type Vec2,
+  type Vec3,
+} from "./handModel";

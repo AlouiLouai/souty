@@ -20,14 +20,28 @@ function audioContextClass(): AudioContextClass | null {
 }
 
 /**
+ * One audio context and one clip cache for the whole app: the scanner and
+ * the sign guide each use this hook, and browsers cap live contexts.
+ */
+let sharedContext: AudioContext | null = null;
+const sharedBuffers = new Map<string, Promise<AudioBuffer>>();
+
+/** A text-to-speech utterance that never reports its end is given up after this. */
+function ttsTimeoutMs(text: string) {
+  return 3000 + text.length * 250;
+}
+
+/**
  * Speaks the sentence: recorded Tunisian word clips where they exist
  * (lib/voice.ts), the browser's Arabic text-to-speech for the other words.
  */
 export function useSpeech() {
   const [supported, setSupported] = useState(false);
+  /** True while a sentence or word is being played, for the speaking animation. */
+  const [speaking, setSpeaking] = useState(false);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
-  const contextRef = useRef<AudioContext | null>(null);
-  const buffersRef = useRef(new Map<string, Promise<AudioBuffer>>());
+  /** Holds the live utterance: Chrome may drop an unreferenced one and never fire its end. */
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const sourcesRef = useRef<AudioBufferSourceNode[]>([]);
   /** Bumped on every speak; a stale run stops at its next step. */
   const runRef = useRef(0);
@@ -66,10 +80,11 @@ export function useSpeech() {
     }
     sourcesRef.current = [];
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    setSpeaking(false);
   }, []);
 
   const decode = useCallback((context: AudioContext, url: string) => {
-    let buffer = buffersRef.current.get(url);
+    let buffer = sharedBuffers.get(url);
     if (!buffer) {
       buffer = fetch(url)
         .then((res) => {
@@ -77,8 +92,8 @@ export function useSpeech() {
           return res.arrayBuffer();
         })
         .then((bytes) => context.decodeAudioData(bytes));
-      buffer.catch(() => buffersRef.current.delete(url)); // retry next time
-      buffersRef.current.set(url, buffer);
+      buffer.catch(() => sharedBuffers.delete(url)); // retry next time
+      sharedBuffers.set(url, buffer);
     }
     return buffer;
   }, []);
@@ -99,7 +114,12 @@ export function useSpeech() {
         ended.push(new Promise((resolve) => (source.onended = () => resolve())));
         at += buffer.duration + CLIP_GAP_S;
       }
-      await Promise.all(ended);
+      // Never wait forever on an "ended" event that does not come.
+      const total = at - context.currentTime;
+      await Promise.race([
+        Promise.all(ended),
+        new Promise<void>((resolve) => window.setTimeout(resolve, (total + 1) * 1000)),
+      ]);
     },
     [decode]
   );
@@ -111,11 +131,19 @@ export function useSpeech() {
       utterance.lang = "ar";
       if (voiceRef.current) utterance.voice = voiceRef.current;
       utterance.rate = 0.95;
-      utterance.onend = () => resolve();
-      utterance.onerror = (event) => {
-        console.error("Speech synthesis error", event);
+      let timer = 0;
+      const done = () => {
+        window.clearTimeout(timer);
+        if (utteranceRef.current === utterance) utteranceRef.current = null;
         resolve();
       };
+      utterance.onend = done;
+      utterance.onerror = (event) => {
+        console.error("Speech synthesis error", event);
+        done();
+      };
+      timer = window.setTimeout(done, ttsTimeoutMs(text));
+      utteranceRef.current = utterance;
       window.speechSynthesis.speak(utterance);
     });
   }, []);
@@ -131,16 +159,17 @@ export function useSpeech() {
       // Create or resume the audio context inside the gesture, before any await.
       const Context = audioContextClass();
       if (Context && segments.some((s) => s.kind === "clips")) {
-        contextRef.current ??= new Context();
-        void contextRef.current.resume();
+        sharedContext ??= new Context();
+        void sharedContext.resume();
       }
 
+      setSpeaking(true);
       void (async () => {
         for (const segment of segments) {
           if (run !== runRef.current) return;
           try {
-            if (segment.kind === "clips" && contextRef.current) {
-              await playClips(contextRef.current, segment.urls, run);
+            if (segment.kind === "clips" && sharedContext) {
+              await playClips(sharedContext, segment.urls, run);
             } else {
               await say(segment.text);
             }
@@ -150,6 +179,7 @@ export function useSpeech() {
             if (run === runRef.current) await say(segment.text);
           }
         }
+        if (run === runRef.current) setSpeaking(false);
       })();
     },
     [playClips, say, stop, supported]
@@ -157,5 +187,5 @@ export function useSpeech() {
 
   useEffect(() => stop, [stop]);
 
-  return { supported, speak };
+  return { supported, speaking, speak };
 }

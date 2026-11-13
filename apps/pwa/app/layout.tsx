@@ -6,7 +6,8 @@ import "@souty/brand/tokens.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Souty | ماسح الإشارات",
+  // The brand only: the app shows no text but the signed words (NFR-8).
+  title: "Souty",
   description:
     "ماسح إشارات اليد الفوري الذي ينطق ويعرض كل إشارة باللغة العربية.",
   applicationName: "Souty",

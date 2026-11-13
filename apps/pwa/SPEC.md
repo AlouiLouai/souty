@@ -16,6 +16,9 @@ Souty lets a deaf or non-speaking person build a spoken sentence with
 Tunisian Sign Language. They sign to the phone's camera; each recognised
 sign becomes a Tunisian Arabic (Derja) word; the words form a sentence the
 phone reads aloud. Everything runs on the phone, offline, with no account.
+Many Deaf Tunisians do not read or write, so the app shows no text but the
+signed words: every instruction is a picture and every control an icon
+(NFR-8).
 
 ## 2. Scope
 
@@ -24,7 +27,9 @@ phone reads aloud. Everything runs on the phone, offline, with no account.
 - Isolated sign recognition, one sign at a time, made with one or two
   hands, from a fixed vocabulary (section 5).
 - Building a sentence word by word; undo the last word; clear.
-- Reading the sentence aloud with on-device text-to-speech, on demand.
+- Reading the sentence, or one word of it, aloud on demand: a recorded
+  Tunisian clip where one exists, else on-device text-to-speech.
+- A sign guide: every sign the app can read, with its hand shape and word.
 - Installable PWA that works offline after the first load.
 
 **Out of scope**
@@ -32,18 +37,20 @@ phone reads aloud. Everything runs on the phone, offline, with no account.
 - Continuous signing (sentences without pauses between signs),
   fingerspelling, and facial expressions or other non-manual markers.
 - Any backend, user account, or storage of sentences across sessions.
-- A user-selectable interface language: the interface is Arabic, right to
-  left.
+- A user-selectable interface language: the interface has no text but the
+  signed words (NFR-8); its screen-reader labels are Arabic, and the layout
+  is right to left.
 
 ## 3. User flow
 
 | Step | Component | Behaviour |
 |---|---|---|
-| Splash | `components/SplashScreen.tsx` | Logo for 1.2 s, then a 300 ms fade, on every load. The model starts loading underneath (`getRecognizer()` in `app/page.tsx`), so the splash adds no waiting. |
-| Landing | `components/LandingScreen.tsx` | "ابدأ الاستخدام" opens the scanner; "كيفاش نستعملها؟" opens the tour. |
-| Tour (optional) | `components/OnboardingTour.tsx` | A live scanner with a 3-step spotlight: make a sign, flip the camera, the sentence controls. Skippable. |
-| Scanner | `components/ScannerWorkspace.tsx`, `components/GestureScanner.tsx` | Camera preview with hand skeletons; one progress ring above the hands; the sentence panel below with speak, undo, clear and pause. Home returns to the landing screen and keeps the sentence. |
-| Idle reminder | `components/IdleExitPopup.tsx`, `hooks/useIdleHandReminder.ts` | After 5 s with no hand in view, an informational popup. It closes when a hand returns or on tap, and never stops the camera. |
+| Splash | `components/SplashScreen.tsx` | The logo mark (no wordmark) for 1.2 s, then a 300 ms fade, on every load. The model starts loading underneath (`getRecognizer()` in `app/page.tsx`), so the splash adds no waiting. |
+| Landing | `components/LandingScreen.tsx` | A picture of what the app does (two hands → words → speaker), privacy and offline icons, and three icon buttons: the large camera button opens the scanner, the question mark opens the tour, the book opens the sign guide. |
+| Tour (optional) | `components/OnboardingTour.tsx` | A live scanner with a 4-step spotlight, each step a picture: hands in view (the hands indicator lights up), make a sign (an animated ring: spin, fill, green check), flip the camera, the sentence controls. Each step completes itself when the user does it (a hand appears, a word is added, the camera is switched, a panel button is pressed); the arrow button moves on and the X button skips. |
+| Scanner | `components/ScannerWorkspace.tsx`, `components/GestureScanner.tsx` | Camera preview with hand skeletons. While a hand is in view, one ring above the hands is always shown and says what the reader is doing (FR-12); two hands are joined by a moving dashed line. Two hand icons in the camera's top-left corner light up for each side of the screen where a hand is seen. The sentence panel below has pause, speak, undo and clear. The header is icons only: home (keeps the sentence), the logo mark with a running/paused dot, and a book that opens the sign guide. |
+| Sign guide | `components/SignGuide.tsx`, `components/SignGlyph.tsx` | Every sign the app can read, in six category tabs, one icon each (requests, family, places, days, transport, universal gestures). Each sign shows its hand shape, or a dashed "no drawing yet" hand when none is known (drawn signs come first), and its word; tapping it says the word. X returns to the landing screen or the scanner, wherever it was opened from; the sentence is kept. |
+| Idle reminder | `components/IdleExitPopup.tsx`, `hooks/useIdleHandReminder.ts` | After 5 s with no hand in view, a picture popup (two hands rising into the frame) with a check button. It closes when a hand returns or on tap, and never stops the camera. |
 
 ## 4. Functional requirements
 
@@ -58,11 +65,11 @@ Each requirement is verified by the tests listed in section 9.
 | **FR-5** | The sign classifier gives the same probabilities as the training notebook's exported model, to within 1e-4. |
 | **FR-6** | Live decoding: frames are resampled to 15 fps; the last 32 form the window; the classifier runs every 2 samples while a hand is visible. A sign is emitted after winning 3 readings in a row with confidence of at least 0.6, and is not emitted again until another sign or `none` wins confidently, the hands are gone for about 200 ms, or the window is reset. |
 | **FR-7** | Only model classes with an entry in `@souty/vocabulary` are ever emitted; every vocabulary entry names a class the shipped model can output; the negative class `none` never has a word. |
-| **FR-8** | An emitted sign appends its word to the sentence; undo removes only the last word; clear empties it; the sentence survives going to the landing screen and back. |
-| **FR-9** | "Speak" reads the whole sentence once, in sentence order. A word with a recorded Tunisian clip (`lib/voiceClips.ts`) is played from it; each run of words without one is read by one text-to-speech utterance with the first installed `ar-TN` voice, else the first `ar-*` voice, else the device default, at rate 0.95. A clip that fails to play is read instead. Words are not spoken automatically. |
-| **FR-10** | Pause stops detection (no word can be added) and resume starts again from an empty window. Switching camera also empties the window. |
+| **FR-8** | An emitted sign appends its word to the sentence; undo removes only the last word; clear empties it, in two taps: the first arms the button (the bin grows and pulses, the words about to go are struck through, with a 20 ms vibration), a second tap within 3 s confirms, and it disarms after 3 s or when the sentence changes. The sentence survives going to the landing screen or the sign guide and back. |
+| **FR-9** | The speaker button reads the whole sentence once, in sentence order; tapping one word of the sentence says just that word. A word with a recorded Tunisian clip (`lib/voiceClips.ts`) is played from it; each run of words without one is read by one text-to-speech utterance with the first installed `ar-TN` voice, else the first `ar-*` voice, else the device default, at rate 0.95. A clip that fails to play is read instead. A new request stops the one playing. The speaker button shows moving sound bars while playing. Words are still not spoken automatically. |
+| **FR-10** | Pause stops detection (no word can be added) and clears the overlay; the camera view is dimmed under a large play button. Tapping that paused view's button, or the pause button again, resumes from an empty window. Switching camera also empties the window and clears the overlay. |
 | **FR-11** | The idle reminder appears after 5 s with no hand while the scanner is running and not paused, and only then. |
-| **FR-12** | Feedback: the ring shows the leading sign's confidence and progress; an emitted word triggers a 400 ms flash ring and a 50 ms vibration where supported, and is highlighted in the sentence. |
+| **FR-12** | Feedback (`lib/handOverlay.ts`): whenever a hand is in view and the scanner is not paused, one ring is drawn above both hands. It has three states: **reading**, a white spinning arc with one dot per visible hand, while no sign leads; **candidate**, a cyan arc that fills with the leading sign's progress towards being said (its winning readings in a row), with that sign's word in a pill under the ring; **said**, a full mint ring with a check, held for 800 ms after the reader stops reporting the sign (the sign ended, a reading dipped, or the hands dropped) unless a different sign starts filling. Skeletons and the two-hand link take the ring's colour. When the leading sign drops, its word fades out over 450 ms instead of blinking off. The ring glides after the centre of the hands, sits above them, or below them when they are too near the top (with hysteresis, so it does not flap), stays inside the part of the frame the cropped preview shows, and has a fixed size in CSS pixels on every phone; the canvas is drawn at the screen's device-pixel resolution so the word stays sharp. On the frame a word is said: a 500 ms burst ring (it plays to the end even if the reader moves on), a 60 ms vibration where supported, and the word is appended and highlighted in the sentence. The only text drawn on the camera is the word: no percentage, no label. |
 
 ## 5. Vocabulary
 
@@ -107,9 +114,10 @@ camera frame ─► HandLandmarker (2 hands) ─► frameFromHands ─► FrameS
 | **NFR-2 Offline** | After one online load, the app starts and recognises signs with no network. Model, WASM and voice-clip files are kept in the persistent `souty-assets-v1` cache; model URLs carry `?v=MODEL_VERSION` and clip URLs a content hash, so a changed file is downloaded once. Older model files are deleted. |
 | **NFR-3 Model integrity** | The model files declared in `lib/assets.ts` are the files shipped, with matching sizes. The classifier's output count must equal the label count in the meta file, or loading fails with a clear error (`lib/recognizer.ts`). |
 | **NFR-4 Performance** | One classifier pass stays well under one frame budget (test limit: 50 ms in Node). The UI stays responsive on low-end phones because tracking is capped at 25 per second. |
-| **NFR-5 Resilience** | Denied camera permission shows an explanation and a retry button; where the Permissions API exists, granting the camera in browser settings resumes the scanner without a tap. A browser without camera access and a failed model load each show an explanation. A failed model load is not cached, so reopening the scanner or reloading retries it. One failing frame is logged and skipped; the detection loop always continues. `app/error.tsx` catches render errors with a retry screen. |
+| **NFR-5 Resilience** | Denied camera permission shows a picture (settings → camera) and a retry button; where the Permissions API exists, granting the camera in browser settings resumes the scanner without a tap. A browser without camera access shows a crossed-out camera and a browser window. A failed model load shows a retry button that loads it again in place; the failure is not cached, so reopening the scanner or reloading also retries. The camera and the model load in parallel and keep separate status, so a model failure stays on screen after the camera starts; while the model loads, a progress bar shows over the camera and a spinner shows next to the hands indicator. Two quick taps on the camera switch never leave a second camera stream running. One failing frame is logged and skipped; the detection loop always continues. `app/error.tsx` and `app/global-error.tsx` catch render errors with an icon-only retry screen, and `app/not-found.tsx` replaces Next's English 404 with a picture and a home button. |
 | **NFR-6 Installability** | The web app manifest (`app/manifest.ts`) declares a standalone, portrait, Arabic right-to-left app, with 192 px, 512 px and maskable 512 px icons that exist in `public/icons/`. |
-| **NFR-7 Layout and accessibility** | Full-height mobile layout (`100dvh`) with safe-area insets; large touch targets; every icon button has an Arabic `aria-label`; the skeleton overlay has a dark halo so it shows on any skin tone; a paused scanner is marked on the camera view itself. Colours and fonts come from `@souty/brand`. |
+| **NFR-7 Layout and accessibility** | Full-height mobile layout (`100dvh`) with safe-area insets. Every control is an icon button of at least 44 px (the main actions 56 px and more), and every icon button has an Arabic `aria-label` for screen readers; status cards, the header state, the tour steps and each newly added word are announced through `sr-only` live regions. The skeletons, the ring and the word pill have a dark halo or backdrop so they show on any skin tone and background. A paused scanner is marked on the camera view itself (a large play button) and in the header. With the system's reduced-motion setting, CSS animations and transitions run once, near-instantly (`app/globals.css`). Colours and fonts come from `@souty/brand`. |
+| **NFR-8 No text but the signs** | The only words on screen are signed words: the sentence, the word under the ring, and the words in the sign guide. Every instruction is a pictogram (`components/Pictograms.tsx`, the ring demo in the tour), every control an icon, every status an icon; Arabic text exists only for screen readers (`aria-label`s and `sr-only` live regions). The page title and the manifest name are the brand only, "Souty". `components/noVisibleText.test.ts` parses every `.tsx` file in `app/` and `components/` and fails on visible text: JSX text (letters, digits or %), string literals anywhere a child expression can render them (`&&`, `?:`, arrays, templates), and any string attribute that is not on its list of invisible ones (so `title`, `alt`, `placeholder` and a custom component's `label` all count); `app/manifest.test.ts` checks the brand-only name. |
 
 ## 8. Configuration
 
@@ -124,6 +132,9 @@ camera frame ─► HandLandmarker (2 hands) ─► frameFromHands ─► FrameS
 | Recorded voice clips | `public/audio/`, listed in `lib/voiceClips.ts` (`pnpm --filter @souty/pwa voice`) | none yet |
 | Splash | `components/SplashScreen.tsx` → `SPLASH_MS`, `SPLASH_FADE_MS` | 1200 ms, 300 ms |
 | Idle reminder delay | `app/page.tsx` → `IDLE_HAND_TIMEOUT_MS` | 5000 ms |
+| Burst after a word is said | `components/GestureScanner.tsx` → `LOCK_FLASH_MS` | 500 ms |
+| Ring size, word fade | `lib/handOverlay.ts` → `RING_RADIUS_CSS`, `WORD_HOLD_MS` | 30 CSS px, 450 ms |
+| Clear confirmation window | `components/TranslationPanel.tsx` → `CLEAR_CONFIRM_MS` | 3000 ms |
 | Service-worker shell cache | `public/sw.js` → `SHELL_CACHE` | `souty-v4`; bump when the caching logic changes |
 
 ## 9. Verification
@@ -141,11 +152,11 @@ Run every automated test from the repository root with `pnpm test`
 | FR-5 | `packages/sign-model/test/parity.test.ts` ("matches the shipped meta file", "reproduces the probabilities of case …", "rejects a file that is not a SignNet export") | |
 | FR-6 | `packages/sign-model/test/live.test.ts` (`FrameSampler`, `WindowBuffer`, `SignDecoder`); `parity.test.ts` ("says a held sign exactly once…") | M-02, M-03, M-04 |
 | FR-7 | `apps/pwa/lib/gestureDictionary.test.ts`; `packages/vocabulary/src/index.test.ts` | M-02, M-05 |
-| FR-8 | | M-06 |
-| FR-9 | `apps/pwa/lib/voice.test.ts` | M-07 |
+| FR-8 | | M-06, M-19 |
+| FR-9 | `apps/pwa/lib/voice.test.ts` | M-07, M-18 |
 | FR-10 | `live.test.ts` ("forgets the last sign on reset") | M-09 |
 | FR-11 | | M-10 |
-| FR-12 | | M-02 |
+| FR-12 | `apps/pwa/lib/handOverlay.test.ts` ("FR-12 sign feedback ring"; `visibleRect`, `handSides`, `approach`) | M-02, M-03, M-17 |
 | NFR-1 | `apps/pwa/lib/assets.test.ts` ("NFR-1 …") | M-12 |
 | NFR-2 | `apps/pwa/lib/assets.test.ts` ("NFR-2 …") | M-11 |
 | NFR-3 | `apps/pwa/lib/assets.test.ts` ("NFR-3 …"); `parity.test.ts` ("matches the shipped meta file") | |
@@ -153,6 +164,7 @@ Run every automated test from the repository root with `pnpm test`
 | NFR-5 | | M-14, M-15 |
 | NFR-6 | `apps/pwa/app/manifest.test.ts` | M-11 |
 | NFR-7 | | M-08, M-16 |
+| NFR-8 | `apps/pwa/components/noVisibleText.test.ts` ("NFR-8 pictures, not text") | M-01, M-18 |
 
 Test names in `apps/pwa` start with the requirement ID they verify.
 
@@ -178,6 +190,8 @@ Test names in `apps/pwa` start with the requirement ID they verify.
    yet, so today every word uses the device's Arabic text-to-speech, with
    a standard Arabic accent (or the default voice if no Arabic voice is
    installed). Recording the 62 distinct words fixes this (README, "Voice").
-5. **No retry button after a failed model load.** The error message asks
-   the user to try again, but the only way is to go home and reopen the
-   scanner, or reload.
+5. **Not every sign has a picture in the guide.** The sign guide draws a
+   hand shape only for signs with a known shape (`shapeForSign` in
+   `@souty/vocabulary`); the others show a dashed "no drawing yet"
+   hand next to the word. A drawing is one still hand, so it shows neither a sign's
+   movement, its second hand, nor where on the body it is made.
