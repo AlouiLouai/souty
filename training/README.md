@@ -105,6 +105,40 @@ Filenames start with `<signer>__`. With 3 or more signers, validation and
 test are split by signer, so the reported score is for a person the model
 has never seen.
 
+### Recording list: introducing yourself and registering a business
+
+None of these signs exist in the TunSL photos, so they can only be
+learned from recorded clips. The target sentence is "مرحباً أنا جوهر
+حلاق من سيدي بوزيد نحب نحل باتيندة مبادر ذاتي". Create one folder per
+row in `souty-sign-clips/`, named exactly as the label. The signs
+themselves must come from a Deaf signer or an ATILS interpreter: do not
+invent them.
+
+| Folder (label) | Spoken word | Meaning | Note |
+|---|---|---|---|
+| `ena` | أنا | I, me | |
+| `jawher` | جوهر | Jawher | his personal name sign, one class; other names need their own folder |
+| `7alle9` | حلاق | barber | |
+| `men` | من | from | if TunSL does not sign it separately, skip the folder |
+| `sidi_bouzid` | سيدي بوزيد | Sidi Bouzid | the place's sign |
+| `n7eb` | نحب | I want | distinct from `t7eb` only if the sign differs |
+| `n7el` | نحل | I open | |
+| `patinda` | باتيندة | business licence (patente) | |
+| `moubeder_dheti` | مبادر ذاتي | self-employed (auto-entrepreneur) | one sign or two? ask the signer |
+
+Worth recording in the same session, for the same counter conversation:
+`esmi` (اسمي, my name is), `ne5dem` (نخدم, I work), `7anout` (حانوت,
+shop), `flous` (فلوس, money), `wra9` (أوراق, papers), `win` (وين, where),
+`9adech` (قداش, how much), `y3aychek` (يعيشك, thank you).
+
+Minimum for a class to survive is `MIN_SAMPLES` (15) usable clips, so
+record at least 20 per sign, and add `none/` clips of the same people
+with idle hands. With fewer than 3 signers the model is only reliable
+for the people who recorded.
+
+After training, each new label needs a vocabulary entry before the app
+speaks it, see the next section.
+
 ## Deploying a trained model
 
 The notebook writes `/kaggle/working/export/`. Download the folder and
