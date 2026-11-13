@@ -56,7 +56,8 @@ const INDICATOR_SIDES = [
 interface GestureScannerProps {
   className?: string;
   paused: boolean;
-  onLocked: (word: string) => void;
+  /** A sign was said: its word, and the model label it came from. */
+  onLocked: (word: string, label: string) => void;
   /** Tapping the paused camera view resumes. */
   onResume?: () => void;
   /** Fires only when hand presence changes, not every frame. */
@@ -202,7 +203,7 @@ export default function GestureScanner({
       if (state?.emitted) {
         flashRef.current = { label: state.emitted, start: now };
         navigator.vibrate?.(60);
-        onLockedRef.current(gestureToWord(state.emitted));
+        onLockedRef.current(gestureToWord(state.emitted), state.emitted);
       }
       const flash = flashRef.current;
       const flashAge = flash ? (now - flash.start) / LOCK_FLASH_MS : undefined;

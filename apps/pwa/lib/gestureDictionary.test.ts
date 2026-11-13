@@ -42,7 +42,7 @@ describe("FR-7 spoken vocabulary", () => {
   });
 });
 
-describe("demo script", () => {
+describe("FR-13 demo script", () => {
   it("only uses signs the shipped model can output", async () => {
     const { DEMO_WORDS } = await import("./demoScript");
     const classes = new Set(meta.labels);

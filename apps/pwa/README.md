@@ -71,7 +71,9 @@ with ATILS. The full list lives in
   backgrounds, a picture-only onboarding tour, an idle reminder, error
   states with a retry button, and reduced motion when the system asks for
   it.
-- **No backend.** A static site with no per-user server cost.
+- **Almost no backend.** A static site plus one small route that counts
+  anonymous votes on the vocabulary (`app/api/votes`); recognition and
+  speech never touch a server.
 
 ## Run it locally
 
@@ -166,6 +168,7 @@ full runbook, including the one-time cutover to the monorepo layout, is in
 | Vocabulary | `@souty/vocabulary` (workspace package), shared with the marketing site |
 | UI | Tailwind CSS 3, shadcn/ui-style primitives in `components/ui`, light "picture-book" theme from `@souty/brand` (design tokens + Tailwind preset) |
 | Fonts | Readex Pro and Baloo Bhaijaan 2, self-hosted through `@souty/brand/fonts` (`next/font/local`) |
+| Vote store | `@upstash/redis` (Upstash Redis over HTTPS), used only by `app/api/votes` |
 | Voice | Recorded Tunisian word clips (`public/audio/`), else browser `SpeechSynthesis` (prefers `ar-TN`, then any `ar-*` voice) |
 | Offline | Hand-written service worker (`public/sw.js`): network-first app shell, cache-first static files, a separate persistent cache for the model and WASM runtime |
 | Analytics | Vercel Web Analytics (`@vercel/analytics`), cookieless page views only, see [Privacy](#privacy) |
@@ -227,6 +230,7 @@ components/
   OnboardingTour.tsx     4-step picture-only tutorial on a live scanner
   SignGuide.tsx          Every sign by category icon; tap to hear its word
   SignGlyph.tsx          Still drawing of one sign's hand shape
+  VoteButtons.tsx        "Word is right / wrong" icon buttons and the blue validated mark
   Pictograms.tsx         Shared pictures (two hands, icon tiles, flows, sound bars)
   SplashScreen.tsx       Launch splash
   IdleExitPopup.tsx      "Put your hands back in frame" picture reminder
@@ -234,13 +238,17 @@ components/
   Logo.tsx               Logo mark (no wordmark)
   noVisibleText.test.ts  NFR-8: fails on any visible text in a component
   ServiceWorkerRegistration.tsx
-  ui/                    Button / Card / Badge primitives
+  ui/                    Button / Card primitives
 hooks/
   useSpeech.ts           Speaks the sentence: recorded clips, then Arabic TTS
   useSentence.ts         Sentence word list state
   useIdleHandReminder.ts No-hand-in-frame reminder timer
+  useVotes.ts            Community votes and tallies, for the vote buttons and blue marks
 lib/
   gestureDictionary.ts   Model label -> Tunisian Arabic word (adapter over @souty/vocabulary)
+  demoScript.ts          Proof-of-concept sentence: stand-in words, on with ?demo=jawher
+  validation.ts          Community validation rule: votes needed for the blue mark
+  votes.ts               This device's votes (kept offline, sent when online) and cached tallies
   handOverlay.ts         Canvas skeletons + the reading/candidate/said ring above both hands
   recognizer.ts          Shared, pre-warmed hand tracker + sign model + log filter
   assets.ts              Parallel model/WASM download, persistent cache, progress

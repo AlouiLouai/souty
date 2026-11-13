@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { localeFromPathname, negotiateLocale, withLocale } from "./negotiate";
+import { localeFromPathname, negotiateLocale } from "./negotiate";
 
 describe("negotiateLocale", () => {
   it("falls back to the default locale without a header", () => {
@@ -51,17 +51,5 @@ describe("localeFromPathname", () => {
     expect(localeFromPathname("/")).toBeNull();
     expect(localeFromPathname("/de")).toBeNull();
     expect(localeFromPathname("/french")).toBeNull();
-  });
-});
-
-describe("withLocale", () => {
-  it("adds a prefix to unprefixed paths", () => {
-    expect(withLocale("/", "fr")).toBe("/fr");
-    expect(withLocale("/privacy", "ar")).toBe("/ar/privacy");
-  });
-
-  it("swaps an existing prefix", () => {
-    expect(withLocale("/en", "ar")).toBe("/ar");
-    expect(withLocale("/en/privacy", "fr")).toBe("/fr/privacy");
   });
 });

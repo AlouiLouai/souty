@@ -9,7 +9,7 @@ Two Vercel projects are built from this one repository:
 | Framework preset | Next.js | Next.js |
 | Build, Install, Output settings | Defaults, no overrides | Defaults, no overrides |
 | Node.js version | 22.x (matches `.nvmrc`) | 22.x |
-| Environment variables | None | Three optional ones, [listed below](#environment-variables) |
+| Environment variables | Two optional ones for the [vote store](#vote-store-pwa-project) | Three optional ones, [listed below](#environment-variables) |
 
 > **Read this first.** The existing Vercel project builds from the
 > repository root. After the monorepo restructure there is no Next.js app
@@ -249,6 +249,27 @@ Details and options: [`tools/qr/README.md`](../tools/qr/README.md).
 
 A printed QR code cannot be changed. If the address changes later, keep
 the old one redirecting to the new one.
+
+## Vote store (PWA project)
+
+Community validation (`apps/pwa/SPEC.md`, FR-14) counts votes in a Redis
+database reached over Upstash's REST API. Without it the PWA works as
+before and simply hides the vote buttons and blue marks.
+
+1. In the **PWA** project on Vercel: Storage → Create Database → Upstash
+   → Redis (the free plan is enough), and connect it to the project for
+   Production. This adds `KV_REST_API_URL`, `KV_REST_API_TOKEN` and
+   `KV_REST_API_READ_ONLY_TOKEN` (used for counting, when present). Do
+   not set a custom prefix: the route looks for these exact names.
+   A database created directly on upstash.com works too: copy its REST
+   URL and token into `UPSTASH_REDIS_REST_URL` and
+   `UPSTASH_REDIS_REST_TOKEN`.
+2. Redeploy, then open `https://<pwa-address>/api/votes`: it must answer
+   `{"tallies":{}}`, not a 503.
+
+The token is a server-side secret: never give it a `NEXT_PUBLIC_` name.
+To reset a sign's votes, delete its two keys, `souty:votes:yes:<label>:<word>`
+and `souty:votes:no:<label>:<word>`, in the Upstash console.
 
 ## Web Analytics
 

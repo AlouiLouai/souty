@@ -109,6 +109,7 @@ export default function HomePage() {
             paused={paused}
             onTogglePaused={() => setPaused((p) => !p)}
             onHandPresenceChange={idleReminder.onHandPresenceChange}
+            askFeedback
             scannerOverlay={idleReminder.visible && <IdleExitPopup onContinue={idleReminder.dismiss} />}
           />
         </div>
