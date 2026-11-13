@@ -15,29 +15,34 @@
  * turned off with `?demo=off`. Outside the demo the vocabulary is untouched.
  */
 
-/** Model label -> word spoken in the demo. */
+/**
+ * Model label -> word spoken in the demo.
+ *
+ * One-handed gestures only: they are the classes the model reads reliably
+ * on a live camera. The two-handed TunSL signs were trained on still
+ * photos and do not lock dependably in front of a phone.
+ */
 export const DEMO_WORDS: Readonly<Record<string, string>> = {
-  // Greeting: the open hand, and the real TunSL hello.
+  // Open hand: a greeting. The real TunSL hello gives the same word.
   Open_Palm: "مرحباً",
   "3aslema": "مرحباً",
-  // An index finger: pointing is how "I" is signed. Both pointing classes,
-  // so either reading of a finger aimed at the chest gives the same word.
+  // One raised index finger.
   Pointing_Up: "أنا",
-  enti: "أنا",
   // A name sign is personal by nature; this one is Jawher's for the demo.
   Shaka_Sign: "جوهر",
   // Two fingers as scissors.
   Victory: "حلاق",
-  // The town sign (municipality). Sign languages rarely sign "from" apart.
-  baladya: "من سيدي بوزيد",
-  // Same verb as تحب (you want), first person.
+  // Thumb pointing down, "from here". Sign languages rarely sign "from" apart.
+  Thumb_Down: "من سيدي بوزيد",
+  // Thumb up: I like, I want. The real TunSL "want" gives the same word.
+  Thumb_Up: "نحب",
   t7eb: "نحب",
-  // A first-person action verb, stand-in for "I open".
-  n3awnek: "نحل",
-  // An administrative application.
-  demande: "باتيندة",
-  // "Your project": the closest sign to an independent venture.
-  barnamjk: "مبادر ذاتي",
+  // Three fingers opening out.
+  Three_Fingers: "نحل",
+  // The OK ring: an approval, a permit.
+  OK_Sign: "باتيندة",
+  // A fist: on my own strength.
+  Closed_Fist: "مبادر ذاتي",
 };
 
 const STORAGE_KEY = "souty.demo";
