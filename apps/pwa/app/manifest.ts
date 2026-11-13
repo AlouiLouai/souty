@@ -2,7 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Souty - ماسح الإشارات",
+    // Shown on the install prompt and splash: the brand only (NFR-8).
+    name: "Souty",
     short_name: "Souty",
     description:
       "ماسح إشارات اليد الفوري الذي ينطق ويعرض كل إشارة باللغة العربية، بالكامل على جهازك بدون إنترنت.",

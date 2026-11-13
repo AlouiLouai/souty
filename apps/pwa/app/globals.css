@@ -45,3 +45,15 @@
     padding-right: max(env(safe-area-inset-right), 1rem);
   }
 }
+
+/* Pictogram animations explain things, but must not move for users who
+   asked the system for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

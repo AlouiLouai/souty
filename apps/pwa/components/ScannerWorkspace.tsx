@@ -41,16 +41,22 @@ export default function ScannerWorkspace({
           className="h-full w-full"
           paused={paused}
           onLocked={sentence.addWord}
+          onResume={onTogglePaused}
           onHandPresenceChange={onHandPresenceChange}
           onCameraSwitched={onCameraSwitched}
         />
         {scannerOverlay}
+        {/* Screen readers hear each new word as it is added. */}
+        <span role="status" className="sr-only">
+          {sentence.words[sentence.words.length - 1] ?? ""}
+        </span>
       </div>
 
       <div className="relative shrink-0">
         <TranslationPanel
           sentenceWords={sentence.words}
           speechSupported={speech.supported}
+          speaking={speech.speaking}
           paused={paused}
           onTogglePaused={() => {
             onTogglePaused();
@@ -66,6 +72,10 @@ export default function ScannerWorkspace({
           }}
           onSpeakSentence={(words) => {
             speech.speak(words);
+            onPanelAction?.();
+          }}
+          onSpeakWord={(word) => {
+            speech.speak([word]);
             onPanelAction?.();
           }}
         />

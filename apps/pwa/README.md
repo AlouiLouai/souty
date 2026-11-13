@@ -24,12 +24,19 @@ improvisation.
 
 Souty turns a smartphone into a real-time sign-to-speech bridge:
 
-1. Point the camera at a hand sign.
-2. A progress ring fills around the hand. Hold the sign about 0.7 s to lock
-   it in.
+1. Sign to the camera, with one hand or two.
+2. A ring above the hands shows what the app is doing: it spins while it
+   reads, fills as one sign keeps winning (with that sign's word under
+   it), and turns green with a check when the word is said.
 3. The recognized word (in Tunisian Derja, Arabic script) is appended to a
    growing sentence.
-4. One tap speaks the full sentence aloud for the person across the desk.
+4. One tap speaks the full sentence aloud for the person across the desk;
+   tapping one word says just that word.
+
+Many Deaf Tunisians do not read or write, so apart from the signed words
+the app shows **no text**: every instruction is a picture and every
+control an icon (each with an Arabic label for screen readers). A test,
+`components/noVisibleText.test.ts`, keeps it that way.
 
 **Current vocabulary: 65 signs**, one- and two-handed. 55 real Tunisian
 Sign Language signs (requests, public places such as the municipality,
@@ -48,15 +55,22 @@ with ATILS. The full list lives in
   runtime, the fonts and the app shell are all self-hosted and cached by a
   service worker, so it keeps working with no connectivity.
 - **Tunisian first.** Real Tunisian Sign Language signs, Tunisian Derja
-  output, Arabic right-to-left interface. Words with a recorded Tunisian
+  output, a right-to-left interface with no text but the signed words.
+  Words with a recorded Tunisian
   voice clip are played from it; the others use the device's Arabic
   text-to-speech voice (see [Voice](#voice)).
 - **Two-handed signs and movement.** Both hands are read together over the
-  last two seconds.
-- **Accessible by design.** Haptic feedback on word lock-in, a hand overlay
-  drawn in white with a dark halo so it stays visible on light and dark
-  backgrounds, large touch targets, an onboarding tour, an idle reminder,
-  error states with retry.
+  last two seconds. One ring sits above both hands, joined by a moving
+  dashed line, and two hand icons in the camera's corner light up for each
+  hand the camera sees.
+- **Sign guide.** Every sign the app knows, by category icon, with its
+  hand shape and word; tap one to hear it.
+- **Accessible by design.** Icon-only controls with large touch targets
+  and Arabic screen-reader labels, haptic feedback when a word is said, a
+  hand overlay with a dark halo so it stays visible on light and dark
+  backgrounds, a picture-only onboarding tour, an idle reminder, error
+  states with a retry button, and reduced motion when the system asks for
+  it.
 - **No backend.** A static site with no per-user server cost.
 
 ## Run it locally
@@ -105,7 +119,7 @@ pnpm --filter @souty/pwa start   # http://localhost:3000
 |---|---|
 | `pnpm --filter @souty/pwa lint` | ESLint |
 | `pnpm turbo run typecheck --filter=@souty/pwa` | Builds the app, then runs `tsc --noEmit` (Next.js generates its route types during the build) |
-| `pnpm --filter @souty/pwa test` | The app's own tests: vocabulary versus the shipped model, model file sizes and cache wiring, manifest |
+| `pnpm --filter @souty/pwa test` | The app's own tests: vocabulary versus the shipped model, model file sizes and cache wiring, manifest, voice clips, the feedback ring (`lib/handOverlay.test.ts`), and no visible text in any component (`components/noVisibleText.test.ts`) |
 | `pnpm --filter @souty/vocabulary test` | The vocabulary contract test |
 | `pnpm --filter @souty/sign-model test` | The browser port of the sign model must reproduce the training notebook's features and probabilities |
 | `pnpm check` | Lint, typecheck and tests for the whole workspace |
@@ -177,7 +191,12 @@ full runbook, including the one-time cutover to the monorepo layout, is in
    thin adapter over `@souty/vocabulary`, and accumulate into a sentence.
    A sign the model knows but the vocabulary has no word for yet is never
    spoken.
-6. "Speak sentence" reads the sentence aloud with the browser's
+6. While this runs, `lib/handOverlay.ts` draws the skeletons and the ring
+   above the hands: spinning while reading, filling for the leading sign
+   with its word under it, green with a check and a burst (and a short
+   vibration) when the word is said.
+7. The speaker button reads the sentence aloud, and tapping a word says
+   just that word: recorded clips where they exist, else the browser's
    text-to-speech (`SpeechSynthesis`).
 
 **Known limitation:** the Tunisian training data is still images, so today
@@ -201,15 +220,19 @@ Paths are relative to `apps/pwa/`.
 ```
 app/                     Next.js App Router (layout, page, manifest, error boundary, globals.css)
 components/
-  GestureScanner.tsx     Camera + MediaPipe recognition + per-hand lock-in
+  GestureScanner.tsx     Camera + MediaPipe recognition + two-hand sign reader + hands indicator
   ScannerWorkspace.tsx   Scanner + sentence panel, shared by app and tour
-  TranslationPanel.tsx   Growing sentence + speak/undo/clear/pause controls
-  LandingScreen.tsx      Entry screen
-  OnboardingTour.tsx     3-step interactive tutorial on a live scanner
+  TranslationPanel.tsx   Sentence as tap-to-hear word chips + pause/speak/undo/clear icons
+  LandingScreen.tsx      Entry screen (pictogram + start, tour and sign-guide icons)
+  OnboardingTour.tsx     4-step picture-only tutorial on a live scanner
+  SignGuide.tsx          Every sign by category icon; tap to hear its word
+  SignGlyph.tsx          Still drawing of one sign's hand shape
+  Pictograms.tsx         Shared pictures (two hands, icon tiles, flows, sound bars)
   SplashScreen.tsx       Launch splash
-  IdleExitPopup.tsx      "Put your hand back in frame" reminder
-  StatusDialog.tsx       Shared loading/error/reminder card
-  Logo.tsx               Logo mark + wordmark
+  IdleExitPopup.tsx      "Put your hands back in frame" picture reminder
+  StatusDialog.tsx       Shared loading/error/reminder card (icons only)
+  Logo.tsx               Logo mark (no wordmark)
+  noVisibleText.test.ts  NFR-8: fails on any visible text in a component
   ServiceWorkerRegistration.tsx
   ui/                    Button / Card / Badge primitives
 hooks/
@@ -218,7 +241,7 @@ hooks/
   useIdleHandReminder.ts No-hand-in-frame reminder timer
 lib/
   gestureDictionary.ts   Model label -> Tunisian Arabic word (adapter over @souty/vocabulary)
-  handOverlay.ts         Canvas skeleton + progress ring drawing
+  handOverlay.ts         Canvas skeletons + the reading/candidate/said ring above both hands
   recognizer.ts          Shared, pre-warmed hand tracker + sign model + log filter
   assets.ts              Parallel model/WASM download, persistent cache, progress
   offline.ts             Asks the service worker to cache loaded resources

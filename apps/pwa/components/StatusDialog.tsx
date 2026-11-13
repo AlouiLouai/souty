@@ -2,44 +2,32 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface StatusDialogProps {
+  /** The big icon that says what happened. */
   icon: ReactNode;
-  title: ReactNode;
-  /** Overrides the default title typography. */
-  titleClassName?: string;
-  message?: ReactNode;
+  /** Arabic description, announced to screen readers; never shown (the app shows no text). */
+  ariaLabel: string;
+  /** Optional pictogram under the icon (what to do next). */
+  children?: ReactNode;
   action?: ReactNode;
   /** Positioning/backdrop classes for the full-area wrapper. */
   className?: string;
 }
 
-/** Centered card over a dimmed backdrop, shared by loading, error and idle states. */
-export function StatusDialog({
-  icon,
-  title,
-  titleClassName = "font-display text-base font-bold",
-  message,
-  action,
-  className,
-}: StatusDialogProps) {
+/**
+ * Centered card over a dimmed backdrop, shared by loading, error and idle
+ * states. Pictures only: an icon, an optional pictogram, an icon button.
+ */
+export function StatusDialog({ icon, ariaLabel, children, action, className }: StatusDialogProps) {
   return (
-    <div
-      role="status"
-      className={cn(
-        "absolute inset-0 flex items-center justify-center bg-background/85 p-6",
-        className
-      )}
-    >
-      <div className="w-full max-w-xs rounded-[1.5rem] border-2 border-border bg-card p-6 text-center shadow-[5px_5px_0_var(--border)]">
+    <div className={cn("absolute inset-0 flex items-center justify-center bg-background/85 p-6", className)}>
+      {/* A live region announces its text content, so the description is content, visually hidden. */}
+      <span role="status" className="sr-only">
+        {ariaLabel}
+      </span>
+      <div className="flex w-full max-w-xs animate-pop-in flex-col items-center gap-4 rounded-[1.5rem] border-2 border-border bg-card p-6 shadow-[5px_5px_0_var(--border)]">
         {icon}
-        <p dir="rtl" className={cn("text-foreground", titleClassName)}>
-          {title}
-        </p>
-        {message && (
-          <p dir="rtl" className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            {message}
-          </p>
-        )}
-        {action && <div className="mt-4">{action}</div>}
+        {children}
+        {action}
       </div>
     </div>
   );
