@@ -17,6 +17,7 @@
     "@souty/brand": "workspace:*",
     "@souty/sign-model": "workspace:*",
     "@souty/vocabulary": "workspace:*",
+    "@upstash/redis": "1.41.0",
     "@vercel/analytics": "catalog:",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",

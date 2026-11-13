@@ -36,11 +36,3 @@ export function localeFromPathname(pathname: string): Locale | null {
   const first = pathname.split("/")[1];
   return isLocale(first) ? first : null;
 }
-
-/** Swaps (or adds) the locale prefix of a pathname. */
-export function withLocale(pathname: string, locale: Locale): string {
-  const current = localeFromPathname(pathname);
-  const rest = current ? pathname.slice(current.length + 1) : pathname;
-  const suffix = rest === "/" || rest === "" ? "" : rest;
-  return `/${locale}${suffix}`;
-}

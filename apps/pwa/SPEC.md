@@ -15,7 +15,9 @@ and the code disagree, the code is the truth and this spec has a bug.
 Souty lets a deaf or non-speaking person build a spoken sentence with
 Tunisian Sign Language. They sign to the phone's camera; each recognised
 sign becomes a Tunisian Arabic (Derja) word; the words form a sentence the
-phone reads aloud. Everything runs on the phone, offline, with no account.
+phone reads aloud. Recognition and speech run on the phone, offline, with
+no account. The one thing that can leave the phone is an anonymous vote
+on whether a sign's word is right (FR-14).
 Many Deaf Tunisians do not read or write, so the app shows no text but the
 signed words: every instruction is a picture and every control an icon
 (NFR-8).
@@ -30,13 +32,18 @@ signed words: every instruction is a picture and every control an icon
 - Reading the sentence, or one word of it, aloud on demand: a recorded
   Tunisian clip where one exists, else on-device text-to-speech.
 - A sign guide: every sign the app can read, with its hand shape and word.
+- A scripted proof-of-concept sentence with stand-in words (FR-13), off by
+  default.
+- Community validation: users vote on whether each sign's word is right,
+  and a word enough of them agree on carries a blue mark (FR-14).
 - Installable PWA that works offline after the first load.
 
 **Out of scope**
 
 - Continuous signing (sentences without pauses between signs),
   fingerspelling, and facial expressions or other non-manual markers.
-- Any backend, user account, or storage of sentences across sessions.
+- Any user account, any storage of sentences across sessions, and any
+  backend other than the vote counter of FR-14.
 - A user-selectable interface language: the interface has no text but the
   signed words (NFR-8); its screen-reader labels are Arabic, and the layout
   is right to left.
@@ -70,6 +77,8 @@ Each requirement is verified by the tests listed in section 9.
 | **FR-10** | Pause stops detection (no word can be added) and clears the overlay; the camera view is dimmed under a large play button. Tapping that paused view's button, or the pause button again, resumes from an empty window. Switching camera also empties the window and clears the overlay. |
 | **FR-11** | The idle reminder appears after 5 s with no hand while the scanner is running and not paused, and only then. |
 | **FR-12** | Feedback (`lib/handOverlay.ts`): whenever a hand is in view and the scanner is not paused, one ring is drawn above both hands. It has three states: **reading**, a white spinning arc with one dot per visible hand, while no sign leads; **candidate**, a cyan arc that fills with the leading sign's progress towards being said (its winning readings in a row), with that sign's word in a pill under the ring; **said**, a full mint ring with a check, held for 800 ms after the reader stops reporting the sign (the sign ended, a reading dipped, or the hands dropped) unless a different sign starts filling. Skeletons and the two-hand link take the ring's colour. When the leading sign drops, its word fades out over 450 ms instead of blinking off. The ring glides after the centre of the hands, sits above them, or below them when they are too near the top (with hysteresis, so it does not flap), stays inside the part of the frame the cropped preview shows, and has a fixed size in CSS pixels on every phone; the canvas is drawn at the screen's device-pixel resolution so the word stays sharp. On the frame a word is said: a 500 ms burst ring (it plays to the end even if the reader moves on), a 60 ms vibration where supported, and the word is appended and highlighted in the sentence. The only text drawn on the camera is the word: no percentage, no label. |
+| **FR-13** | Demo script (`lib/demoScript.ts`), off by default. Opening the app with `?demo=jawher` turns it on and remembers it on the device (`localStorage` key `souty.demo`); any other `?demo=` value, for example `?demo=off`, turns it off. While on, the labels in `DEMO_WORDS` show and speak a stand-in word instead of their vocabulary word, in the scanner, the sentence and the sign guide; every other label is unchanged. The script spells one sentence, "مرحباً أنا جوهر حلاق من سيدي بوزيد نحب نحل باتيندة مبادر ذاتي", with one one-handed gesture per word: open palm مرحباً, index up أنا, shaka جوهر, V حلاق, thumb down من سيدي بوزيد, thumb up نحب, three fingers نحل, OK ring باتيندة, fist مبادر ذاتي (`3aslema` and `t7eb` also give مرحباً and نحب). These are stand-ins for a demonstration, not the Tunisian signs for those words. |
+| **FR-14** | Community validation (`lib/validation.ts`, `lib/votes.ts`, `app/api/votes/route.ts`). A user can say whether a sign's word is right or wrong with two icon buttons (check, cross): under every sign in the sign guide, and in a pill at the bottom of the camera for 6 s after the scanner says a word (only for a sign this device has not judged yet, never in the tour, never while paused). A device has one vote per sign and can change it. A word is **validated** when it has at least 10 votes and at least 80% of them say it is right; it then shows a blue check mark in the sign guide and in the pill. Votes are saved on the device first and sent when there is a network; the last tallies received are kept, so the marks show offline. A vote is: a random device id, the sign's label, yes or no. Votes are counted per label **and word**, so changing a sign's word starts its count again. The vote buttons and marks are hidden when the server has no vote store (it answers 503) and while the demo script is on. The server refuses unknown signs, malformed ids, and more than 30 posts a minute from one address. |
 
 ## 5. Vocabulary
 
@@ -110,7 +119,7 @@ camera frame ─► HandLandmarker (2 hands) ─► frameFromHands ─► FrameS
 
 | ID | Requirement |
 |---|---|
-| **NFR-1 Privacy** | Camera frames, landmarks and sentences never leave the device. The models and the MediaPipe WASM runtime are served from this origin (`public/models/`, `public/wasm/`), never from a CDN. The only network beacon is Vercel Web Analytics page views, active only when enabled in the Vercel project. |
+| **NFR-1 Privacy** | Camera frames, landmarks and sentences never leave the device. The models and the MediaPipe WASM runtime are served from this origin (`public/models/`, `public/wasm/`), never from a CDN. Two things are sent, both to this origin: Vercel Web Analytics page views, active only when enabled in the Vercel project, and the votes of FR-14 (a random device id, a sign label, yes or no), sent only when the user taps a vote button. The vote route keeps a hash of the sender's address for one minute, to limit ballot stuffing, and nothing else about the sender. |
 | **NFR-2 Offline** | After one online load, the app starts and recognises signs with no network. Model, WASM and voice-clip files are kept in the persistent `souty-assets-v1` cache; model URLs carry `?v=MODEL_VERSION` and clip URLs a content hash, so a changed file is downloaded once. Older model files are deleted. |
 | **NFR-3 Model integrity** | The model files declared in `lib/assets.ts` are the files shipped, with matching sizes. The classifier's output count must equal the label count in the meta file, or loading fails with a clear error (`lib/recognizer.ts`). |
 | **NFR-4 Performance** | One classifier pass stays well under one frame budget (test limit: 50 ms in Node). The UI stays responsive on low-end phones because tracking is capped at 25 per second. |
@@ -129,6 +138,11 @@ camera frame ─► HandLandmarker (2 hands) ─► frameFromHands ─► FrameS
 | Tracking rate cap | `components/GestureScanner.tsx` → `MIN_FRAME_INTERVAL_MS` | 40 ms |
 | Model cache version | `lib/assets.ts` → `MODEL_VERSION` | 2 |
 | Label → word | `packages/vocabulary/src/index.ts` → `SIGNS` | 65 entries (32 marked `toConfirm`) |
+| Validation rule | `lib/validation.ts` → `MIN_VOTES`, `MIN_AGREEMENT` | 10 votes, 80% yes |
+| Feedback pill after a word | `components/ScannerWorkspace.tsx` → `FEEDBACK_MS` | 6000 ms |
+| Vote store | Vercel environment: `KV_REST_API_URL` + `KV_REST_API_TOKEN`, or `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (`docs/DEPLOYMENT.md`) | unset: voting hidden |
+| Vote rate limit | `app/api/votes/route.ts` → `RATE_LIMIT` | 30 posts per minute per address |
+| Demo script | `lib/demoScript.ts` → `DEMO_WORDS`; `?demo=jawher` / `?demo=off` | off; 11 labels, 9 words |
 | Recorded voice clips | `public/audio/`, listed in `lib/voiceClips.ts` (`pnpm --filter @souty/pwa voice`) | none yet |
 | Splash | `components/SplashScreen.tsx` → `SPLASH_MS`, `SPLASH_FADE_MS` | 1200 ms, 300 ms |
 | Idle reminder delay | `app/page.tsx` → `IDLE_HAND_TIMEOUT_MS` | 5000 ms |
@@ -157,6 +171,8 @@ Run every automated test from the repository root with `pnpm test`
 | FR-10 | `live.test.ts` ("forgets the last sign on reset") | M-09 |
 | FR-11 | | M-10 |
 | FR-12 | `apps/pwa/lib/handOverlay.test.ts` ("FR-12 sign feedback ring"; `visibleRect`, `handSides`, `approach`) | M-02, M-03, M-17 |
+| FR-13 | `apps/pwa/lib/gestureDictionary.test.ts` ("FR-13 demo script") | M-20 |
+| FR-14 | `apps/pwa/lib/validation.test.ts` ("FR-14 community validation") | M-21 |
 | NFR-1 | `apps/pwa/lib/assets.test.ts` ("NFR-1 …") | M-12 |
 | NFR-2 | `apps/pwa/lib/assets.test.ts` ("NFR-2 …") | M-11 |
 | NFR-3 | `apps/pwa/lib/assets.test.ts` ("NFR-3 …"); `parity.test.ts` ("matches the shipped meta file") | |
@@ -190,7 +206,17 @@ Test names in `apps/pwa` start with the requirement ID they verify.
    yet, so today every word uses the device's Arabic text-to-speech, with
    a standard Arabic accent (or the default voice if no Arabic voice is
    installed). Recording the 62 distinct words fixes this (README, "Voice").
-5. **Not every sign has a picture in the guide.** The sign guide draws a
+5. **The demo script is not sign language.** Its nine words (FR-13) are
+   carried by universal gestures chosen because the model reads them
+   reliably. The real signs need recorded clips (`training/README.md`,
+   "Recording list").
+6. **Anyone can vote.** There are no accounts, so a vote does not prove
+   the voter is Deaf or knows Tunisian Sign Language, and one person
+   with several devices or browsers has several votes. The blue mark
+   means "users agree", not "confirmed by ATILS"; the `toConfirm` drafts
+   of section 5 are a separate review. The vote route and its client
+   (`lib/votes.ts`) have no automated test beyond the validation rule.
+7. **Not every sign has a picture in the guide.** The sign guide draws a
    hand shape only for signs with a known shape (`shapeForSign` in
    `@souty/vocabulary`); the others show a dashed "no drawing yet"
    hand next to the word. A drawing is one still hand, so it shows neither a sign's

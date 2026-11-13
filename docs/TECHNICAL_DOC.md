@@ -31,8 +31,10 @@ in the `catalog` of `pnpm-workspace.yaml`. Setup and commands are in the
 
 ## 1. Architecture overview
 
-Souty is a fully client-side application — there is no backend, no API, no
-database. Every byte of inference happens on the user's device. The only
+Souty is a client-side application: every byte of inference happens on
+the user's device, and no image, landmark or sentence is ever sent. The
+only server code is one route that counts anonymous votes on the
+vocabulary (`apps/pwa/app/api/votes/route.ts`, SPEC.md FR-14), and the only
 third-party call is Vercel Web Analytics (cookieless page views; see
 [section 3](#3-privacy--security)).
 
@@ -133,6 +135,8 @@ third-party call is Vercel Web Analytics (cookieless page views; see
 | `packages/vocabulary/src/index.ts` | The vocabulary: `SIGNS` (model label, Tunisian Arabic word, glosses, category, source), `WORD_BY_LABEL` |
 | `packages/vocabulary/src/index.test.ts` | Contract test pinning the label → word mapping of the deployed model |
 | `apps/pwa/lib/gestureDictionary.ts` | Thin adapter over `@souty/vocabulary`: `gestureToWord`, `hasWord` |
+| `apps/pwa/lib/validation.ts`, `apps/pwa/lib/votes.ts`, `apps/pwa/app/api/votes/route.ts` | Community validation (SPEC.md, FR-14): the rule for the blue mark, this device's offline-first votes, and the route that counts votes in an Upstash Redis database with the `@upstash/redis` client. The app's only server code |
+| `apps/pwa/lib/demoScript.ts` | Proof-of-concept script: with `?demo=jawher`, nine one-handed gestures speak stand-in words (SPEC.md, FR-13) |
 | `apps/pwa/hooks/useSpeech.ts`, `apps/pwa/lib/voice.ts` | Speaks the sentence: recorded clips first, Arabic TTS for the rest |
 | `apps/pwa/hooks/useSentence.ts`, `apps/pwa/hooks/useIdleHandReminder.ts` | Sentence state; no-hand reminder timer |
 | `apps/pwa/app/page.tsx` | View orchestration (landing/onboarding/scanner/sign guide) |
@@ -241,7 +245,7 @@ hard-coded to one hand and one still frame.
   existing project to the monorepo layout, is [`DEPLOYMENT.md`](DEPLOYMENT.md).
 - `pnpm build` builds both apps; `pnpm --filter @souty/pwa build` builds
   the PWA alone. HTTPS is mandatory (camera + service worker).
-- Bundle: ~130 kB first-load JS + 8.1 MB model + WASM runtime (two
+- Bundle: ~143 kB first-load JS + 8.6 MB model + WASM runtime (two
   variants committed, SIMD and non-SIMD, ~23 MB together; the browser
   loads one, ~12 MB), all cache-first after first visit.
 - `apps/pwa/next.config.mjs` sets immutable caching on `/models` + `/wasm`

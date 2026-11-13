@@ -17,8 +17,11 @@ import { SIGN_CATEGORIES, signsByCategory, type SignCategory } from "@souty/voca
 import { gestureToWord } from "@/lib/gestureDictionary";
 import { SoundBars } from "@/components/Pictograms";
 import { SignGlyph, hasGlyph } from "@/components/SignGlyph";
+import { ValidatedMark, VoteButtons } from "@/components/VoteButtons";
 import { Button } from "@/components/ui/button";
 import { useSpeech } from "@/hooks/useSpeech";
+import { useVotes } from "@/hooks/useVotes";
+import { isValidated } from "@/lib/validation";
 import { cn } from "@/lib/utils";
 
 /** One icon per vocabulary group; the Arabic name is for screen readers only. */
@@ -38,12 +41,14 @@ interface SignGuideProps {
 /**
  * Every sign Souty can read, grouped by an icon tab: the hand shape (when
  * one is known) and its word. Tapping a sign says its word, so a hearing
- * companion can check it too.
+ * companion can check it too. Under each sign, two buttons say whether its
+ * word is right; a word enough users agree on carries the blue mark.
  */
 export default function SignGuide({ onClose }: SignGuideProps) {
   const [category, setCategory] = useState<SignCategory>(SIGN_CATEGORIES[0]!);
   const [active, setActive] = useState<string | null>(null);
   const speech = useSpeech();
+  const votes = useVotes();
   const CategoryIcon = CATEGORY_ICONS[category].icon;
 
   return (
@@ -104,8 +109,8 @@ export default function SignGuide({ onClose }: SignGuideProps) {
           // In the demo script a sign can carry a stand-in word.
           const word = gestureToWord(sign.label);
           return (
+            <div key={sign.label} className="flex flex-col gap-1.5">
             <button
-              key={sign.label}
               type="button"
               disabled={!speech.supported}
               onClick={() => {
@@ -134,6 +139,9 @@ export default function SignGuide({ onClose }: SignGuideProps) {
               <span lang="ar" className="w-full truncate text-center font-display text-lg font-extrabold leading-tight text-foreground">
                 {word}
               </span>
+              {votes.enabled && isValidated(votes.tallies[sign.label]) && (
+                <ValidatedMark className="absolute right-1 top-1 h-7 w-7" />
+              )}
               <span
                 aria-hidden="true"
                 className={cn(
@@ -144,6 +152,8 @@ export default function SignGuide({ onClose }: SignGuideProps) {
                 {playing ? <SoundBars className="h-3 [&>span]:w-[2px]" /> : <Volume2 className="h-3.5 w-3.5" />}
               </span>
             </button>
+            {votes.enabled && <VoteButtons label={sign.label} word={word} mine={votes.mine[sign.label]} />}
+            </div>
           );
         })}
       </div>

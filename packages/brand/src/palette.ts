@@ -17,5 +17,3 @@ export const palette = {
   skin: "#F2B48B",
   skinLine: "#B9683F",
 } as const;
-
-export type PaletteColor = keyof typeof palette;
