@@ -41,3 +41,22 @@ describe("FR-7 spoken vocabulary", () => {
     expect(SIGNS.some((sign) => sign.label === meta.negative_label)).toBe(false);
   });
 });
+
+describe("demo script", () => {
+  it("only uses signs the shipped model can output", async () => {
+    const { DEMO_WORDS } = await import("./demoScript");
+    const classes = new Set(meta.labels);
+    expect(Object.keys(DEMO_WORDS).filter((label) => !classes.has(label))).toEqual([]);
+  });
+
+  it("covers every word of the demo sentence", async () => {
+    const { DEMO_WORDS } = await import("./demoScript");
+    const sentence = "مرحباً أنا جوهر حلاق من سيدي بوزيد نحب نحل باتيندة مبادر ذاتي";
+    const spoken = [...new Set(Object.values(DEMO_WORDS))].join(" ");
+    for (const word of sentence.split(" ")) expect(spoken, word).toContain(word);
+  });
+
+  it("stays off unless asked for", () => {
+    expect(gestureToWord("Victory")).toBe("بالسلامة");
+  });
+});

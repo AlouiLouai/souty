@@ -14,6 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SIGN_CATEGORIES, signsByCategory, type SignCategory } from "@souty/vocabulary";
+import { gestureToWord } from "@/lib/gestureDictionary";
 import { SoundBars } from "@/components/Pictograms";
 import { SignGlyph, hasGlyph } from "@/components/SignGlyph";
 import { Button } from "@/components/ui/button";
@@ -100,6 +101,8 @@ export default function SignGuide({ onClose }: SignGuideProps) {
           .sort((a, b) => Number(hasGlyph(b.label)) - Number(hasGlyph(a.label)))
           .map((sign) => {
           const playing = speech.speaking && active === sign.label;
+          // In the demo script a sign can carry a stand-in word.
+          const word = gestureToWord(sign.label);
           return (
             <button
               key={sign.label}
@@ -107,9 +110,9 @@ export default function SignGuide({ onClose }: SignGuideProps) {
               disabled={!speech.supported}
               onClick={() => {
                 setActive(sign.label);
-                speech.speak([sign.word]);
+                speech.speak([word]);
               }}
-              aria-label={`اسمع: ${sign.word}`}
+              aria-label={`اسمع: ${word}`}
               className={cn(
                 "relative flex animate-fade-in-up flex-col items-center gap-1 rounded-2xl border-2 bg-card p-2 transition-transform active:scale-95 disabled:cursor-default",
                 playing ? "border-highlight" : "border-border"
@@ -129,7 +132,7 @@ export default function SignGuide({ onClose }: SignGuideProps) {
                 )}
               </span>
               <span lang="ar" className="w-full truncate text-center font-display text-lg font-extrabold leading-tight text-foreground">
-                {sign.word}
+                {word}
               </span>
               <span
                 aria-hidden="true"
