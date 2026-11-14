@@ -9,15 +9,16 @@
  * scripts/voice.ts), which also regenerates `voiceClips.ts`.
  */
 import { SIGNS } from "@souty/vocabulary";
+import { DEMO_PHRASES } from "./demoScript";
 import { VOICE_CLIPS } from "./voiceClips";
 
 export const VOICE_DIR = "/audio";
 
 /** Spoken word -> clip URL, for every word that has a recording. */
 const CLIP_BY_WORD: ReadonlyMap<string, string> = new Map(
-  SIGNS.flatMap((sign) => {
-    const url = Object.prototype.hasOwnProperty.call(VOICE_CLIPS, sign.label) ? VOICE_CLIPS[sign.label] : undefined;
-    return url ? [[sign.word, url] as const] : [];
+  [...SIGNS, ...DEMO_PHRASES].flatMap((entry) => {
+    const url = Object.prototype.hasOwnProperty.call(VOICE_CLIPS, entry.label) ? VOICE_CLIPS[entry.label] : undefined;
+    return url ? [[entry.word, url] as const] : [];
   })
 );
 

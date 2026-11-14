@@ -143,7 +143,7 @@ camera frame ─► HandLandmarker (2 hands) ─► frameFromHands ─► FrameS
 | Vote store | Vercel environment: `KV_REST_API_URL` + `KV_REST_API_TOKEN`, or `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (`docs/DEPLOYMENT.md`) | unset: voting hidden |
 | Vote rate limit | `app/api/votes/route.ts` → `RATE_LIMIT` | 30 posts per minute per address |
 | Demo script | `lib/demoScript.ts` → `DEMO_WORDS`; `?demo=jawher` / `?demo=off` | off; 11 labels, 9 words |
-| Recorded voice clips | `public/audio/`, listed in `lib/voiceClips.ts` (`pnpm --filter @souty/pwa voice`) | none yet |
+| Recorded voice clips | `public/audio/`, listed in `lib/voiceClips.ts` (`pnpm --filter @souty/pwa voice`); 71 words can be recorded: the vocabulary and the demo sentence's own words (`DEMO_PHRASES`) | none yet |
 | Splash | `components/SplashScreen.tsx` → `SPLASH_MS`, `SPLASH_FADE_MS` | 1200 ms, 300 ms |
 | Idle reminder delay | `app/page.tsx` → `IDLE_HAND_TIMEOUT_MS` | 5000 ms |
 | Burst after a word is said | `components/GestureScanner.tsx` → `LOCK_FLASH_MS` | 500 ms |

@@ -140,10 +140,17 @@ is a few kilobytes and works offline.
 To add or replace recordings (needs `ffmpeg` on the PATH):
 
 1. `pnpm --filter @souty/pwa voice list` prints the words still to record,
-   with the file name to use for each.
+   with the file name to use for each: the 62 vocabulary words, then the 9
+   words of the demo sentence (`demo-*` names).
 2. Record each word once, in a quiet room, close to the phone: one file per
    word, named after its label (`baladya.m4a`, `oui.wav`, ...). Any format
-   ffmpeg reads works, including phone voice-recorder files.
+   ffmpeg reads works, including mp3 and phone voice-recorder files.
+   One clip per word, never per sentence: sentences are built from signs,
+   so any order of words must be possible. Say each word the way you say it
+   inside a sentence, with no long pause before or after (the tool trims
+   the silence), and keep the same distance and volume throughout. A word
+   shared by several signs (`ايه`, `لا`, `عسلامة`) is recorded once, under
+   any of its labels.
 3. `pnpm --filter @souty/pwa voice import <folder>` trims the silence,
    evens out the loudness, writes `public/audio/<label>.mp3`, and
    regenerates `lib/voiceClips.ts`. Commit both.

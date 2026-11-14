@@ -16,12 +16,18 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { SIGNS } from "@souty/vocabulary";
+import { DEMO_PHRASES } from "../lib/demoScript";
 
 const APP_DIR = path.resolve(import.meta.dirname, "..");
 const AUDIO_DIR = path.join(APP_DIR, "public", "audio");
 const CLIPS_TS = path.join(APP_DIR, "lib", "voiceClips.ts");
 const INPUT_EXTS = new Set([".wav", ".m4a", ".mp3", ".ogg", ".opus", ".webm", ".aac", ".3gp", ".flac", ".amr"]);
-const LABELS = new Set(SIGNS.map((sign) => sign.label));
+/** Everything that can have a recording: the vocabulary, then the demo sentence's own words. */
+const ENTRIES: readonly { label: string; word: string; gloss: string }[] = [
+  ...SIGNS.map((sign) => ({ label: sign.label, word: sign.word, gloss: sign.gloss.en })),
+  ...DEMO_PHRASES,
+];
+const LABELS = new Set(ENTRIES.map((entry) => entry.label));
 
 /** Trim leading and trailing silence, normalise loudness. */
 const FILTER = [
@@ -42,7 +48,7 @@ function sync(): void {
   const entries: string[] = [];
   for (const [label, file] of recorded()) {
     if (!LABELS.has(label)) {
-      console.warn(`  skipped public/audio/${label}.mp3: not a vocabulary label`);
+      console.warn(`  skipped public/audio/${label}.mp3: not a recordable name`);
       continue;
     }
     const hash = createHash("sha256").update(readFileSync(file)).digest("hex").slice(0, 10);
@@ -66,12 +72,12 @@ function sync(): void {
 function list(): void {
   const done = recorded();
   const byWord = new Map<string, string[]>();
-  for (const sign of SIGNS) byWord.set(sign.word, [...(byWord.get(sign.word) ?? []), sign.label]);
+  for (const entry of ENTRIES) byWord.set(entry.word, [...(byWord.get(entry.word) ?? []), entry.label]);
   const todo = [...byWord].filter(([, labels]) => !labels.some((label) => done.has(label)));
   console.log(`${byWord.size - todo.length} of ${byWord.size} words recorded. To record (file name -> word, meaning):`);
   for (const [word, labels] of todo) {
-    const sign = SIGNS.find((s) => s.label === labels[0])!;
-    console.log(`  ${labels[0]!.padEnd(14)} ${word}  (${sign.gloss.en})`);
+    const entry = ENTRIES.find((e) => e.label === labels[0])!;
+    console.log(`  ${labels[0]!.padEnd(18)} ${word}  (${entry.gloss})`);
   }
 }
 
@@ -83,7 +89,7 @@ function importFolder(folder: string): void {
     if (!INPUT_EXTS.has(ext)) continue;
     const label = path.basename(name, path.extname(name));
     if (!LABELS.has(label)) {
-      console.warn(`  skipped ${name}: "${label}" is not a vocabulary label (see \`voice list\`)`);
+      console.warn(`  skipped ${name}: "${label}" is not a recordable name (see \`voice list\`)`);
       continue;
     }
     const out = path.join(AUDIO_DIR, `${label}.mp3`);

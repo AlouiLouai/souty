@@ -45,6 +45,23 @@ export const DEMO_WORDS: Readonly<Record<string, string>> = {
   Closed_Fist: "مبادر ذاتي",
 };
 
+/**
+ * The words the demo speaks, each with the name its voice recording goes by
+ * (`public/audio/<label>.mp3`, see scripts/voice.ts). They are not in the
+ * vocabulary, so the recording tool needs this list.
+ */
+export const DEMO_PHRASES = [
+  { label: "demo-marhba", word: "مرحباً", gloss: "hello" },
+  { label: "demo-ana", word: "أنا", gloss: "I, me" },
+  { label: "demo-jawher", word: "جوهر", gloss: "Jawher (a name)" },
+  { label: "demo-7alle9", word: "حلاق", gloss: "barber" },
+  { label: "demo-sidi-bouzid", word: "من سيدي بوزيد", gloss: "from Sidi Bouzid" },
+  { label: "demo-n7eb", word: "نحب", gloss: "I want" },
+  { label: "demo-n7el", word: "نحل", gloss: "I open" },
+  { label: "demo-patinda", word: "باتيندة", gloss: "business licence" },
+  { label: "demo-moubader", word: "مبادر ذاتي", gloss: "self-employed" },
+] as const;
+
 const STORAGE_KEY = "souty.demo";
 const DEMO_NAME = "jawher";
 
