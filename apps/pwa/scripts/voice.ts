@@ -115,6 +115,15 @@ function importFolder(folder: string): void {
   sync();
 }
 
+class SynthesisError extends Error {
+  constructor(
+    readonly status: number,
+    detail: string
+  ) {
+    super(`${status} ${detail}`);
+  }
+}
+
 /** Calls ElevenLabs text-to-speech for one word; returns the mp3 bytes. */
 async function synthesize(text: string, settings: { voice: string; key: string; base: string; model: string; voiceSettings?: unknown }) {
   const url = `${settings.base}/v1/text-to-speech/${encodeURIComponent(settings.voice)}?output_format=mp3_44100_128`;
@@ -127,7 +136,7 @@ async function synthesize(text: string, settings: { voice: string; key: string; 
     });
     if (response.ok) return Buffer.from(await response.arrayBuffer());
     const retryable = response.status === 429 || response.status >= 500;
-    if (!retryable || attempt >= 3) throw new Error(`${response.status} ${(await response.text()).slice(0, 200)}`);
+    if (!retryable || attempt >= 3) throw new SynthesisError(response.status, (await response.text()).slice(0, 300));
     await new Promise((resolve) => setTimeout(resolve, attempt * 2000));
   }
 }
@@ -183,6 +192,11 @@ async function generate(args: string[]): Promise<void> {
       console.log(`  ${t.label}: ok`);
     } catch (error) {
       console.warn(`  ${t.label}: failed (${(error as Error).message})`);
+      // The key, the plan or the voice is refused: every other word would fail the same way.
+      if (error instanceof SynthesisError && [401, 402, 403, 404].includes(error.status)) {
+        console.warn("Stopping: this is about the account or the voice, not the word.");
+        break;
+      }
     }
   }
   console.log(`Generated ${made} of ${targets.length} words into voice-raw/.`);
