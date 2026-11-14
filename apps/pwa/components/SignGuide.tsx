@@ -111,7 +111,7 @@ export default function SignGuide({ onClose }: SignGuideProps) {
           // In the demo script a sign can carry a stand-in word.
           const word = gestureToWord(sign.label);
           return (
-            <div key={sign.label} className="flex flex-col gap-1.5">
+            <div key={sign.label} className="relative">
             <button
               type="button"
               disabled={!speech.supported}
@@ -121,7 +121,7 @@ export default function SignGuide({ onClose }: SignGuideProps) {
               }}
               aria-label={`اسمع: ${word}`}
               className={cn(
-                "relative flex animate-fade-in-up flex-col items-center gap-1 rounded-2xl border-2 bg-card p-2 transition-transform active:scale-95 disabled:cursor-default",
+                "relative flex w-full animate-fade-in-up flex-col items-center gap-1 rounded-2xl border-2 bg-card p-2 transition-transform active:scale-95 disabled:cursor-default",
                 playing ? "border-highlight" : "border-border"
               )}
             >
@@ -154,7 +154,15 @@ export default function SignGuide({ onClose }: SignGuideProps) {
                 {playing ? <SoundBars className="h-3 [&>span]:w-[2px]" /> : <Volume2 className="h-3.5 w-3.5" />}
               </span>
             </button>
-            {votes.enabled && <VoteButtons label={sign.label} word={word} mine={votes.mine[sign.label]} />}
+            {/* Two small badges in the bottom corners of the picture, over the tile. */}
+            {votes.enabled && (
+              <VoteButtons
+                label={sign.label}
+                word={word}
+                mine={votes.mine[sign.label]}
+                className="pointer-events-none absolute inset-x-2.5 top-2.5 aspect-square items-end justify-between p-1"
+              />
+            )}
             </div>
           );
         })}

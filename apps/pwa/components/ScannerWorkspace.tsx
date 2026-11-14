@@ -77,13 +77,13 @@ export default function ScannerWorkspace({
           <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
             <div
               dir="rtl"
-              className="pointer-events-auto flex animate-fade-in-up items-center gap-3 rounded-full border-2 border-foreground bg-card py-1.5 pl-2 pr-4 shadow-[0_4px_0_var(--foreground)]"
+              className="pointer-events-auto flex animate-fade-in-up items-center gap-2 rounded-full border-2 border-foreground bg-card py-1 pl-1.5 pr-3 shadow-[0_3px_0_var(--foreground)]"
             >
-              <span lang="ar" className="flex items-center gap-1 font-display text-xl font-extrabold text-foreground">
+              <span lang="ar" className="flex items-center gap-1 font-display text-lg font-extrabold text-foreground">
                 {judged.word}
-                {isValidated(votes.tallies[judged.label]) && <ValidatedMark className="h-6 w-6" />}
+                {isValidated(votes.tallies[judged.label]) && <ValidatedMark className="h-5 w-5" />}
               </span>
-              <VoteButtons label={judged.label} word={judged.word} mine={undefined} onVoted={() => setJudged(null)} />
+              <VoteButtons size="pill" label={judged.label} word={judged.word} mine={undefined} onVoted={() => setJudged(null)} />
             </div>
           </div>
         )}
