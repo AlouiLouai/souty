@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Delete, MessageSquareText, Pause, Play, Trash2, Volume2 } from "lucide-react";
+import { Delete, MessageSquareText, Pause, Play, Trash2, Volume2, VolumeX } from "lucide-react";
 import { Flow, IconTile, SoundBars, TwoHands } from "@/components/Pictograms";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -14,6 +14,8 @@ interface TranslationPanelProps {
   sentenceWords: string[];
   speechSupported: boolean;
   speaking: boolean;
+  /** The last words got no sound: the speaker shows crossed out. */
+  speechFailed?: boolean;
   paused: boolean;
   onTogglePaused: () => void;
   onRemoveLastWord: () => void;
@@ -31,6 +33,7 @@ export default function TranslationPanel({
   sentenceWords,
   speechSupported,
   speaking,
+  speechFailed = false,
   paused,
   onTogglePaused,
   onRemoveLastWord,
@@ -133,7 +136,11 @@ export default function TranslationPanel({
           onClick={() => onSpeakSentence(sentenceWords)}
           aria-label="اسمع الجملة"
         >
-          <Volume2 className="h-7 w-7" strokeWidth={2.4} />
+          {speechFailed && !speaking ? (
+            <VolumeX className="h-7 w-7" strokeWidth={2.4} />
+          ) : (
+            <Volume2 className="h-7 w-7" strokeWidth={2.4} />
+          )}
           {speaking && <SoundBars />}
         </Button>
         <Button

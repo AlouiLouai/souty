@@ -16,6 +16,8 @@ const nextConfig = {
     return [
       { source: "/models/:path*", headers: [immutable] },
       { source: "/wasm/:path*", headers: [immutable] },
+      // Clip URLs carry a content hash (?v=), so a changed clip is a new URL.
+      { source: "/audio/:path*", headers: [immutable] },
       {
         // Must always revalidate, or returning visitors never get updates.
         source: "/sw.js",

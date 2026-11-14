@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, House, Pause } from "lucide-react";
+import { BookOpen, Clapperboard, House, Pause } from "lucide-react";
 import IdleExitPopup from "@/components/IdleExitPopup";
 import LandingScreen from "@/components/LandingScreen";
 import { LogoMark } from "@/components/Logo";
@@ -10,6 +10,7 @@ import ScannerWorkspace from "@/components/ScannerWorkspace";
 import SignGuide from "@/components/SignGuide";
 import SplashScreen from "@/components/SplashScreen";
 import { Button } from "@/components/ui/button";
+import { useDemo } from "@/hooks/useDemo";
 import { useIdleHandReminder } from "@/hooks/useIdleHandReminder";
 import { useSentence } from "@/hooks/useSentence";
 import { getRecognizer } from "@/lib/recognizer";
@@ -29,6 +30,7 @@ export default function HomePage() {
   const [paused, setPaused] = useState(false);
   // Owned here so the sentence survives a trip back to the landing screen.
   const sentence = useSentence();
+  const demo = useDemo();
 
   // Warm the model while the user is still on the splash/landing screens.
   useEffect(() => {
@@ -78,6 +80,11 @@ export default function HomePage() {
                 {STATUS_LABELS[paused ? "paused" : "running"]}
               </span>
               <LogoMark className="h-8" />
+              {demo && (
+                <span aria-hidden="true" className="flex h-7 w-7 items-center justify-center rounded-full bg-highlight text-highlight-foreground">
+                  <Clapperboard className="h-4 w-4" strokeWidth={2.4} />
+                </span>
+              )}
               <span
                 aria-hidden="true"
                 className={cn(

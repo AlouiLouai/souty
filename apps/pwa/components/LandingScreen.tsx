@@ -1,9 +1,22 @@
 "use client";
 
-import { BookOpen, Camera, Check, CircleHelp, MessageSquareText, ShieldCheck, Volume2, WifiOff } from "lucide-react";
+import {
+  BookOpen,
+  Camera,
+  Check,
+  CircleHelp,
+  Clapperboard,
+  MessageSquareText,
+  ShieldCheck,
+  Volume2,
+  WifiOff,
+} from "lucide-react";
 import { LogoMark } from "@/components/Logo";
 import { Flow, IconTile, TwoHands } from "@/components/Pictograms";
 import { Button } from "@/components/ui/button";
+import { useDemo } from "@/hooks/useDemo";
+import { setDemoActive } from "@/lib/demoScript";
+import { cn } from "@/lib/utils";
 
 interface LandingScreenProps {
   onStart: () => void;
@@ -13,10 +26,11 @@ interface LandingScreenProps {
 
 /**
  * Home: what Souty does, as a picture (hands, then words, then a voice),
- * that it stays on the phone and works offline, and three icon buttons:
- * start, the guided tour, and the list of signs.
+ * that it stays on the phone and works offline, and icon buttons: start,
+ * the guided tour, the list of signs, and the demo sentence switch.
  */
 export default function LandingScreen({ onStart, onOnboarding, onGuide }: LandingScreenProps) {
+  const demo = useDemo();
   return (
     <div className="safe-top safe-x safe-bottom relative mx-auto flex h-[100dvh] w-full max-w-md flex-col items-center justify-center gap-10 overflow-hidden px-6">
       <div
@@ -86,6 +100,17 @@ export default function LandingScreen({ onStart, onOnboarding, onGuide }: Landin
             aria-label="الإشارات اللي يعرفها التطبيق"
           >
             <BookOpen className="h-8 w-8" strokeWidth={2.2} />
+          </Button>
+          {/* Demo sentence: nine gestures speak the words of one scripted sentence. */}
+          <Button
+            onClick={() => setDemoActive(!demo)}
+            variant="outline"
+            size="icon"
+            aria-pressed={demo}
+            className={cn("h-16 w-16", demo && "bg-highlight text-highlight-foreground")}
+            aria-label="الجملة التجريبية"
+          >
+            <Clapperboard className="h-8 w-8" strokeWidth={2.2} />
           </Button>
         </div>
       </div>

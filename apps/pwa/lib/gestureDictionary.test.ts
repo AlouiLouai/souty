@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { parseSignModelMeta } from "@souty/sign-model";
 import { SIGNS } from "@souty/vocabulary";
 import { gestureToWord, hasWord } from "./gestureDictionary";
@@ -56,7 +56,28 @@ describe("FR-13 demo script", () => {
     for (const word of sentence.split(" ")) expect(spoken, word).toContain(word);
   });
 
-  it("stays off unless asked for", () => {
-    expect(gestureToWord("Victory")).toBe("بالسلامة");
+  it("stays off unless switched on, and the switch is remembered", async () => {
+    const { isDemoActive, setDemoActive } = await import("./demoScript");
+    const saved = new Map<string, string>();
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: (key: string) => saved.get(key) ?? null,
+        setItem: (key: string, value: string) => void saved.set(key, value),
+        removeItem: (key: string) => void saved.delete(key),
+      },
+    });
+    try {
+      expect(isDemoActive()).toBe(false);
+      expect(gestureToWord("Victory")).toBe("بالسلامة");
+      setDemoActive(true);
+      expect(gestureToWord("Victory")).toBe("حلاق");
+      expect(gestureToWord("sbitar")).toBe("سبيطار"); // labels outside the script are untouched
+      expect(saved.get("souty.demo")).toBe("on");
+      setDemoActive(false);
+      expect(gestureToWord("Victory")).toBe("بالسلامة");
+      expect(saved.has("souty.demo")).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

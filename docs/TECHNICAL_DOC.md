@@ -136,7 +136,7 @@ third-party call is Vercel Web Analytics (cookieless page views; see
 | `packages/vocabulary/src/index.test.ts` | Contract test pinning the label → word mapping of the deployed model |
 | `apps/pwa/lib/gestureDictionary.ts` | Thin adapter over `@souty/vocabulary`: `gestureToWord`, `hasWord` |
 | `apps/pwa/lib/validation.ts`, `apps/pwa/lib/votes.ts`, `apps/pwa/app/api/votes/route.ts` | Community validation (SPEC.md, FR-14): the rule for the blue mark, this device's offline-first votes, and the route that counts votes in an Upstash Redis database with the `@upstash/redis` client. The app's only server code |
-| `apps/pwa/lib/demoScript.ts` | Proof-of-concept script: with `?demo=jawher`, nine one-handed gestures speak stand-in words (SPEC.md, FR-13) |
+| `apps/pwa/lib/demoScript.ts` | Proof-of-concept script: with the landing screen's demo button on, nine one-handed gestures speak stand-in words (SPEC.md, FR-13) |
 | `apps/pwa/hooks/useSpeech.ts`, `apps/pwa/lib/voice.ts` | Speaks the sentence: recorded clips first, Arabic TTS for the rest |
 | `apps/pwa/hooks/useSentence.ts`, `apps/pwa/hooks/useIdleHandReminder.ts` | Sentence state; no-hand reminder timer |
 | `apps/pwa/app/page.tsx` | View orchestration (landing/onboarding/scanner/sign guide) |

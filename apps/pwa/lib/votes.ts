@@ -3,7 +3,7 @@
  * votes, kept on the device and sent when there is a network, and the last
  * tallies it received, kept so the blue marks also show offline.
  */
-import { isDemoActive } from "./demoScript";
+import { isDemoActive, subscribeDemo } from "./demoScript";
 import { isVote, withOwnVote, type Tally, type Vote } from "./validation";
 
 const API = "/api/votes";
@@ -137,6 +137,7 @@ function start() {
   started = true;
   stored = load();
   publish();
+  subscribeDemo(publish); // voting hides while the demo is on
   void refresh().then(flush);
   window.addEventListener("online", () => void refresh().then(flush));
 }

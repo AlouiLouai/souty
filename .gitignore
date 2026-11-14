@@ -52,3 +52,6 @@ coverage/
 # (training runs on Kaggle; the TunSL dataset is CC BY 4.0 and not ours to
 # redistribute). See docs/TECHNICAL_DOC.md for the training process.
 training/
+
+# Raw voice recordings, before `voice import` turns them into public/audio clips
+voice-raw/

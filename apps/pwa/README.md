@@ -140,13 +140,41 @@ is a few kilobytes and works offline.
 To add or replace recordings (needs `ffmpeg` on the PATH):
 
 1. `pnpm --filter @souty/pwa voice list` prints the words still to record,
-   with the file name to use for each.
+   with the file name to use for each: the 62 vocabulary words, then the 9
+   words of the demo sentence (`demo-*` names).
 2. Record each word once, in a quiet room, close to the phone: one file per
    word, named after its label (`baladya.m4a`, `oui.wav`, ...). Any format
-   ffmpeg reads works, including phone voice-recorder files.
+   ffmpeg reads works, including mp3 and phone voice-recorder files.
+   One clip per word, never per sentence: sentences are built from signs,
+   so any order of words must be possible. Say each word the way you say it
+   inside a sentence, with no long pause before or after (the tool trims
+   the silence), and keep the same distance and volume throughout. A word
+   shared by several signs (`ايه`, `لا`, `عسلامة`) is recorded once, under
+   any of its labels.
 3. `pnpm --filter @souty/pwa voice import <folder>` trims the silence,
    evens out the loudness, writes `public/audio/<label>.mp3`, and
    regenerates `lib/voiceClips.ts`. Commit both.
+
+To make the words by hand on a text-to-speech website (ElevenLabs' free plan
+cannot use library voices through its API), print the words with their
+vowelled spelling, in order, with `pnpm --filter @souty/pwa voice generate --dry`.
+Generate and download each word in that order into `voice-raw/` (set the
+browser's download folder to it), deleting any retake. Then
+`voice rename` shows which word each download will be named after (oldest
+download first), and `voice rename --apply` renames them; run `voice import
+voice-raw` to convert them. It can be done in several batches.
+
+To make the words with an ElevenLabs voice instead of recording them
+yourself, set `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` in your shell
+(never commit them), then run
+`pnpm --filter @souty/pwa voice generate`: it makes every word that has no
+clip yet, from the vowelled spellings in `scripts/voiceText.ts`, saves the
+raw mp3s in `voice-raw/` (not committed), and imports them. `--dry` lists
+what it would do, `voice generate <label>...` redoes the named words
+(after correcting their spelling), and the optional `ELEVENLABS_SETTINGS`
+(a JSON object, for example `{"stability":0.5}`) and `ELEVENLABS_MODEL`
+override the voice settings and model. Check the ElevenLabs plan's terms
+before the audio ships in a public app.
 
 If you delete a clip, run `pnpm --filter @souty/pwa voice sync`. The test
 `lib/voice.test.ts` fails when a clip changed without a sync.
@@ -246,7 +274,7 @@ hooks/
   useVotes.ts            Community votes and tallies, for the vote buttons and blue marks
 lib/
   gestureDictionary.ts   Model label -> Tunisian Arabic word (adapter over @souty/vocabulary)
-  demoScript.ts          Proof-of-concept sentence: stand-in words, on with ?demo=jawher
+  demoScript.ts          Proof-of-concept sentence: stand-in words, switched with the clapperboard button on the landing screen
   validation.ts          Community validation rule: votes needed for the blue mark
   votes.ts               This device's votes (kept offline, sent when online) and cached tallies
   handOverlay.ts         Canvas skeletons + the reading/candidate/said ring above both hands

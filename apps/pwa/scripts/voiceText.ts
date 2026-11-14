@@ -1,0 +1,92 @@
+/**
+ * What a text-to-speech voice is told to say for each recordable label:
+ * the word with its short vowels, in Tunisian pronunciation where that
+ * differs from standard Arabic. Used by `voice generate` (scripts/voice.ts).
+ *
+ * Only the pronunciation lives here. The app still shows and speaks the
+ * plain word from the vocabulary; `voiceText.test.ts` checks that each entry,
+ * once its vowel marks are removed, is exactly that word.
+ *
+ * These are a first draft. A Tunisian speaker should listen to the result
+ * and correct any word in this file, then run `voice generate <label>` again.
+ */
+export const VOICED: Readonly<Record<string, string>> = {
+  // Requests
+  assam: "أَصَمّ",
+  labes: "لَابَاس",
+  oui: "إِيهْ",
+  non: "لَا",
+  siye7a: "سِيَاحَة",
+  ta3raf: "تَعْرِفْ",
+  "5adamet": "خِدْمَات",
+  "3aslema": "عَسْلَامَة",
+  demande: "مَطْلَب",
+  cv: "سِي فِي",
+  n3awnek: "نْعَاوْنِكْ",
+  nekteblk: "نِكْتِبْلَكْ",
+  t7eb: "تْحِبّ",
+  enti: "إِنْتِي",
+  barnamjk: "بَرْنَامْجِكْ",
+  ta9ra: "تِقْرَا",
+  ta3lim: "تَعْلِيم",
+  se7a: "صِحَّة",
+  tha9afa: "ثَقَافَة",
+  chabeb: "شَبَاب",
+  radio: "رَادْيُو",
+  telvza: "تِلْفِزَة",
+  // Places
+  mostawsaf: "مُسْتَوْصَف",
+  sbitar: "سْبِيطَار",
+  baladya: "بَلَدِيَّة",
+  wzara: "وِزَارَة",
+  ma7kma: "مَحْكْمَة",
+  bousta: "بُوسْطَة",
+  banka: "بَنْكَة",
+  dar: "دَار",
+  // Family
+  bent: "بِنْت",
+  bou: "بَابَا",
+  eben: "اِبْن",
+  jad: "جَدّ",
+  jadda: "جَدَّة",
+  mar2a: "مَرْأَة",
+  tfol: "طِفْل",
+  om: "مَامَا",
+  "3ayla": "عَايْلَة",
+  "5ou": "خُو",
+  o5t: "أُخْت",
+  "5al-3am": "عَمّ",
+  // Days
+  "5mis": "الخَمِيس",
+  sebt: "السَّبْت",
+  thnin: "الِاثْنِين",
+  lyoum: "اليَوْم",
+  thleth: "الثُّلَاثَاء",
+  erb3a: "الإِرْبِعَاء",
+  jom3a: "الجُمْعَة",
+  a7ad: "الأَحَد",
+  // Transport
+  car: "سَيَّارَة",
+  louage: "لُوَاج",
+  metro: "مِتْرُو",
+  train: "قِطَار",
+  taxi: "تَاكْسِي",
+  // Universal gestures (the ones whose word no sign above already says)
+  Closed_Fist: "وَقِّفْ",
+  Victory: "بِالسَّلَامَة",
+  Pointing_Up: "إِسْتَنَّى",
+  OK_Sign: "بَاهِي",
+  Three_Fingers: "ثْلَاثَة",
+  Four_Fingers: "أَرْبَعَة",
+  Shaka_Sign: "مَبْرُوك",
+  // The demo sentence
+  "demo-marhba": "مَرْحْبَا",
+  "demo-ana": "أَنَا",
+  "demo-jawher": "جَوْهَر",
+  "demo-7alle9": "حَلَّاق",
+  "demo-sidi-bouzid": "مِنْ سِيدِي بُوزِيد",
+  "demo-n7eb": "نْحِبّ",
+  "demo-n7el": "نْحِلّ",
+  "demo-patinda": "بَاتِينْدَة",
+  "demo-moubader": "مُبَادِر ذَاتِي",
+};

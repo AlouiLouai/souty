@@ -9,15 +9,16 @@
  * scripts/voice.ts), which also regenerates `voiceClips.ts`.
  */
 import { SIGNS } from "@souty/vocabulary";
+import { DEMO_PHRASES } from "./demoScript";
 import { VOICE_CLIPS } from "./voiceClips";
 
 export const VOICE_DIR = "/audio";
 
 /** Spoken word -> clip URL, for every word that has a recording. */
 const CLIP_BY_WORD: ReadonlyMap<string, string> = new Map(
-  SIGNS.flatMap((sign) => {
-    const url = Object.prototype.hasOwnProperty.call(VOICE_CLIPS, sign.label) ? VOICE_CLIPS[sign.label] : undefined;
-    return url ? [[sign.word, url] as const] : [];
+  [...SIGNS, ...DEMO_PHRASES].flatMap((entry) => {
+    const url = Object.prototype.hasOwnProperty.call(VOICE_CLIPS, entry.label) ? VOICE_CLIPS[entry.label] : undefined;
+    return url ? [[entry.word, url] as const] : [];
   })
 );
 
@@ -29,6 +30,23 @@ export function clipForWord(word: string): string | null {
 /** Every recorded clip, for warming the offline cache. */
 export function allClips(): readonly string[] {
   return [...new Set(Object.values(VOICE_CLIPS))];
+}
+
+/** A voice's language tag, in lower case, for matching. */
+const langOf = (voice: { lang: string }) => voice.lang.toLowerCase().replace("_", "-");
+
+/** The best installed Arabic voice: Tunisian first, then any Arabic one. */
+export function pickArabicVoice<T extends { lang: string }>(voices: readonly T[]): T | null {
+  return voices.find((v) => langOf(v).startsWith("ar-tn")) ?? voices.find((v) => langOf(v).startsWith("ar")) ?? null;
+}
+
+/**
+ * The language to ask for. A chosen voice dictates it. Without one, a full
+ * tag: iOS WebKit (every iPhone browser, Chrome included) does not match the
+ * bare "ar" and stays silent, while "ar-SA" finds its built-in Arabic voice.
+ */
+export function utteranceLang(voice: { lang: string } | null): string {
+  return voice ? voice.lang : "ar-SA";
 }
 
 export type SpeechSegment =

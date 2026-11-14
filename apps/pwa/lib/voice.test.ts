@@ -2,11 +2,45 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { SIGNS } from "@souty/vocabulary";
-import { planSpeech } from "./voice";
+import { DEMO_PHRASES, DEMO_WORDS } from "./demoScript";
+import { clipForWord, pickArabicVoice, planSpeech, utteranceLang } from "./voice";
 import { VOICE_CLIPS } from "./voiceClips";
 
 const clips: Record<string, string> = { بلدية: "/audio/baladya.mp3", اليوم: "/audio/lyoum.mp3" };
 const clipFor = (word: string) => clips[word] ?? null;
+
+describe("FR-9 recordings cover the demo sentence", () => {
+  it("names a recording for every word the demo speaks, and for no one else's label", () => {
+    const named = new Set<string>(DEMO_PHRASES.map((phrase) => phrase.word));
+    for (const word of new Set(Object.values(DEMO_WORDS))) expect(named.has(word), word).toBe(true);
+    const labels = [...DEMO_PHRASES.map((p) => p.label), ...SIGNS.map((s) => s.label)];
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+});
+
+describe("FR-9 the demo sentence is spoken from recordings", () => {
+  it("has a clip for every word of the demo sentence, so none falls back to text-to-speech", () => {
+    for (const { word } of DEMO_PHRASES) expect(clipForWord(word), word).not.toBeNull();
+    const sentence = DEMO_PHRASES.map((phrase) => phrase.word);
+    expect(planSpeech(sentence).map((segment) => segment.kind)).toEqual(["clips"]);
+  });
+});
+
+describe("FR-9 text-to-speech voice choice", () => {
+  const voice = (lang: string) => ({ lang });
+
+  it("prefers a Tunisian voice, then any Arabic one, including iOS-style tags", () => {
+    expect(pickArabicVoice([voice("en-US"), voice("ar-SA"), voice("ar-TN")])).toEqual(voice("ar-TN"));
+    expect(pickArabicVoice([voice("en-US"), voice("ar_SA")])).toEqual(voice("ar_SA"));
+    expect(pickArabicVoice([voice("fr-FR")])).toBeNull();
+    expect(pickArabicVoice([])).toBeNull();
+  });
+
+  it("asks for a full Arabic language tag when no voice is chosen (iOS ignores bare \"ar\")", () => {
+    expect(utteranceLang(null)).toBe("ar-SA");
+    expect(utteranceLang(voice("ar-TN"))).toBe("ar-TN");
+  });
+});
 
 describe("FR-9 Tunisian voice: recorded clips first, text-to-speech for the rest", () => {
   it("plays a fully recorded sentence as one run of clips", () => {
@@ -31,9 +65,9 @@ describe("FR-9 Tunisian voice: recorded clips first, text-to-speech for the rest
 });
 
 describe("FR-9 recorded clips (lib/voiceClips.ts)", () => {
-  const labels = new Set(SIGNS.map((sign) => sign.label));
+  const labels = new Set([...SIGNS.map((sign) => sign.label), ...DEMO_PHRASES.map((phrase) => phrase.label)]);
 
-  it("lists only vocabulary labels, each with a current file", () => {
+  it("lists only vocabulary or demo labels, each with a current file", () => {
     for (const [label, url] of Object.entries(VOICE_CLIPS)) {
       expect(labels.has(label), label).toBe(true);
       const [file, query] = url.split("?v=");
