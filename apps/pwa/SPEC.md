@@ -56,7 +56,7 @@ signed words: every instruction is a picture and every control an icon
 | Landing | `components/LandingScreen.tsx` | A picture of what the app does (two hands → words → speaker), privacy and offline icons, and three icon buttons: the large camera button opens the scanner, the question mark opens the tour, the book opens the sign guide. |
 | Tour (optional) | `components/OnboardingTour.tsx` | A live scanner with a 4-step spotlight, each step a picture: hands in view (the hands indicator lights up), make a sign (an animated ring: spin, fill, green check), flip the camera, the sentence controls. Each step completes itself when the user does it (a hand appears, a word is added, the camera is switched, a panel button is pressed); the arrow button moves on and the X button skips. |
 | Scanner | `components/ScannerWorkspace.tsx`, `components/GestureScanner.tsx` | Camera preview with hand skeletons. While a hand is in view, one ring above the hands is always shown and says what the reader is doing (FR-12); two hands are joined by a moving dashed line. Two hand icons in the camera's top-left corner light up for each side of the screen where a hand is seen. The sentence panel below has pause, speak, undo and clear. The header is icons only: home (keeps the sentence), the logo mark with a running/paused dot, and a book that opens the sign guide. |
-| Sign guide | `components/SignGuide.tsx`, `components/SignGlyph.tsx` | Every sign the app can read, in six category tabs, one icon each (requests, family, places, days, transport, universal gestures). Each sign shows its hand shape, or a dashed "no drawing yet" hand when none is known (drawn signs come first), and its word; tapping it says the word. X returns to the landing screen or the scanner, wherever it was opened from; the sentence is kept. |
+| Sign guide | `components/SignGuide.tsx`, `components/SignGlyph.tsx` | Every sign the app can read, in six category tabs, one icon each (requests, family, places, days, transport, universal gestures). Each sign shows its hand shape, or, when none is known, a picture of what the word means (`lib/signMeaning.ts`, else its category's icon), drawn signs first, and its word; tapping it says the word. X returns to the landing screen or the scanner, wherever it was opened from; the sentence is kept. |
 | Idle reminder | `components/IdleExitPopup.tsx`, `hooks/useIdleHandReminder.ts` | After 5 s with no hand in view, a picture popup (two hands rising into the frame) with a check button. It closes when a hand returns or on tap, and never stops the camera. |
 
 ## 4. Functional requirements
@@ -222,8 +222,9 @@ Test names in `apps/pwa` start with the requirement ID they verify.
    means "users agree", not "confirmed by ATILS"; the `toConfirm` drafts
    of section 5 are a separate review. The vote route and its client
    (`lib/votes.ts`) have no automated test beyond the validation rule.
-7. **Not every sign has a picture in the guide.** The sign guide draws a
-   hand shape only for signs with a known shape (`shapeForSign` in
-   `@souty/vocabulary`); the others show a dashed "no drawing yet"
-   hand next to the word. A drawing is one still hand, so it shows neither a sign's
-   movement, its second hand, nor where on the body it is made.
+7. **Not every sign has a hand drawing in the guide.** The sign guide draws
+   a hand shape only for signs with a known shape (`shapeForSign` in
+   `@souty/vocabulary`, 33 of 65); the 32 others show a picture of what
+   the word means, which says nothing about how the sign is made. A
+   drawing is one still hand, so it shows neither a sign's movement, its
+   second hand, nor where on the body it is made.
