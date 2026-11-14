@@ -3,25 +3,48 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { allClips, pickArabicVoice, planSpeech, utteranceLang } from "@/lib/voice";
 
-/** Silence between two recorded words, in seconds. */
-const CLIP_GAP_S = 0.08;
-
-type AudioContextClass = typeof AudioContext;
-
-function audioContextClass(): AudioContextClass | null {
-  if (typeof window === "undefined") return null;
-  return window.AudioContext ?? (window as unknown as { webkitAudioContext?: AudioContextClass }).webkitAudioContext ?? null;
-}
-
-/**
- * One audio context and one clip cache for the whole app: the scanner and
- * the sign guide each use this hook, and browsers cap live contexts.
- */
-let sharedContext: AudioContext | null = null;
-const sharedBuffers = new Map<string, Promise<AudioBuffer>>();
+/** Silence between two recorded words, in milliseconds. */
+const CLIP_GAP_MS = 60;
 
 /** Time for a cancelled utterance to clear before the next one starts (iOS and Chrome drop it otherwise). */
 const AFTER_CANCEL_MS = 80;
+
+/** A clip that never reports its end is given up after this. */
+const CLIP_TIMEOUT_MS = 8000;
+
+/** 0.02 s of silence. Played inside a tap, it lets iOS start this element's later clips without another tap. */
+const SILENCE =
+  "data:audio/wav;base64,UklGRmQBAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YUABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
+
+/**
+ * One audio element for the whole app, played by the tap. iOS plays a media
+ * element even with the silent switch on, but mutes Web Audio (and speech)
+ * when it is on, which made the app silent on iPhones with the switch down.
+ */
+let sharedAudio: HTMLAudioElement | null = null;
+
+/**
+ * Clip URL -> object URL of its bytes. A blob URL needs no range requests,
+ * which iOS makes for media and the service worker cannot answer.
+ */
+const clipUrls = new Map<string, Promise<string>>();
+
+function loadClip(url: string): Promise<string> {
+  let loaded = clipUrls.get(url);
+  if (!loaded) {
+    loaded = fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error(`${url}: ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => URL.createObjectURL(blob));
+    loaded.catch(() => clipUrls.delete(url)); // retry next time
+    clipUrls.set(url, loaded);
+  }
+  return loaded;
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 
 /** A text-to-speech utterance that never reports its end is given up after this. */
 function ttsTimeoutMs(text: string) {
@@ -41,19 +64,20 @@ export function useSpeech() {
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   /** Holds the live utterance: Chrome may drop an unreferenced one and never fire its end. */
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const sourcesRef = useRef<AudioBufferSourceNode[]>([]);
+  /** Ends the clip being played, so a new request is not left waiting for it. */
+  const cancelClipRef = useRef<(() => void) | null>(null);
   /** Bumped on every speak; a stale run stops at its next step. */
   const runRef = useRef(0);
 
   useEffect(() => {
     const hasTts = "speechSynthesis" in window;
     const clips = allClips();
-    setSupported(hasTts || (clips.length > 0 && audioContextClass() !== null));
+    setSupported(hasTts || (clips.length > 0 && typeof Audio !== "undefined"));
 
-    // Fetch every clip once, so the service worker keeps them for offline use.
+    // Fetch every clip once: the service worker keeps them for offline use, and a tap then starts at once.
     const idle = window.setTimeout(() => {
-      for (const url of clips) void fetch(url).catch(() => {});
-    }, 3000);
+      for (const url of clips) void loadClip(url).catch(() => {});
+    }, 1500);
 
     if (!hasTts) return () => window.clearTimeout(idle);
     const synth = window.speechSynthesis;
@@ -70,14 +94,8 @@ export function useSpeech() {
 
   const stop = useCallback(() => {
     runRef.current++;
-    for (const source of sourcesRef.current) {
-      try {
-        source.stop();
-      } catch {
-        // already stopped
-      }
-    }
-    sourcesRef.current = [];
+    cancelClipRef.current?.();
+    sharedAudio?.pause();
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     setSpeaking(false);
   }, []);
@@ -88,45 +106,49 @@ export function useSpeech() {
     return synth.speaking || synth.pending;
   };
 
-  const decode = useCallback((context: AudioContext, url: string) => {
-    let buffer = sharedBuffers.get(url);
-    if (!buffer) {
-      buffer = fetch(url)
-        .then((res) => {
-          if (!res.ok) throw new Error(`${url}: ${res.status}`);
-          return res.arrayBuffer();
-        })
-        .then((bytes) => context.decodeAudioData(bytes));
-      buffer.catch(() => sharedBuffers.delete(url)); // retry next time
-      sharedBuffers.set(url, buffer);
-    }
-    return buffer;
+  /** Plays one clip on the shared element; resolves when it ends. */
+  const playOnce = useCallback((audio: HTMLAudioElement, src: string) => {
+    return new Promise<void>((resolve, reject) => {
+      let timer = 0;
+      const cleanup = () => {
+        window.clearTimeout(timer);
+        audio.onended = null;
+        audio.onerror = null;
+        if (cancelClipRef.current === finish) cancelClipRef.current = null;
+      };
+      const finish = () => {
+        cleanup();
+        resolve();
+      };
+      audio.onended = finish;
+      audio.onerror = () => {
+        cleanup();
+        reject(new Error("audio element error"));
+      };
+      timer = window.setTimeout(finish, CLIP_TIMEOUT_MS);
+      cancelClipRef.current = finish;
+      audio.src = src;
+      audio.play().catch((error) => {
+        cleanup();
+        reject(error);
+      });
+    });
   }, []);
 
-  /** Plays clips back to back; resolves when the last one ends. */
+  /** Plays clips back to back on the shared element. */
   const playClips = useCallback(
-    async (context: AudioContext, urls: readonly string[], run: number) => {
-      const buffers = await Promise.all(urls.map((url) => decode(context, url)));
-      if (run !== runRef.current) return;
-      let at = context.currentTime + 0.02;
-      const ended: Promise<void>[] = [];
-      for (const buffer of buffers) {
-        const source = context.createBufferSource();
-        source.buffer = buffer;
-        source.connect(context.destination);
-        source.start(at);
-        sourcesRef.current.push(source);
-        ended.push(new Promise((resolve) => (source.onended = () => resolve())));
-        at += buffer.duration + CLIP_GAP_S;
+    async (urls: readonly string[], run: number) => {
+      const audio = sharedAudio;
+      if (!audio) throw new Error("no audio element");
+      for (let i = 0; i < urls.length; i++) {
+        if (run !== runRef.current) return;
+        const src = await loadClip(urls[i]!);
+        if (run !== runRef.current) return;
+        await playOnce(audio, src);
+        if (i < urls.length - 1 && run === runRef.current) await sleep(CLIP_GAP_MS);
       }
-      // Never wait forever on an "ended" event that does not come.
-      const total = at - context.currentTime;
-      await Promise.race([
-        Promise.all(ended),
-        new Promise<void>((resolve) => window.setTimeout(resolve, (total + 1) * 1000)),
-      ]);
     },
-    [decode]
+    [playOnce]
   );
 
   const say = useCallback((text: string) => {
@@ -175,26 +197,26 @@ export function useSpeech() {
       const run = runRef.current;
       const segments = planSpeech(words);
 
-      // Create or resume the audio context inside the gesture, before any await.
-      const Context = audioContextClass();
-      if (Context && segments.some((s) => s.kind === "clips")) {
-        sharedContext ??= new Context();
-        void sharedContext.resume();
+      // Start the shared element inside the tap, before any await: iOS then lets it play the clips that follow.
+      if (segments.some((s) => s.kind === "clips") && typeof Audio !== "undefined") {
+        sharedAudio ??= new Audio();
+        sharedAudio.src = SILENCE;
+        sharedAudio.play().catch(() => {});
       }
 
       setSpeaking(true);
       void (async () => {
-        if (wasBusy) await new Promise<void>((resolve) => window.setTimeout(resolve, AFTER_CANCEL_MS));
+        if (wasBusy) await sleep(AFTER_CANCEL_MS);
         for (const segment of segments) {
           if (run !== runRef.current) return;
           try {
-            if (segment.kind === "clips" && sharedContext) {
-              await playClips(sharedContext, segment.urls, run);
+            if (segment.kind === "clips") {
+              await playClips(segment.urls, run);
             } else {
               await say(segment.text);
             }
           } catch (err) {
-            // A clip that fails to load or decode: read those words instead.
+            // A clip that fails to load or play: read those words instead.
             console.error("Voice clip failed, using text-to-speech", err);
             if (run === runRef.current) await say(segment.text);
           }

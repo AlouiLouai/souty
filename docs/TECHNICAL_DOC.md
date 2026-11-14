@@ -101,7 +101,8 @@ third-party call is Vercel Web Analytics (cookieless page views; see
   client-side only, and warmed up while the landing screen is showing so
   the scanner opens quickly.
 - **Voice** — recorded Tunisian word clips (`apps/pwa/public/audio/`,
-  listed in `lib/voiceClips.ts`) are played with the Web Audio API; runs of
+  listed in `lib/voiceClips.ts`) are played on one shared audio element (an iPhone mutes Web Audio
+  with its silent switch, not a media element); runs of
   words without a clip go to the browser's `SpeechSynthesis` (prefers
   `ar-TN`, then any `ar-*`, else the OS default). On demand only (no
   auto-speak). Clips are added with `pnpm --filter @souty/pwa voice`.

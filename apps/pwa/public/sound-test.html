@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Souty sound test</title>
+<style>
+  body { font: 16px/1.4 system-ui, sans-serif; margin: 16px; max-width: 32rem; }
+  button { display: block; width: 100%; margin: 10px 0; padding: 14px; font-size: 17px; }
+  pre { background: #eee; padding: 10px; white-space: pre-wrap; word-break: break-word; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>Souty sound test</h1>
+<p>Turn the volume up. Tap each button and say whether you heard a voice. Then repeat with the silent switch on the side of the iPhone down.</p>
+<button id="a">1. Audio element (what the app uses)</button>
+<button id="b">2. Web Audio (what the app used before)</button>
+<button id="c">3. Speech synthesis (the phone's voice)</button>
+<pre id="log"></pre>
+<script>
+var CLIP = "/audio/demo-ana.mp3";
+var log = document.getElementById("log");
+function say(text) { log.textContent += text + "\n"; }
+
+say("browser: " + navigator.userAgent);
+say("service worker controlling this page: " + !!(navigator.serviceWorker && navigator.serviceWorker.controller));
+say("audioSession API: " + !!navigator.audioSession);
+say("speechSynthesis: " + ("speechSynthesis" in window));
+function voices() {
+  var list = ("speechSynthesis" in window) ? speechSynthesis.getVoices() : [];
+  var ar = list.filter(function (v) { return /^ar/i.test(v.lang); }).map(function (v) { return v.name + " (" + v.lang + ")"; });
+  say("voices: " + list.length + ", Arabic: " + (ar.join(", ") || "none"));
+}
+voices();
+if ("speechSynthesis" in window) speechSynthesis.onvoiceschanged = voices;
+if (window.caches) caches.keys().then(function (k) { say("caches: " + k.join(", ")); });
+
+var audio = new Audio();
+document.getElementById("a").onclick = function () {
+  say("1: fetching clip...");
+  audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
+  audio.play().catch(function () {});
+  fetch(CLIP).then(function (r) { return r.blob(); }).then(function (blob) {
+    audio.src = URL.createObjectURL(blob);
+    audio.onended = function () { say("1: ended"); };
+    audio.onerror = function () { say("1: error " + (audio.error && audio.error.code)); };
+    return audio.play();
+  }).then(function () { say("1: playing"); }).catch(function (e) { say("1: failed: " + e); });
+};
+document.getElementById("b").onclick = function () {
+  var Ctx = window.AudioContext || window.webkitAudioContext;
+  var ctx = new Ctx();
+  ctx.resume();
+  say("2: context " + ctx.state);
+  fetch(CLIP).then(function (r) { return r.arrayBuffer(); }).then(function (bytes) { return ctx.decodeAudioData(bytes); })
+    .then(function (buffer) {
+      var src = ctx.createBufferSource();
+      src.buffer = buffer; src.connect(ctx.destination); src.start();
+      say("2: playing, context " + ctx.state);
+    }).catch(function (e) { say("2: failed: " + e); });
+};
+document.getElementById("c").onclick = function () {
+  if (!("speechSynthesis" in window)) return say("3: no speech synthesis");
+  var u = new SpeechSynthesisUtterance("\u0645\u0631\u062d\u0628\u0627");
+  u.lang = "ar-SA";
+  u.onstart = function () { say("3: started"); };
+  u.onend = function () { say("3: ended"); };
+  u.onerror = function (e) { say("3: error " + e.error); };
+  speechSynthesis.speak(u);
+};
+</script>
+</body>
+</html>
