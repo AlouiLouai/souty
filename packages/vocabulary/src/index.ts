@@ -109,19 +109,22 @@ export const SIGNS: readonly Sign[] = [
   { label: "train", word: "قطار", gloss: { en: "train", fr: "train" }, category: "transport", source: "tunsl" },
   { label: "taxi", word: "تاكسي", gloss: { en: "taxi", fr: "taxi" }, category: "transport", source: "tunsl", toConfirm: "Draft: confirm the word with ATILS." },
 
-  // Universal hand gestures (overlap with TunSL words, such as عسلامة, is intentional)
-  { label: "Open_Palm", word: "عسلامة", gloss: { en: "hello", fr: "bonjour" }, category: "universal", source: "hagrid" },
-  { label: "Closed_Fist", word: "وقف", gloss: { en: "stop", fr: "stop" }, category: "universal", source: "hagrid" },
-  { label: "Thumb_Up", word: "ايه", gloss: { en: "yes", fr: "oui" }, category: "universal", source: "hagrid" },
-  { label: "Thumb_Down", word: "لا", gloss: { en: "no", fr: "non" }, category: "universal", source: "hagrid" },
-  { label: "Victory", word: "بالسلامة", gloss: { en: "goodbye", fr: "au revoir" }, category: "universal", source: "hagrid" },
-  { label: "Pointing_Up", word: "استنى", gloss: { en: "wait", fr: "attends" }, category: "universal", source: "hagrid" },
-  // Tunisian Derja, not the Egyptian/Levantine "تمام"
-  { label: "OK_Sign", word: "باهي", gloss: { en: "OK", fr: "d'accord" }, category: "universal", source: "hagrid" },
-  // Digits, per Maghreb convention
-  { label: "Three_Fingers", word: "3", gloss: { en: "three", fr: "trois" }, category: "universal", source: "hagrid" },
+  // Universal hand gestures. Nine of them speak the words of the sample sentence
+  //   مرحباً أنا جوهر حلاق من سيدي بوزيد نحب نحل باتيندة مبادر ذاتي
+  // (a proof of concept). They are gestures the model reads reliably, standing in
+  // for words that have no trained Tunisian sign yet: marked toConfirm until a
+  // real sign is recorded for each (training/README.md, "Recording list").
+  { label: "Open_Palm", word: "مرحباً", gloss: { en: "hello", fr: "bonjour" }, category: "universal", source: "hagrid", toConfirm: "Stand-in gesture, not the Tunisian sign for this word: replace it with a recorded real sign." },
+  { label: "Pointing_Up", word: "أنا", gloss: { en: "I, me", fr: "moi, je" }, category: "universal", source: "hagrid", toConfirm: "Stand-in gesture, not the Tunisian sign for this word: replace it with a recorded real sign." },
+  { label: "Shaka_Sign", word: "جوهر", gloss: { en: "Jawher (a first name)", fr: "Jawher (un prénom)" }, category: "universal", source: "hagrid", toConfirm: "Stand-in gesture, not the Tunisian sign for this word: replace it with a recorded real sign." },
+  { label: "Victory", word: "حلاق", gloss: { en: "barber", fr: "coiffeur" }, category: "universal", source: "hagrid", toConfirm: "Stand-in gesture, not the Tunisian sign for this word: replace it with a recorded real sign." },
+  { label: "Thumb_Down", word: "من سيدي بوزيد", gloss: { en: "from Sidi Bouzid", fr: "de Sidi Bouzid" }, category: "universal", source: "hagrid", toConfirm: "Stand-in gesture, not the Tunisian sign for this word: replace it with a recorded real sign." },
+  { label: "Thumb_Up", word: "نحب", gloss: { en: "I want", fr: "je veux" }, category: "universal", source: "hagrid", toConfirm: "Stand-in gesture, not the Tunisian sign for this word: replace it with a recorded real sign." },
+  { label: "Three_Fingers", word: "نحل", gloss: { en: "I open", fr: "j'ouvre" }, category: "universal", source: "hagrid", toConfirm: "Stand-in gesture, not the Tunisian sign for this word: replace it with a recorded real sign." },
+  { label: "OK_Sign", word: "باتيندة", gloss: { en: "business licence", fr: "patente" }, category: "universal", source: "hagrid", toConfirm: "Stand-in gesture, not the Tunisian sign for this word: replace it with a recorded real sign." },
+  { label: "Closed_Fist", word: "مبادر ذاتي", gloss: { en: "self-employed", fr: "auto-entrepreneur" }, category: "universal", source: "hagrid", toConfirm: "Stand-in gesture, not the Tunisian sign for this word: replace it with a recorded real sign." },
+  // A digit, per Maghreb convention
   { label: "Four_Fingers", word: "4", gloss: { en: "four", fr: "quatre" }, category: "universal", source: "hagrid" },
-  { label: "Shaka_Sign", word: "مبروك", gloss: { en: "congratulations", fr: "félicitations" }, category: "universal", source: "hagrid" },
 ];
 
 /** Display order for grouped listings. */

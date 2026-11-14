@@ -3,7 +3,6 @@
  * votes, kept on the device and sent when there is a network, and the last
  * tallies it received, kept so the blue marks also show offline.
  */
-import { isDemoActive, subscribeDemo } from "./demoScript";
 import { isVote, withOwnVote, type Tally, type Vote } from "./validation";
 
 const API = "/api/votes";
@@ -21,7 +20,7 @@ interface Stored {
 }
 
 export interface VotesSnapshot {
-  /** False when voting is switched off: no vote store, or the demo script is on. */
+  /** False when voting is switched off: the server has no vote store. */
   readonly enabled: boolean;
   readonly mine: Readonly<Record<string, Vote>>;
   readonly tallies: Readonly<Record<string, Tally>>;
@@ -78,7 +77,7 @@ function publish() {
   const { tallies, synced, pending } = stored;
   const labels = new Set([...Object.keys(tallies), ...Object.keys(pending)]);
   snapshot = {
-    enabled: available && !isDemoActive(),
+    enabled: available,
     mine: { ...synced, ...pending },
     tallies: Object.fromEntries([...labels].map((label) => [label, withOwnVote(tallies[label], synced[label], pending[label])])),
   };
@@ -137,7 +136,6 @@ function start() {
   started = true;
   stored = load();
   publish();
-  subscribeDemo(publish); // voting hides while the demo is on
   void refresh().then(flush);
   window.addEventListener("online", () => void refresh().then(flush));
 }

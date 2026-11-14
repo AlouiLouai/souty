@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   Building2,
-  Hand,
   CalendarDays,
   Car,
   MessageCircle,
@@ -14,15 +13,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SIGN_CATEGORIES, signsByCategory, type SignCategory } from "@souty/vocabulary";
-import { gestureToWord } from "@/lib/gestureDictionary";
 import { SoundBars } from "@/components/Pictograms";
 import { SignGlyph, hasGlyph } from "@/components/SignGlyph";
 import { ValidatedMark, VoteButtons } from "@/components/VoteButtons";
 import { Button } from "@/components/ui/button";
-import { useDemo } from "@/hooks/useDemo";
 import { useSpeech } from "@/hooks/useSpeech";
 import { useVotes } from "@/hooks/useVotes";
 import { isValidated } from "@/lib/validation";
+import { MEANING_ICONS } from "@/lib/signMeaning";
 import { cn } from "@/lib/utils";
 
 /** One icon per vocabulary group; the Arabic name is for screen readers only. */
@@ -50,7 +48,6 @@ export default function SignGuide({ onClose }: SignGuideProps) {
   const [active, setActive] = useState<string | null>(null);
   const speech = useSpeech();
   const votes = useVotes();
-  useDemo(); // the words shown change when the demo is switched
   const CategoryIcon = CATEGORY_ICONS[category].icon;
 
   return (
@@ -108,10 +105,11 @@ export default function SignGuide({ onClose }: SignGuideProps) {
           .sort((a, b) => Number(hasGlyph(b.label)) - Number(hasGlyph(a.label)))
           .map((sign) => {
           const playing = speech.speaking && active === sign.label;
-          // In the demo script a sign can carry a stand-in word.
-          const word = gestureToWord(sign.label);
+          const word = sign.word;
+          // No hand drawing yet: a picture of what the word means, else its category's icon.
+          const Meaning = MEANING_ICONS[sign.label] ?? CATEGORY_ICONS[category].icon;
           return (
-            <div key={sign.label} className="flex flex-col gap-1.5">
+            <div key={sign.label} className="relative">
             <button
               type="button"
               disabled={!speech.supported}
@@ -121,7 +119,7 @@ export default function SignGuide({ onClose }: SignGuideProps) {
               }}
               aria-label={`اسمع: ${word}`}
               className={cn(
-                "relative flex animate-fade-in-up flex-col items-center gap-1 rounded-2xl border-2 bg-card p-2 transition-transform active:scale-95 disabled:cursor-default",
+                "relative flex w-full animate-fade-in-up flex-col items-center gap-1 rounded-2xl border-2 bg-card p-2 transition-transform active:scale-95 disabled:cursor-default",
                 playing ? "border-highlight" : "border-border"
               )}
             >
@@ -129,13 +127,7 @@ export default function SignGuide({ onClose }: SignGuideProps) {
                 {hasGlyph(sign.label) ? (
                   <SignGlyph label={sign.label} className="h-[85%] w-[85%]" />
                 ) : (
-                  // No drawing of this sign yet: an outlined hand in a dashed frame.
-                  <span
-                    aria-hidden="true"
-                    className="flex h-[70%] w-[70%] items-center justify-center rounded-xl border-2 border-dashed border-foreground/50"
-                  >
-                    <Hand className="h-8 w-8 text-foreground/70" strokeWidth={2} />
-                  </span>
+                  <Meaning aria-hidden="true" className="h-[48%] w-[48%] text-foreground/60" strokeWidth={1.6} />
                 )}
               </span>
               <span lang="ar" className="w-full truncate text-center font-display text-lg font-extrabold leading-tight text-foreground">
@@ -154,7 +146,15 @@ export default function SignGuide({ onClose }: SignGuideProps) {
                 {playing ? <SoundBars className="h-3 [&>span]:w-[2px]" /> : <Volume2 className="h-3.5 w-3.5" />}
               </span>
             </button>
-            {votes.enabled && <VoteButtons label={sign.label} word={word} mine={votes.mine[sign.label]} />}
+            {/* Two small badges in the bottom corners of the picture, over the tile. */}
+            {votes.enabled && (
+              <VoteButtons
+                label={sign.label}
+                word={word}
+                mine={votes.mine[sign.label]}
+                className="pointer-events-none absolute inset-x-2.5 top-2.5 aspect-square items-end justify-between p-1"
+              />
+            )}
             </div>
           );
         })}

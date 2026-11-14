@@ -14,7 +14,7 @@
  *
  * Bump SHELL_CACHE when this caching logic changes.
  */
-const SHELL_CACHE = "souty-v4";
+const SHELL_CACHE = "souty-v5";
 const ASSET_CACHE = "souty-assets-v1";
 const NAVIGATE_TIMEOUT_MS = 4000;
 
@@ -56,8 +56,11 @@ self.addEventListener("message", (event) => {
 /** Network first, but falls back to the cached shell if the network stalls. */
 function navigate(request) {
   const cached = () => caches.match("/", { cacheName: SHELL_CACHE });
+  // Only the home page is the app shell: any other page (an API address opened by hand, for
+  // example) must not replace it, or the next offline start would show that page instead.
+  const isShell = new URL(request.url).pathname === "/";
   const network = fetch(request).then((response) => {
-    if (response.ok) {
+    if (response.ok && isShell) {
       const copy = response.clone();
       caches.open(SHELL_CACHE).then((cache) => cache.put("/", copy));
     }

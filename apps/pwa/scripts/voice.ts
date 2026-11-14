@@ -20,7 +20,6 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { SIGNS } from "@souty/vocabulary";
-import { DEMO_PHRASES } from "../lib/demoScript";
 import { VOICED } from "./voiceText";
 
 const APP_DIR = path.resolve(import.meta.dirname, "..");
@@ -29,11 +28,12 @@ const AUDIO_DIR = path.join(APP_DIR, "public", "audio");
 const RAW_DIR = path.resolve(APP_DIR, "..", "..", "voice-raw");
 const CLIPS_TS = path.join(APP_DIR, "lib", "voiceClips.ts");
 const INPUT_EXTS = new Set([".wav", ".m4a", ".mp3", ".ogg", ".opus", ".webm", ".aac", ".3gp", ".flac", ".amr"]);
-/** Everything that can have a recording: the vocabulary, then the demo sentence's own words. */
-const ENTRIES: readonly { label: string; word: string; gloss: string }[] = [
-  ...SIGNS.map((sign) => ({ label: sign.label, word: sign.word, gloss: sign.gloss.en })),
-  ...DEMO_PHRASES,
-];
+/** Everything that can have a recording: the vocabulary. */
+const ENTRIES: readonly { label: string; word: string; gloss: string }[] = SIGNS.map((sign) => ({
+  label: sign.label,
+  word: sign.word,
+  gloss: sign.gloss.en,
+}));
 const LABELS = new Set(ENTRIES.map((entry) => entry.label));
 
 /** Trim leading and trailing silence, normalise loudness. */

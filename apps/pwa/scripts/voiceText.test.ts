@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { SIGNS } from "@souty/vocabulary";
-import { DEMO_PHRASES } from "../lib/demoScript";
 import { VOICED } from "./voiceText";
 
 /** Removes the short vowels and folds letter variants, leaving the plain spelling. */
@@ -10,7 +9,7 @@ const plain = (text: string) =>
     .replace(/[أإآٱ]/g, "ا")
     .replace(/ى/g, "ي");
 
-const ENTRIES = [...SIGNS, ...DEMO_PHRASES];
+const ENTRIES = SIGNS;
 
 describe("FR-9 voice text: how each word is pronounced when a voice is generated", () => {
   it("names a pronunciation for every word, and only for real labels", () => {
