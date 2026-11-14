@@ -155,6 +155,15 @@ To add or replace recordings (needs `ffmpeg` on the PATH):
    evens out the loudness, writes `public/audio/<label>.mp3`, and
    regenerates `lib/voiceClips.ts`. Commit both.
 
+To make the words by hand on a text-to-speech website (ElevenLabs' free plan
+cannot use library voices through its API), print the words with their
+vowelled spelling, in order, with `pnpm --filter @souty/pwa voice generate --dry`.
+Generate and download each word in that order into `voice-raw/` (set the
+browser's download folder to it), deleting any retake. Then
+`voice rename` shows which word each download will be named after (oldest
+download first), and `voice rename --apply` renames them; run `voice import
+voice-raw` to convert them. It can be done in several batches.
+
 To make the words with an ElevenLabs voice instead of recording them
 yourself, set `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` in your shell
 (never commit them), then run

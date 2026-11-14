@@ -4,6 +4,8 @@
  *   pnpm --filter @souty/pwa voice list            words still to record
  *   pnpm --filter @souty/pwa voice import <folder> convert recordings, then sync
  *   pnpm --filter @souty/pwa voice sync            regenerate lib/voiceClips.ts
+ *   pnpm --filter @souty/pwa voice rename [folder] [--apply]
+ *                                                  name downloaded files after the words, in `voice list` order
  *   pnpm --filter @souty/pwa voice generate [label...] [--force] [--dry]
  *                                                  make the missing words with an ElevenLabs voice
  *
@@ -15,7 +17,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { SIGNS } from "@souty/vocabulary";
 import { DEMO_PHRASES } from "../lib/demoScript";
@@ -124,6 +126,53 @@ class SynthesisError extends Error {
   }
 }
 
+/**
+ * The words still to record, in the order `voice list` prints them, each under
+ * the first label that says it. A word shared by several signs appears once.
+ */
+function todoLabels(alsoDone: ReadonlySet<string> = new Set()): { label: string; word: string; text: string }[] {
+  const done = new Set([...recorded().keys(), ...alsoDone]);
+  const seen = new Set<string>();
+  const todo: { label: string; word: string; text: string }[] = [];
+  for (const entry of ENTRIES) {
+    if (seen.has(entry.word)) continue;
+    seen.add(entry.word);
+    const labels = ENTRIES.filter((e) => e.word === entry.word).map((e) => e.label);
+    if (labels.some((label) => done.has(label))) continue;
+    todo.push({ label: entry.label, word: entry.word, text: VOICED[entry.label] ?? entry.word });
+  }
+  return todo;
+}
+
+/**
+ * For words made by hand on a website: the downloads have random names, so name
+ * them after the words. The oldest download takes the first word still to
+ * record, and so on. Shows the plan; only renames with --apply.
+ */
+function renameDownloads(args: string[]): void {
+  const apply = args.includes("--apply");
+  const folderArg = args.find((arg) => !arg.startsWith("--"));
+  const folder = folderArg ? path.resolve(process.env.INIT_CWD ?? process.cwd(), folderArg) : RAW_DIR;
+  const audio = readdirSync(folder).filter((name) => INPUT_EXTS.has(path.extname(name).toLowerCase()));
+  const stem = (name: string) => path.basename(name, path.extname(name));
+  const files = audio
+    .filter((name) => !LABELS.has(stem(name)))
+    .map((name) => ({ name, time: statSync(path.join(folder, name)).mtimeMs }))
+    .sort((a, b) => a.time - b.time || a.name.localeCompare(b.name));
+  // Words already named in this folder (an earlier batch, not imported yet) are not to be recorded again.
+  const todo = todoLabels(new Set(audio.map(stem).filter((name) => LABELS.has(name))));
+  if (files.length === 0) return console.log(`No unnamed audio files in ${folder}.`);
+  if (files.length > todo.length) {
+    throw new Error(`${files.length} unnamed files but only ${todo.length} words left to record: delete the extra takes first.`);
+  }
+  console.log(`${files.length} unnamed files, oldest first, take these words (of ${todo.length} still to record):`);
+  const plan = files.map((file, i) => ({ file, target: todo[i]!, to: `${todo[i]!.label}${path.extname(file.name).toLowerCase()}` }));
+  for (const { file, target, to } of plan) console.log(`  ${file.name.slice(0, 60).padEnd(60)} -> ${to.padEnd(22)} ${target.text}`);
+  if (!apply) return console.log("Check that every line is right, then run again with --apply. Nothing was renamed.");
+  for (const { file, to } of plan) renameSync(path.join(folder, file.name), path.join(folder, to));
+  console.log(`Renamed ${plan.length} files. Next: voice import ${path.relative(process.env.INIT_CWD ?? process.cwd(), folder) || "."}`);
+}
+
 /** Calls ElevenLabs text-to-speech for one word; returns the mp3 bytes. */
 async function synthesize(text: string, settings: { voice: string; key: string; base: string; model: string; voiceSettings?: unknown }) {
   const url = `${settings.base}/v1/text-to-speech/${encodeURIComponent(settings.voice)}?output_format=mp3_44100_128`;
@@ -209,10 +258,11 @@ if (command === "generate") {
     console.error(error.message);
     process.exit(1);
   });
-} else if (command === "list") list();
+} else if (command === "rename") renameDownloads(process.argv.slice(3));
+else if (command === "list") list();
 else if (command === "sync") sync();
 else if (command === "import" && arg) importFolder(arg);
 else {
-  console.error("Usage: voice list | voice import <folder> | voice sync | voice generate [label...] [--force] [--dry]");
+  console.error("Usage: voice list | voice import <folder> | voice sync | voice rename [folder] [--apply] | voice generate [label...] [--force] [--dry]");
   process.exit(1);
 }
