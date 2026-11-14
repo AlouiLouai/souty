@@ -31,6 +31,23 @@ export function allClips(): readonly string[] {
   return [...new Set(Object.values(VOICE_CLIPS))];
 }
 
+/** A voice's language tag, in lower case, for matching. */
+const langOf = (voice: { lang: string }) => voice.lang.toLowerCase().replace("_", "-");
+
+/** The best installed Arabic voice: Tunisian first, then any Arabic one. */
+export function pickArabicVoice<T extends { lang: string }>(voices: readonly T[]): T | null {
+  return voices.find((v) => langOf(v).startsWith("ar-tn")) ?? voices.find((v) => langOf(v).startsWith("ar")) ?? null;
+}
+
+/**
+ * The language to ask for. A chosen voice dictates it. Without one, a full
+ * tag: iOS WebKit (every iPhone browser, Chrome included) does not match the
+ * bare "ar" and stays silent, while "ar-SA" finds its built-in Arabic voice.
+ */
+export function utteranceLang(voice: { lang: string } | null): string {
+  return voice ? voice.lang : "ar-SA";
+}
+
 export type SpeechSegment =
   | { readonly kind: "clips"; readonly urls: readonly string[]; readonly text: string }
   | { readonly kind: "tts"; readonly text: string };

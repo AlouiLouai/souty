@@ -99,6 +99,7 @@ export default function ScannerWorkspace({
           sentenceWords={sentence.words}
           speechSupported={speech.supported}
           speaking={speech.speaking}
+          speechFailed={speech.failed}
           paused={paused}
           onTogglePaused={() => {
             onTogglePaused();

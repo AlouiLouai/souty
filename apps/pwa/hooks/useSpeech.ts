@@ -1,16 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { allClips, planSpeech } from "@/lib/voice";
+import { allClips, pickArabicVoice, planSpeech, utteranceLang } from "@/lib/voice";
 
 /** Silence between two recorded words, in seconds. */
 const CLIP_GAP_S = 0.08;
-
-function pickArabicVoice(voices: SpeechSynthesisVoice[]) {
-  const byPrefix = (prefix: string) =>
-    voices.find((v) => v.lang.toLowerCase().startsWith(prefix));
-  return byPrefix("ar-tn") ?? byPrefix("ar") ?? null;
-}
 
 type AudioContextClass = typeof AudioContext;
 
@@ -26,6 +20,9 @@ function audioContextClass(): AudioContextClass | null {
 let sharedContext: AudioContext | null = null;
 const sharedBuffers = new Map<string, Promise<AudioBuffer>>();
 
+/** Time for a cancelled utterance to clear before the next one starts (iOS and Chrome drop it otherwise). */
+const AFTER_CANCEL_MS = 80;
+
 /** A text-to-speech utterance that never reports its end is given up after this. */
 function ttsTimeoutMs(text: string) {
   return 3000 + text.length * 250;
@@ -39,6 +36,8 @@ export function useSpeech() {
   const [supported, setSupported] = useState(false);
   /** True while a sentence or word is being played, for the speaking animation. */
   const [speaking, setSpeaking] = useState(false);
+  /** True when the last words got no sound at all (no usable voice, or the phone's mute): shown as a muted speaker. */
+  const [failed, setFailed] = useState(false);
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   /** Holds the live utterance: Chrome may drop an unreferenced one and never fire its end. */
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -82,6 +81,12 @@ export function useSpeech() {
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     setSpeaking(false);
   }, []);
+
+  /** Whether the speech engine still holds an utterance that a cancel has to clear first. */
+  const engineBusy = () => {
+    const synth = window.speechSynthesis;
+    return synth.speaking || synth.pending;
+  };
 
   const decode = useCallback((context: AudioContext, url: string) => {
     let buffer = sharedBuffers.get(url);
@@ -127,15 +132,25 @@ export function useSpeech() {
   const say = useCallback((text: string) => {
     return new Promise<void>((resolve) => {
       if (!("speechSynthesis" in window)) return resolve();
+      const synth = window.speechSynthesis;
+      // The voice list can still be empty when the effect first ran (iOS fills it late).
+      voiceRef.current ??= pickArabicVoice(synth.getVoices());
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "ar";
+      utterance.lang = utteranceLang(voiceRef.current);
       if (voiceRef.current) utterance.voice = voiceRef.current;
       utterance.rate = 0.95;
       let timer = 0;
+      let started = false;
       const done = () => {
         window.clearTimeout(timer);
         if (utteranceRef.current === utterance) utteranceRef.current = null;
+        // Finished without ever starting: the phone said nothing.
+        if (!started) setFailed(true);
         resolve();
+      };
+      utterance.onstart = () => {
+        started = true;
+        setFailed(false);
       };
       utterance.onend = done;
       utterance.onerror = (event) => {
@@ -144,7 +159,8 @@ export function useSpeech() {
       };
       timer = window.setTimeout(done, ttsTimeoutMs(text));
       utteranceRef.current = utterance;
-      window.speechSynthesis.speak(utterance);
+      synth.resume(); // iOS can leave the engine paused after an earlier cancel
+      synth.speak(utterance);
     });
   }, []);
 
@@ -152,6 +168,9 @@ export function useSpeech() {
   const speak = useCallback(
     (words: readonly string[]) => {
       if (!supported || words.length === 0) return;
+      // Cancelling and speaking in the same instant drops the new speech on iOS and Chrome, so
+      // wait a beat, but only when something was actually playing: a first tap stays inside its gesture.
+      const wasBusy = "speechSynthesis" in window && engineBusy();
       stop();
       const run = runRef.current;
       const segments = planSpeech(words);
@@ -165,6 +184,7 @@ export function useSpeech() {
 
       setSpeaking(true);
       void (async () => {
+        if (wasBusy) await new Promise<void>((resolve) => window.setTimeout(resolve, AFTER_CANCEL_MS));
         for (const segment of segments) {
           if (run !== runRef.current) return;
           try {
@@ -187,5 +207,5 @@ export function useSpeech() {
 
   useEffect(() => stop, [stop]);
 
-  return { supported, speaking, speak };
+  return { supported, speaking, failed, speak };
 }
