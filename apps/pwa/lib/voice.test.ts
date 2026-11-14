@@ -1,27 +1,22 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { SIGNS } from "@souty/vocabulary";
-import { DEMO_PHRASES, DEMO_WORDS } from "./demoScript";
+import { SIGNS, WORD_BY_LABEL } from "@souty/vocabulary";
 import { clipForWord, pickArabicVoice, planSpeech, utteranceLang } from "./voice";
 import { VOICE_CLIPS } from "./voiceClips";
 
 const clips: Record<string, string> = { بلدية: "/audio/baladya.mp3", اليوم: "/audio/lyoum.mp3" };
 const clipFor = (word: string) => clips[word] ?? null;
 
-describe("FR-9 recordings cover the demo sentence", () => {
-  it("names a recording for every word the demo speaks, and for no one else's label", () => {
-    const named = new Set<string>(DEMO_PHRASES.map((phrase) => phrase.word));
-    for (const word of new Set(Object.values(DEMO_WORDS))) expect(named.has(word), word).toBe(true);
-    const labels = [...DEMO_PHRASES.map((p) => p.label), ...SIGNS.map((s) => s.label)];
-    expect(new Set(labels).size).toBe(labels.length);
+describe("FR-9 every word the app can say is a recording", () => {
+  it("has a clip for each vocabulary word, so none falls back to the phone's voice", () => {
+    for (const sign of SIGNS) expect(clipForWord(sign.word), `${sign.label} ${sign.word}`).not.toBeNull();
   });
-});
 
-describe("FR-9 the demo sentence is spoken from recordings", () => {
-  it("has a clip for every word of the demo sentence, so none falls back to text-to-speech", () => {
-    for (const { word } of DEMO_PHRASES) expect(clipForWord(word), word).not.toBeNull();
-    const sentence = DEMO_PHRASES.map((phrase) => phrase.word);
+  it("plays the sample sentence from recordings only", () => {
+    const sentence = ["Open_Palm", "Pointing_Up", "Shaka_Sign", "Victory", "Thumb_Down", "Thumb_Up", "Three_Fingers", "OK_Sign", "Closed_Fist"].map(
+      (label) => WORD_BY_LABEL[label]!
+    );
     expect(planSpeech(sentence).map((segment) => segment.kind)).toEqual(["clips"]);
   });
 });
@@ -65,9 +60,9 @@ describe("FR-9 Tunisian voice: recorded clips first, text-to-speech for the rest
 });
 
 describe("FR-9 recorded clips (lib/voiceClips.ts)", () => {
-  const labels = new Set([...SIGNS.map((sign) => sign.label), ...DEMO_PHRASES.map((phrase) => phrase.label)]);
+  const labels = new Set(SIGNS.map((sign) => sign.label));
 
-  it("lists only vocabulary or demo labels, each with a current file", () => {
+  it("lists only vocabulary labels, each with a current file", () => {
     for (const [label, url] of Object.entries(VOICE_CLIPS)) {
       expect(labels.has(label), label).toBe(true);
       const [file, query] = url.split("?v=");

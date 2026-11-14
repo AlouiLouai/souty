@@ -41,10 +41,10 @@ control an icon (each with an Arabic label for screen readers). A test,
 **Current vocabulary: 65 signs**, one- and two-handed. 55 real Tunisian
 Sign Language signs (requests, public places such as the municipality,
 ministry, court, post office and bank, family, days, transport), trained on
-the Tunisian Sign Language Dataset, plus 10 universal hand gestures (hello,
-stop, yes, no, wait, OK, the numbers 3 and 4, congratulations...). The words
-for 32 of the Tunisian signs are drafts marked `toConfirm`, to be confirmed
-with ATILS. The full list lives in
+the Tunisian Sign Language Dataset, plus 10 universal hand gestures (nine speak
+the words of a sample sentence, as stand-ins for real signs; the tenth is the
+number 4). The words for 32 of the Tunisian signs, and the 9 stand-ins, are
+drafts marked `toConfirm`, to be confirmed with ATILS. The full list lives in
 [`packages/vocabulary`](../../packages/vocabulary/src/index.ts).
 
 ## Key features
@@ -140,8 +140,7 @@ is a few kilobytes and works offline.
 To add or replace recordings (needs `ffmpeg` on the PATH):
 
 1. `pnpm --filter @souty/pwa voice list` prints the words still to record,
-   with the file name to use for each: the 62 vocabulary words, then the 9
-   words of the demo sentence (`demo-*` names).
+   with the file name to use for each (all 65 are recorded today).
 2. Record each word once, in a quiet room, close to the phone: one file per
    word, named after its label (`baladya.m4a`, `oui.wav`, ...). Any format
    ffmpeg reads works, including mp3 and phone voice-recorder files.
@@ -274,7 +273,6 @@ hooks/
   useVotes.ts            Community votes and tallies, for the vote buttons and blue marks
 lib/
   gestureDictionary.ts   Model label -> Tunisian Arabic word (adapter over @souty/vocabulary)
-  demoScript.ts          Proof-of-concept sentence: stand-in words, switched with the clapperboard button on the landing screen
   validation.ts          Community validation rule: votes needed for the blue mark
   votes.ts               This device's votes (kept offline, sent when online) and cached tallies
   handOverlay.ts         Canvas skeletons + the reading/candidate/said ring above both hands

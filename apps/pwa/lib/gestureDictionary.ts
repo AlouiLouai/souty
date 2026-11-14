@@ -7,7 +7,6 @@
  * model's classes means updating that list (see docs/TECHNICAL_DOC.md).
  */
 import { WORD_BY_LABEL } from "@souty/vocabulary";
-import { demoWord } from "./demoScript";
 
 /**
  * Whether a model label has a word to say. A model class without a
@@ -21,8 +20,6 @@ export function hasWord(categoryName: string): boolean {
 export function gestureToWord(categoryName: string): string {
   // Own-property check: a label like "constructor" must not resolve to
   // something inherited from Object.prototype.
-  const demo = demoWord(categoryName);
-  if (demo !== null) return demo;
   if (hasWord(categoryName)) {
     return WORD_BY_LABEL[categoryName];
   }

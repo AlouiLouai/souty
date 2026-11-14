@@ -137,7 +137,6 @@ third-party call is Vercel Web Analytics (cookieless page views; see
 | `packages/vocabulary/src/index.test.ts` | Contract test pinning the label → word mapping of the deployed model |
 | `apps/pwa/lib/gestureDictionary.ts` | Thin adapter over `@souty/vocabulary`: `gestureToWord`, `hasWord` |
 | `apps/pwa/lib/validation.ts`, `apps/pwa/lib/votes.ts`, `apps/pwa/app/api/votes/route.ts` | Community validation (SPEC.md, FR-14): the rule for the blue mark, this device's offline-first votes, and the route that counts votes in an Upstash Redis database with the `@upstash/redis` client. The app's only server code |
-| `apps/pwa/lib/demoScript.ts` | Proof-of-concept script: with the landing screen's demo button on, nine one-handed gestures speak stand-in words (SPEC.md, FR-13) |
 | `apps/pwa/hooks/useSpeech.ts`, `apps/pwa/lib/voice.ts` | Speaks the sentence: recorded clips first, Arabic TTS for the rest |
 | `apps/pwa/hooks/useSentence.ts`, `apps/pwa/hooks/useIdleHandReminder.ts` | Sentence state; no-hand reminder timer |
 | `apps/pwa/app/page.tsx` | View orchestration (landing/onboarding/scanner/sign guide) |
@@ -189,8 +188,10 @@ third-party call is Vercel Web Analytics (cookieless page views; see
    public Tunisian data has none, so most signs are learned as a held
    shape and position. Recorded clips fix this with no code change.
 2. **No facial markers**, and no continuous signing (one sign at a time).
-3. Every sign class has a word, but 32 of them are drafts (`toConfirm` in
-   `packages/vocabulary`) until ATILS confirms them.
+3. Every sign class has a word, but 41 of them are drafts (`toConfirm` in
+   `packages/vocabulary`): 32 Tunisian words, and 9 universal gestures that
+   stand in for the words of a sample sentence (SPEC.md, FR-13), until
+   ATILS confirms them or real signs are recorded.
 
 ## 2. Model training pipeline
 

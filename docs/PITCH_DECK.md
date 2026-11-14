@@ -76,6 +76,8 @@ Demo script (rehearsed, reliable signs only):
 2. Sign: أصم (deaf) → بابا (dad) → سبيطار (hospital) → الخميس (Thursday).
 3. Tap "انطق الجملة" — the phone speaks the sentence.
 
+Alternative (a self-introduction, nine one-handed gestures, see SPEC FR-13): open palm, index up, shaka, V, thumb down, thumb up, three fingers, OK ring, fist = مرحباً أنا جوهر حلاق من سيدي بوزيد نحب نحل باتيندة مبادر ذاتي. Say aloud that these are stand-ins, not Tunisian signs.
+
 On the slide: the app QR code (`docs/pitch/qr/souty-app-card.png`), so the
 audience can open souty.vercel.app on their own phones and try it during
 the demo.

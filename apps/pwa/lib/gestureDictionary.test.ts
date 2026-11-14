@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { parseSignModelMeta } from "@souty/sign-model";
 import { SIGNS } from "@souty/vocabulary";
 import { gestureToWord, hasWord } from "./gestureDictionary";
@@ -42,42 +42,17 @@ describe("FR-7 spoken vocabulary", () => {
   });
 });
 
-describe("FR-13 demo script", () => {
-  it("only uses signs the shipped model can output", async () => {
-    const { DEMO_WORDS } = await import("./demoScript");
-    const classes = new Set(meta.labels);
-    expect(Object.keys(DEMO_WORDS).filter((label) => !classes.has(label))).toEqual([]);
+describe("FR-13 the sample sentence", () => {
+  it("is spoken by nine gestures, one per word, in order", () => {
+    const gestures = ["Open_Palm", "Pointing_Up", "Shaka_Sign", "Victory", "Thumb_Down", "Thumb_Up", "Three_Fingers", "OK_Sign", "Closed_Fist"];
+    expect(gestures.map((label) => gestureToWord(label)).join(" ")).toBe(
+      "مرحباً أنا جوهر حلاق من سيدي بوزيد نحب نحل باتيندة مبادر ذاتي"
+    );
   });
 
-  it("covers every word of the demo sentence", async () => {
-    const { DEMO_WORDS } = await import("./demoScript");
-    const sentence = "مرحباً أنا جوهر حلاق من سيدي بوزيد نحب نحل باتيندة مبادر ذاتي";
-    const spoken = [...new Set(Object.values(DEMO_WORDS))].join(" ");
-    for (const word of sentence.split(" ")) expect(spoken, word).toContain(word);
-  });
-
-  it("stays off unless switched on, and the switch is remembered", async () => {
-    const { isDemoActive, setDemoActive } = await import("./demoScript");
-    const saved = new Map<string, string>();
-    vi.stubGlobal("window", {
-      localStorage: {
-        getItem: (key: string) => saved.get(key) ?? null,
-        setItem: (key: string, value: string) => void saved.set(key, value),
-        removeItem: (key: string) => void saved.delete(key),
-      },
-    });
-    try {
-      expect(isDemoActive()).toBe(false);
-      expect(gestureToWord("Victory")).toBe("بالسلامة");
-      setDemoActive(true);
-      expect(gestureToWord("Victory")).toBe("حلاق");
-      expect(gestureToWord("sbitar")).toBe("سبيطار"); // labels outside the script are untouched
-      expect(saved.get("souty.demo")).toBe("on");
-      setDemoActive(false);
-      expect(gestureToWord("Victory")).toBe("بالسلامة");
-      expect(saved.has("souty.demo")).toBe(false);
-    } finally {
-      vi.unstubAllGlobals();
+  it("marks those gestures as stand-ins until real signs are recorded", () => {
+    for (const label of ["Open_Palm", "Pointing_Up", "Shaka_Sign", "Victory", "Thumb_Down", "Thumb_Up", "Three_Fingers", "OK_Sign", "Closed_Fist"]) {
+      expect(SIGNS.find((sign) => sign.label === label)?.toConfirm, label).toMatch(/Stand-in/);
     }
   });
 });

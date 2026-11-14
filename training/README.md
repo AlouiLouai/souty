@@ -139,6 +139,12 @@ for the people who recorded.
 After training, each new label needs a vocabulary entry before the app
 speaks it, see the next section.
 
+Until these signs are recorded, the sentence is carried by nine universal
+gestures (open palm, index up, shaka, V, thumb down, thumb up, three
+fingers, OK ring, fist), marked `toConfirm` in the vocabulary. When a real
+sign exists for a word, give it its own class and move the word there: the
+gesture is then free to mean what it normally means.
+
 ## Deploying a trained model
 
 The notebook writes `/kaggle/working/export/`. Download the folder and

@@ -32,8 +32,8 @@ signed words: every instruction is a picture and every control an icon
 - Reading the sentence, or one word of it, aloud on demand: a recorded
   Tunisian clip where one exists, else on-device text-to-speech.
 - A sign guide: every sign the app can read, with its hand shape and word.
-- A scripted proof-of-concept sentence with stand-in words (FR-13), off by
-  default.
+- A sample sentence (FR-13): nine universal gestures speak the words of one
+  proof-of-concept sentence, as stand-ins until real signs are recorded.
 - Community validation: users vote on whether each sign's word is right,
   and a word enough of them agree on carries a blue mark (FR-14).
 - Installable PWA that works offline after the first load.
@@ -77,21 +77,24 @@ Each requirement is verified by the tests listed in section 9.
 | **FR-10** | Pause stops detection (no word can be added) and clears the overlay; the camera view is dimmed under a large play button. Tapping that paused view's button, or the pause button again, resumes from an empty window. Switching camera also empties the window and clears the overlay. |
 | **FR-11** | The idle reminder appears after 5 s with no hand while the scanner is running and not paused, and only then. |
 | **FR-12** | Feedback (`lib/handOverlay.ts`): whenever a hand is in view and the scanner is not paused, one ring is drawn above both hands. It has three states: **reading**, a white spinning arc with one dot per visible hand, while no sign leads; **candidate**, a cyan arc that fills with the leading sign's progress towards being said (its winning readings in a row), with that sign's word in a pill under the ring; **said**, a full mint ring with a check, held for 800 ms after the reader stops reporting the sign (the sign ended, a reading dipped, or the hands dropped) unless a different sign starts filling. Skeletons and the two-hand link take the ring's colour. When the leading sign drops, its word fades out over 450 ms instead of blinking off. The ring glides after the centre of the hands, sits above them, or below them when they are too near the top (with hysteresis, so it does not flap), stays inside the part of the frame the cropped preview shows, and has a fixed size in CSS pixels on every phone; the canvas is drawn at the screen's device-pixel resolution so the word stays sharp. On the frame a word is said: a 500 ms burst ring (it plays to the end even if the reader moves on), a 60 ms vibration where supported, and the word is appended and highlighted in the sentence. The only text drawn on the camera is the word: no percentage, no label. |
-| **FR-13** | Demo script (`lib/demoScript.ts`), off by default. A clapperboard icon button on the landing screen switches it on and off (it is filled when on) and the choice is remembered on the device (`localStorage` key `souty.demo`); while it is on, a small clapperboard badge shows next to the logo in the scanner header. There is no URL parameter. While on, the labels in `DEMO_WORDS` show and speak a stand-in word instead of their vocabulary word, in the scanner, the sentence and the sign guide; every other label is unchanged. The script spells one sentence, "مرحباً أنا جوهر حلاق من سيدي بوزيد نحب نحل باتيندة مبادر ذاتي", with one one-handed gesture per word: open palm مرحباً, index up أنا, shaka جوهر, V حلاق, thumb down من سيدي بوزيد, thumb up نحب, three fingers نحل, OK ring باتيندة, fist مبادر ذاتي (`3aslema` and `t7eb` also give مرحباً and نحب). These are stand-ins for a demonstration, not the Tunisian signs for those words. |
-| **FR-14** | Community validation (`lib/validation.ts`, `lib/votes.ts`, `app/api/votes/route.ts`). A user can say whether a sign's word is right or wrong with two small round icon badges (check, cross), the same size and style as the speaker badge: in the bottom corners of every sign's picture in the sign guide (the drawn badge is 24 px, its touch area 44 px), and in a compact pill at the bottom of the camera for 6 s after the scanner says a word (only for a sign this device has not judged yet, never in the tour, never while paused). A device has one vote per sign and can change it. A word is **validated** when it has at least 10 votes and at least 80% of them say it is right; it then shows a blue check mark in the sign guide and in the pill. Votes are saved on the device first and sent when there is a network; the last tallies received are kept, so the marks show offline. A vote is: a random device id, the sign's label, yes or no. Votes are counted per label **and word**, so changing a sign's word starts its count again. The vote buttons and marks are hidden when the server has no vote store (it answers 503) and while the demo script is on. The server refuses unknown signs, malformed ids, and more than 30 posts a minute from one address. |
+| **FR-13** | Sample sentence (proof of concept). Nine universal gestures speak, in this order, the words of one sentence, "مرحباً أنا جوهر حلاق من سيدي بوزيد نحب نحل باتيندة مبادر ذاتي": open palm مرحباً, index finger up أنا, shaka جوهر, V sign حلاق, thumb down من سيدي بوزيد, thumb up نحب, three fingers نحل, OK ring باتيندة, fist مبادر ذاتي. This is the vocabulary itself (`packages/vocabulary/src/index.ts`), with no mode or switch: the gestures always say these words, and they do not say what they said in earlier versions (stop, yes, no, goodbye, wait, OK, 3, congratulations). They are stand-ins chosen because the model reads them reliably, not the Tunisian signs for these words, so each is marked `toConfirm` until a real sign is recorded for it. Their votes (FR-14) start from zero, since votes count a sign's label and word. |
+| **FR-14** | Community validation (`lib/validation.ts`, `lib/votes.ts`, `app/api/votes/route.ts`). A user can say whether a sign's word is right or wrong with two small round icon badges (check, cross), the same size and style as the speaker badge: in the bottom corners of every sign's picture in the sign guide (the drawn badge is 24 px, its touch area 44 px), and in a compact pill at the bottom of the camera for 6 s after the scanner says a word (only for a sign this device has not judged yet, never in the tour, never while paused). A device has one vote per sign and can change it. A word is **validated** when it has at least 10 votes and at least 80% of them say it is right; it then shows a blue check mark in the sign guide and in the pill. Votes are saved on the device first and sent when there is a network; the last tallies received are kept, so the marks show offline. A vote is: a random device id, the sign's label, yes or no. Votes are counted per label **and word**, so changing a sign's word starts its count again. The vote buttons and marks are hidden when the server has no vote store (it answers 503). The server refuses unknown signs, malformed ids, and more than 30 posts a minute from one address. |
 
 ## 5. Vocabulary
 
 - The model (`public/models/sign_model.meta.json` → `labels`) has 66
   classes: 55 Tunisian Sign Language signs, 10 universal hand gestures
-  (from HaGRID), and the negative class `none`.
+  (from HaGRID, nine of which carry the sample sentence, FR-13), and the
+  negative class `none`.
 - **Every class has a word**, listed in `packages/vocabulary/src/index.ts`,
   whose test pins the exact label-to-word contract. A PWA test fails if a
   model class has no word.
-- **32 words are drafts** (for example `baladya` بلدية, `wzara` وزارة,
-  `demande` مطلب), marked `toConfirm` with what to check. They are spoken,
-  but must be confirmed with ATILS before the app is presented as correct
-  for them; then their `toConfirm` is removed.
+- **41 words are drafts**: 32 Tunisian words (for example `baladya` بلدية,
+  `wzara` وزارة, `demande` مطلب) and the 9 stand-in gestures of FR-13, all
+  marked `toConfirm` with what to check. They are spoken, but must be
+  confirmed with ATILS before the app is presented as correct for them;
+  then their `toConfirm` is removed (a stand-in's is removed once its word
+  has a real recorded sign).
 
 ## 6. Recognition pipeline
 
@@ -137,14 +140,13 @@ camera frame ─► HandLandmarker (2 hands) ─► frameFromHands ─► FrameS
 | Hands tracked | `lib/recognizer.ts` → `MAX_HANDS` | 2 |
 | Tracking rate cap | `components/GestureScanner.tsx` → `MIN_FRAME_INTERVAL_MS` | 40 ms |
 | Model cache version | `lib/assets.ts` → `MODEL_VERSION` | 2 |
-| Label → word | `packages/vocabulary/src/index.ts` → `SIGNS` | 65 entries (32 marked `toConfirm`) |
+| Label → word | `packages/vocabulary/src/index.ts` → `SIGNS` | 65 entries (41 marked `toConfirm`) |
 | Validation rule | `lib/validation.ts` → `MIN_VOTES`, `MIN_AGREEMENT` | 10 votes, 80% yes |
 | Feedback pill after a word | `components/ScannerWorkspace.tsx` → `FEEDBACK_MS` | 6000 ms |
 | Vote store | Vercel environment: `KV_REST_API_URL` + `KV_REST_API_TOKEN`, or `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (`docs/DEPLOYMENT.md`) | unset: voting hidden |
 | Vote rate limit | `app/api/votes/route.ts` → `RATE_LIMIT` | 30 posts per minute per address |
-| Demo script | `lib/demoScript.ts` → `DEMO_WORDS`; the clapperboard button on the landing screen | off; 11 labels, 9 words |
 | Pronunciation for generated voices | `scripts/voiceText.ts` → `VOICED` | 71 entries, vowelled |
-| Recorded voice clips | `public/audio/`, listed in `lib/voiceClips.ts` (`pnpm --filter @souty/pwa voice`); 71 words can be recorded: the vocabulary and the demo sentence's own words (`DEMO_PHRASES`); 9 recorded, the demo sentence's words; served immutable from `/audio/` (`next.config.mjs`) |
+| Recorded voice clips | `public/audio/`, listed in `lib/voiceClips.ts` (`pnpm --filter @souty/pwa voice`); all 65 distinct words are recorded; served immutable from `/audio/` (`next.config.mjs`) |
 | Splash | `components/SplashScreen.tsx` → `SPLASH_MS`, `SPLASH_FADE_MS` | 1200 ms, 300 ms |
 | Idle reminder delay | `app/page.tsx` → `IDLE_HAND_TIMEOUT_MS` | 5000 ms |
 | Burst after a word is said | `components/GestureScanner.tsx` → `LOCK_FLASH_MS` | 500 ms |
@@ -172,7 +174,7 @@ Run every automated test from the repository root with `pnpm test`
 | FR-10 | `live.test.ts` ("forgets the last sign on reset") | M-09 |
 | FR-11 | | M-10 |
 | FR-12 | `apps/pwa/lib/handOverlay.test.ts` ("FR-12 sign feedback ring"; `visibleRect`, `handSides`, `approach`) | M-02, M-03, M-17 |
-| FR-13 | `apps/pwa/lib/gestureDictionary.test.ts` ("FR-13 demo script") | M-20 |
+| FR-13 | `apps/pwa/lib/gestureDictionary.test.ts` ("FR-13 the sample sentence") | M-20 |
 | FR-14 | `apps/pwa/lib/validation.test.ts` ("FR-14 community validation") | M-21 |
 | NFR-1 | `apps/pwa/lib/assets.test.ts` ("NFR-1 …") | M-12 |
 | NFR-2 | `apps/pwa/lib/assets.test.ts` ("NFR-2 …") | M-11 |
@@ -203,15 +205,17 @@ Test names in `apps/pwa` start with the requirement ID they verify.
    images; the full list is in TESTING.md). The test images come
    from the same 7 signers as training, so accuracy on new signers will
    be lower. It has not been measured.
-4. **The voice is only Tunisian for recorded words.** Only the 9 words of the demo sentence
-   are recorded (generated with an ElevenLabs voice); every other word uses the
-   device's Arabic text-to-speech, with a standard Arabic accent. A phone with no Arabic voice installed, or
-   with its silent switch on (iPhone), stays silent; the speaker button
-   then shows crossed out. Recording the 62 distinct words fixes this (README, "Voice").
-5. **The demo script is not sign language.** Its nine words (FR-13) are
-   carried by universal gestures chosen because the model reads them
-   reliably. The real signs need recorded clips (`training/README.md`,
-   "Recording list").
+4. **The voice is generated.** All 65 distinct words play from clips made
+   with an ElevenLabs voice in Tunisian pronunciation
+   (`scripts/voiceText.ts`), judged by ear by one person only; check the
+   plan's licence before launch. A word added later without a clip falls
+   back to the device's Arabic text-to-speech, which stays silent on a
+   phone with no Arabic voice (the speaker button then shows crossed out).
+5. **The sample sentence is not sign language.** Its nine words (FR-13)
+   are carried by universal gestures chosen because the model reads them
+   reliably, and they replace those gestures' usual meanings: thumb up
+   says نحب, not yes (yes is the Tunisian sign `oui`). The real signs need
+   recorded clips (`training/README.md`, "Recording list").
 6. **Anyone can vote.** There are no accounts, so a vote does not prove
    the voter is Deaf or knows Tunisian Sign Language, and one person
    with several devices or browsers has several votes. The blue mark

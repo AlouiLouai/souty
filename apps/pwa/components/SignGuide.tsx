@@ -14,12 +14,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { SIGN_CATEGORIES, signsByCategory, type SignCategory } from "@souty/vocabulary";
-import { gestureToWord } from "@/lib/gestureDictionary";
 import { SoundBars } from "@/components/Pictograms";
 import { SignGlyph, hasGlyph } from "@/components/SignGlyph";
 import { ValidatedMark, VoteButtons } from "@/components/VoteButtons";
 import { Button } from "@/components/ui/button";
-import { useDemo } from "@/hooks/useDemo";
 import { useSpeech } from "@/hooks/useSpeech";
 import { useVotes } from "@/hooks/useVotes";
 import { isValidated } from "@/lib/validation";
@@ -50,7 +48,6 @@ export default function SignGuide({ onClose }: SignGuideProps) {
   const [active, setActive] = useState<string | null>(null);
   const speech = useSpeech();
   const votes = useVotes();
-  useDemo(); // the words shown change when the demo is switched
   const CategoryIcon = CATEGORY_ICONS[category].icon;
 
   return (
@@ -108,8 +105,7 @@ export default function SignGuide({ onClose }: SignGuideProps) {
           .sort((a, b) => Number(hasGlyph(b.label)) - Number(hasGlyph(a.label)))
           .map((sign) => {
           const playing = speech.speaking && active === sign.label;
-          // In the demo script a sign can carry a stand-in word.
-          const word = gestureToWord(sign.label);
+          const word = sign.word;
           return (
             <div key={sign.label} className="relative">
             <button
