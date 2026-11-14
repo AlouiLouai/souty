@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { SIGNS } from "@souty/vocabulary";
 import { DEMO_PHRASES, DEMO_WORDS } from "./demoScript";
-import { pickArabicVoice, planSpeech, utteranceLang } from "./voice";
+import { clipForWord, pickArabicVoice, planSpeech, utteranceLang } from "./voice";
 import { VOICE_CLIPS } from "./voiceClips";
 
 const clips: Record<string, string> = { بلدية: "/audio/baladya.mp3", اليوم: "/audio/lyoum.mp3" };
@@ -15,6 +15,14 @@ describe("FR-9 recordings cover the demo sentence", () => {
     for (const word of new Set(Object.values(DEMO_WORDS))) expect(named.has(word), word).toBe(true);
     const labels = [...DEMO_PHRASES.map((p) => p.label), ...SIGNS.map((s) => s.label)];
     expect(new Set(labels).size).toBe(labels.length);
+  });
+});
+
+describe("FR-9 the demo sentence is spoken from recordings", () => {
+  it("has a clip for every word of the demo sentence, so none falls back to text-to-speech", () => {
+    for (const { word } of DEMO_PHRASES) expect(clipForWord(word), word).not.toBeNull();
+    const sentence = DEMO_PHRASES.map((phrase) => phrase.word);
+    expect(planSpeech(sentence).map((segment) => segment.kind)).toEqual(["clips"]);
   });
 });
 

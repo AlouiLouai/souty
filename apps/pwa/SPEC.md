@@ -143,7 +143,7 @@ camera frame ─► HandLandmarker (2 hands) ─► frameFromHands ─► FrameS
 | Vote store | Vercel environment: `KV_REST_API_URL` + `KV_REST_API_TOKEN`, or `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (`docs/DEPLOYMENT.md`) | unset: voting hidden |
 | Vote rate limit | `app/api/votes/route.ts` → `RATE_LIMIT` | 30 posts per minute per address |
 | Demo script | `lib/demoScript.ts` → `DEMO_WORDS`; `?demo=jawher` / `?demo=off` | off; 11 labels, 9 words |
-| Recorded voice clips | `public/audio/`, listed in `lib/voiceClips.ts` (`pnpm --filter @souty/pwa voice`); 71 words can be recorded: the vocabulary and the demo sentence's own words (`DEMO_PHRASES`) | none yet |
+| Recorded voice clips | `public/audio/`, listed in `lib/voiceClips.ts` (`pnpm --filter @souty/pwa voice`); 71 words can be recorded: the vocabulary and the demo sentence's own words (`DEMO_PHRASES`); 9 recorded, the demo sentence's words; served immutable from `/audio/` (`next.config.mjs`) |
 | Splash | `components/SplashScreen.tsx` → `SPLASH_MS`, `SPLASH_FADE_MS` | 1200 ms, 300 ms |
 | Idle reminder delay | `app/page.tsx` → `IDLE_HAND_TIMEOUT_MS` | 5000 ms |
 | Burst after a word is said | `components/GestureScanner.tsx` → `LOCK_FLASH_MS` | 500 ms |
@@ -202,9 +202,9 @@ Test names in `apps/pwa` start with the requirement ID they verify.
    images; the full list is in TESTING.md). The test images come
    from the same 7 signers as training, so accuracy on new signers will
    be lower. It has not been measured.
-4. **The voice is only Tunisian for recorded words.** No recordings exist
-   yet, so today every word uses the device's Arabic text-to-speech, with
-   a standard Arabic accent. A phone with no Arabic voice installed, or
+4. **The voice is only Tunisian for recorded words.** Only the 9 words of the demo sentence
+   are recorded (generated with an ElevenLabs voice); every other word uses the
+   device's Arabic text-to-speech, with a standard Arabic accent. A phone with no Arabic voice installed, or
    with its silent switch on (iPhone), stays silent; the speaker button
    then shows crossed out. Recording the 62 distinct words fixes this (README, "Voice").
 5. **The demo script is not sign language.** Its nine words (FR-13) are
