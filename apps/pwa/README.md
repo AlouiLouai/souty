@@ -281,6 +281,7 @@ lib/
   offline.ts             Asks the service worker to cache loaded resources
   voice.ts               Which words have a clip; splits a sentence into clips and TTS
   voiceClips.ts          Generated list of recorded clips (scripts/voice.ts)
+  signMeaning.ts         Picture of a word's meaning, for guide tiles with no hand drawing
   utils.ts               Class name helper
 public/
   models/                Hand tracker + sign model + its meta file (committed)

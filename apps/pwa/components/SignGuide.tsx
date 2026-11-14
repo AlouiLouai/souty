@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   Building2,
-  Hand,
   CalendarDays,
   Car,
   MessageCircle,
@@ -21,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { useSpeech } from "@/hooks/useSpeech";
 import { useVotes } from "@/hooks/useVotes";
 import { isValidated } from "@/lib/validation";
+import { MEANING_ICONS } from "@/lib/signMeaning";
 import { cn } from "@/lib/utils";
 
 /** One icon per vocabulary group; the Arabic name is for screen readers only. */
@@ -106,6 +106,8 @@ export default function SignGuide({ onClose }: SignGuideProps) {
           .map((sign) => {
           const playing = speech.speaking && active === sign.label;
           const word = sign.word;
+          // No hand drawing yet: a picture of what the word means, else its category's icon.
+          const Meaning = MEANING_ICONS[sign.label] ?? CATEGORY_ICONS[category].icon;
           return (
             <div key={sign.label} className="relative">
             <button
@@ -125,13 +127,7 @@ export default function SignGuide({ onClose }: SignGuideProps) {
                 {hasGlyph(sign.label) ? (
                   <SignGlyph label={sign.label} className="h-[85%] w-[85%]" />
                 ) : (
-                  // No drawing of this sign yet: an outlined hand in a dashed frame.
-                  <span
-                    aria-hidden="true"
-                    className="flex h-[70%] w-[70%] items-center justify-center rounded-xl border-2 border-dashed border-foreground/50"
-                  >
-                    <Hand className="h-8 w-8 text-foreground/70" strokeWidth={2} />
-                  </span>
+                  <Meaning aria-hidden="true" className="h-[48%] w-[48%] text-foreground/60" strokeWidth={1.6} />
                 )}
               </span>
               <span lang="ar" className="w-full truncate text-center font-display text-lg font-extrabold leading-tight text-foreground">
