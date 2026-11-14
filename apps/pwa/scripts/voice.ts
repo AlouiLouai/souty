@@ -4,6 +4,8 @@
  *   pnpm --filter @souty/pwa voice list            words still to record
  *   pnpm --filter @souty/pwa voice import <folder> convert recordings, then sync
  *   pnpm --filter @souty/pwa voice sync            regenerate lib/voiceClips.ts
+ *   pnpm --filter @souty/pwa voice generate [label...] [--force] [--dry]
+ *                                                  make the missing words with an ElevenLabs voice
  *
  * Recording: one file per word, named after the model label, for example
  * `baladya.m4a` or `oui.wav` (any format ffmpeg reads). Words shared by
@@ -17,9 +19,12 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { SIGNS } from "@souty/vocabulary";
 import { DEMO_PHRASES } from "../lib/demoScript";
+import { VOICED } from "./voiceText";
 
 const APP_DIR = path.resolve(import.meta.dirname, "..");
 const AUDIO_DIR = path.join(APP_DIR, "public", "audio");
+/** Raw recordings, before conversion. Not committed (see .gitignore). */
+const RAW_DIR = path.resolve(APP_DIR, "..", "..", "voice-raw");
 const CLIPS_TS = path.join(APP_DIR, "lib", "voiceClips.ts");
 const INPUT_EXTS = new Set([".wav", ".m4a", ".mp3", ".ogg", ".opus", ".webm", ".aac", ".3gp", ".flac", ".amr"]);
 /** Everything that can have a recording: the vocabulary, then the demo sentence's own words. */
@@ -110,11 +115,90 @@ function importFolder(folder: string): void {
   sync();
 }
 
+/** Calls ElevenLabs text-to-speech for one word; returns the mp3 bytes. */
+async function synthesize(text: string, settings: { voice: string; key: string; base: string; model: string; voiceSettings?: unknown }) {
+  const url = `${settings.base}/v1/text-to-speech/${encodeURIComponent(settings.voice)}?output_format=mp3_44100_128`;
+  const body = JSON.stringify({ text, model_id: settings.model, ...(settings.voiceSettings ? { voice_settings: settings.voiceSettings } : {}) });
+  for (let attempt = 1; ; attempt++) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "xi-api-key": settings.key, "Content-Type": "application/json", Accept: "audio/mpeg" },
+      body,
+    });
+    if (response.ok) return Buffer.from(await response.arrayBuffer());
+    const retryable = response.status === 429 || response.status >= 500;
+    if (!retryable || attempt >= 3) throw new Error(`${response.status} ${(await response.text()).slice(0, 200)}`);
+    await new Promise((resolve) => setTimeout(resolve, attempt * 2000));
+  }
+}
+
+async function generate(args: string[]): Promise<void> {
+  const key = process.env.ELEVENLABS_API_KEY;
+  const voice = process.env.ELEVENLABS_VOICE_ID;
+  const dry = args.includes("--dry");
+  if ((!key || !voice) && !dry) {
+    console.error("Set ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID in your shell first (never commit them).");
+    process.exit(1);
+  }
+  const force = args.includes("--force");
+  const only = args.filter((arg) => !arg.startsWith("--"));
+  const unknown = only.filter((label) => !LABELS.has(label));
+  if (unknown.length) throw new Error(`not recordable names: ${unknown.join(", ")} (see \`voice list\`)`);
+
+  // One recording per distinct word, made under the first label that says it.
+  const done = recorded();
+  const targets: { label: string; word: string; text: string }[] = [];
+  const seen = new Set<string>();
+  for (const entry of ENTRIES) {
+    if (seen.has(entry.word)) continue;
+    seen.add(entry.word);
+    const labels = ENTRIES.filter((e) => e.word === entry.word).map((e) => e.label);
+    const wanted = only.length ? labels.find((label) => only.includes(label)) : undefined;
+    if (only.length && !wanted) continue;
+    if (!only.length && !force && labels.some((label) => done.has(label))) continue;
+    const label = wanted ?? entry.label;
+    const text = VOICED[label];
+    if (!text) throw new Error(`no pronunciation for "${label}" in scripts/voiceText.ts`);
+    targets.push({ label, word: entry.word, text });
+  }
+
+  const characters = targets.reduce((sum, t) => sum + t.text.length, 0);
+  console.log(`${targets.length} words to generate (${characters} characters of your ElevenLabs allowance):`);
+  for (const t of targets) console.log(`  ${t.label.padEnd(18)} ${t.text}`);
+  if (dry || targets.length === 0) return;
+
+  const settings = {
+    voice: voice!,
+    key: key!,
+    base: process.env.ELEVENLABS_API_URL ?? "https://api.elevenlabs.io",
+    model: process.env.ELEVENLABS_MODEL ?? "eleven_multilingual_v2",
+    voiceSettings: process.env.ELEVENLABS_SETTINGS ? JSON.parse(process.env.ELEVENLABS_SETTINGS) : undefined,
+  };
+  mkdirSync(RAW_DIR, { recursive: true });
+  let made = 0;
+  for (const t of targets) {
+    try {
+      writeFileSync(path.join(RAW_DIR, `${t.label}.mp3`), await synthesize(t.text, settings));
+      made++;
+      console.log(`  ${t.label}: ok`);
+    } catch (error) {
+      console.warn(`  ${t.label}: failed (${(error as Error).message})`);
+    }
+  }
+  console.log(`Generated ${made} of ${targets.length} words into voice-raw/.`);
+  if (made > 0) importFolder(RAW_DIR);
+}
+
 const [command, arg] = process.argv.slice(2);
-if (command === "list") list();
+if (command === "generate") {
+  generate(process.argv.slice(3)).catch((error: Error) => {
+    console.error(error.message);
+    process.exit(1);
+  });
+} else if (command === "list") list();
 else if (command === "sync") sync();
 else if (command === "import" && arg) importFolder(arg);
 else {
-  console.error("Usage: voice list | voice import <folder> | voice sync");
+  console.error("Usage: voice list | voice import <folder> | voice sync | voice generate [label...] [--force] [--dry]");
   process.exit(1);
 }

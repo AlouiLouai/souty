@@ -155,6 +155,18 @@ To add or replace recordings (needs `ffmpeg` on the PATH):
    evens out the loudness, writes `public/audio/<label>.mp3`, and
    regenerates `lib/voiceClips.ts`. Commit both.
 
+To make the words with an ElevenLabs voice instead of recording them
+yourself, set `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` in your shell
+(never commit them), then run
+`pnpm --filter @souty/pwa voice generate`: it makes every word that has no
+clip yet, from the vowelled spellings in `scripts/voiceText.ts`, saves the
+raw mp3s in `voice-raw/` (not committed), and imports them. `--dry` lists
+what it would do, `voice generate <label>...` redoes the named words
+(after correcting their spelling), and the optional `ELEVENLABS_SETTINGS`
+(a JSON object, for example `{"stability":0.5}`) and `ELEVENLABS_MODEL`
+override the voice settings and model. Check the ElevenLabs plan's terms
+before the audio ships in a public app.
+
 If you delete a clip, run `pnpm --filter @souty/pwa voice sync`. The test
 `lib/voice.test.ts` fails when a clip changed without a sync.
 
@@ -253,7 +265,7 @@ hooks/
   useVotes.ts            Community votes and tallies, for the vote buttons and blue marks
 lib/
   gestureDictionary.ts   Model label -> Tunisian Arabic word (adapter over @souty/vocabulary)
-  demoScript.ts          Proof-of-concept sentence: stand-in words, on with ?demo=jawher
+  demoScript.ts          Proof-of-concept sentence: stand-in words, switched with the clapperboard button on the landing screen
   validation.ts          Community validation rule: votes needed for the blue mark
   votes.ts               This device's votes (kept offline, sent when online) and cached tallies
   handOverlay.ts         Canvas skeletons + the reading/candidate/said ring above both hands
